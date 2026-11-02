@@ -1,0 +1,13 @@
+{
+  "name": "flowtrace",
+  "description": "The Flowtrace plugin: skills that plan a change from the code it touches, teach it, and review a pull request.",
+  "owner": {
+    "name": "Perillo"
+  },
+  "plugins": [
+    {
+      "name": "flowtrace",
+      "source": "./"
+    }
+  ]
+}

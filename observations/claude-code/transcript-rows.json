@@ -1,0 +1,243 @@
+{
+  "claim": "A Claude app session transcript (the JSON-lines file a hook's transcript_path names) marks a person's own message as a user row with origin.kind \"human\"; another session's or a subagent's report is a user row with origin.kind \"peer\", and a background task's notice one with \"task-notification\". A tool call is a tool_use block (id, name, input) in an assistant row's message.content, and its answer a tool_result block naming it by tool_use_id in a later user row with no origin. An Artifact publish leaves out its action or names \"publish\"; an open names \"open\". A call that failed or was refused has is_error true on its tool_result; one that succeeded has no is_error. The next-step box is a tool_use of mcp__ccd_turn__wrap_up, and its question is input.ask. Its buttons are input.actions, each either an app action ({ action: \"commit\" }, with no label) or a reply ({ label }, with no action).",
+  "source": "Claude Code in the Claude desktop app (Code tab), 2.1.275 to 2.1.309, on macOS",
+  "observed": "2026-11-01",
+  "how": "node observations/claude-code/transcript-rows.probe.mjs <transcript.jsonl>... (beside this record), run on five session transcripts of this plugin's own development, in Claude Code's folder of transcripts. It prints the first row of each kind, trimmed to the keys explain-before-ask.mjs reads, with what a person or a model wrote put as <redacted>. Tool-call ids are replaced by placeholders, the same id keeping the same placeholder.",
+  "recheckWhen": "Claude Code or the Claude app is upgraded and its transcript rows, the Artifact tool's input or mcp__ccd_turn__wrap_up's input change.",
+  "evidence": [
+    {
+      "kind": "a person's own message",
+      "row": {
+        "type": "user",
+        "version": "2.1.309",
+        "origin": {
+          "kind": "human"
+        },
+        "message": {
+          "role": "user",
+          "content": "<redacted>"
+        }
+      }
+    },
+    {
+      "kind": "another session's or a subagent's report",
+      "row": {
+        "type": "user",
+        "version": "2.1.309",
+        "origin": {
+          "kind": "peer"
+        },
+        "message": {
+          "role": "user",
+          "content": "<redacted>"
+        }
+      }
+    },
+    {
+      "kind": "a background task's notice",
+      "row": {
+        "type": "user",
+        "version": "2.1.309",
+        "origin": {
+          "kind": "task-notification"
+        },
+        "message": {
+          "role": "user",
+          "content": "<redacted>"
+        }
+      }
+    },
+    {
+      "kind": "an Artifact publish, its action left out",
+      "row": {
+        "type": "assistant",
+        "version": "2.1.309",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "toolu_01",
+              "name": "Artifact",
+              "input": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "an Artifact publish naming its action",
+      "row": {
+        "type": "assistant",
+        "version": "2.1.309",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "toolu_02",
+              "name": "Artifact",
+              "input": {
+                "action": "publish"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "the publish's result",
+      "row": {
+        "type": "user",
+        "version": "2.1.309",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "toolu_01"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "an Artifact open",
+      "row": {
+        "type": "assistant",
+        "version": "2.1.275",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "toolu_03",
+              "name": "Artifact",
+              "input": {
+                "action": "open"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "a call that failed",
+      "row": {
+        "type": "user",
+        "version": "2.1.309",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "tool_result",
+              "tool_use_id": "toolu_04",
+              "is_error": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "a next-step box with a question",
+      "row": {
+        "type": "assistant",
+        "version": "2.1.309",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "toolu_05",
+              "name": "mcp__ccd_turn__wrap_up",
+              "input": {
+                "ask": "<redacted>"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "a next-step box asking with two reply buttons",
+      "row": {
+        "type": "assistant",
+        "version": "2.1.299",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "toolu_06",
+              "name": "mcp__ccd_turn__wrap_up",
+              "input": {
+                "ask": "<redacted>",
+                "actions": [
+                  {
+                    "label": "<redacted>"
+                  },
+                  {
+                    "label": "<redacted>"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "a next-step box asking with one reply button",
+      "row": {
+        "type": "assistant",
+        "version": "2.1.299",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "toolu_07",
+              "name": "mcp__ccd_turn__wrap_up",
+              "input": {
+                "ask": "<redacted>",
+                "actions": [
+                  {
+                    "label": "<redacted>"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "a next-step box asking with an app action and one reply",
+      "row": {
+        "type": "assistant",
+        "version": "2.1.299",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "tool_use",
+              "id": "toolu_08",
+              "name": "mcp__ccd_turn__wrap_up",
+              "input": {
+                "ask": "<redacted>",
+                "actions": [
+                  {
+                    "action": "commit"
+                  },
+                  {
+                    "label": "<redacted>"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

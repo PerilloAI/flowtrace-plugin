@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "perillo": {
+      "type": "http",
+      "url": "https://app.perillo.ai/mcp"
+    }
+  }
+}

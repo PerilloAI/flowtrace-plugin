@@ -1,0 +1,19 @@
+{
+  "claim": "Node 18 has no import.meta.dirname, so a module using it gets undefined, while path.dirname(fileURLToPath(import.meta.url)) works there and on current Node.",
+  "source": "Node v18.20.8 and v25.6.1",
+  "observed": "2026-11-02",
+  "how": "npx -y -p node@18 node observations/node/import-meta-dirname.probe.mjs, and the same probe with the current node",
+  "recheckWhen": "The lowest Node the README names changes.",
+  "evidence": [
+    {
+      "node": "v18.20.8",
+      "importMetaDirname": "undefined",
+      "fromFileUrl": "string"
+    },
+    {
+      "node": "v25.6.1",
+      "importMetaDirname": "string",
+      "fromFileUrl": "string"
+    }
+  ]
+}

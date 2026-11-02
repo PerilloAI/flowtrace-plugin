@@ -1,0 +1,173 @@
+{
+  "title": "Should an export that times out be retried?",
+  "about": "the shop repository · [branch export-retry](https://example.com/shop/tree/export-retry)",
+  "sections": [
+    {
+      "heading": "What I'm asking",
+      "content": [
+        { "p": "Retry a timed-out export once, after 30 seconds. Say yes, or pick another option under The choice." }
+      ]
+    },
+    {
+      "heading": "The big picture",
+      "content": [
+        { "p": "Exports move off the web server in three pieces. The first is done; this is the second." },
+        {
+          "chart": {
+            "steps": [
+              { "text": "Exports run in a worker", "where": "PR #40", "result": "ok" },
+              { "text": "A timed-out export is retried", "kind": "here", "note": "this page" },
+              { "text": "Exports show their progress" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "heading": "The example",
+      "content": [
+        { "p": "Ana exports order 1042 at 09:00. The warehouse service takes 31 seconds (`exports.log`, 2026-10-30), and the export gives up at 30 (`exports/run.ts:42`)." }
+      ]
+    },
+    {
+      "heading": "What you'd see",
+      "content": [
+        {
+          "chart": {
+            "title": "Exporting order 1042, from the orders page",
+            "columns": [
+              {
+                "title": "Today",
+                "steps": [
+                  { "text": "Ana presses Export on order 1042", "kind": "start" },
+                  { "text": "The warehouse answers after 31 seconds" },
+                  { "text": "\"Export failed\"", "result": "bad", "note": "Ana has to press Export again" }
+                ]
+              },
+              {
+                "title": "After",
+                "steps": [
+                  { "text": "Ana presses Export on order 1042", "kind": "start" },
+                  { "text": "The warehouse answers after 31 seconds" },
+                  { "text": "The export waits 30 seconds and tries once more", "result": "ok" },
+                  { "text": "The file downloads", "result": "ok" }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "heading": "Check your reading",
+      "content": [
+        {
+          "question": {
+            "question": "Ana's export of order 1042 times out twice in a row. What does she see?",
+            "options": [
+              "The file, after a third try",
+              "\"Export failed\", after the one retry",
+              "Nothing until she reloads the page"
+            ],
+            "answer": "B",
+            "read": "How it decides",
+            "why": "The export retries once; a second timeout ends it."
+          }
+        },
+        {
+          "question": {
+            "question": "Ben's export fails at once because order 7 doesn't exist. What happens?",
+            "options": [
+              "\"Export failed\" at once, with no retry",
+              "One retry after 30 seconds, then \"Export failed\"",
+              "The export keeps trying every 30 seconds"
+            ],
+            "answer": "A",
+            "read": "How it decides",
+            "why": "Only a timeout is retried."
+          }
+        }
+      ]
+    },
+    {
+      "heading": "The choice",
+      "content": [
+        {
+          "choice": {
+            "question": "Should an export that times out be retried?",
+            "recommended": "Retry once, after 30 seconds",
+            "alternatives": [
+              "Don't retry"
+            ],
+            "options": [
+              {
+                "name": "Retry once",
+                "steps": [
+                  { "text": "Ana exports order 1042", "kind": "start" },
+                  { "text": "Times out, waits 30 s, tries again", "result": "ok" },
+                  { "text": "The file downloads", "result": "ok" }
+                ]
+              },
+              {
+                "name": "Don't retry",
+                "steps": [
+                  { "text": "Ana exports order 1042", "kind": "start" },
+                  { "text": "\"Export failed\"", "result": "bad" }
+                ]
+              }
+            ],
+            "why": "The warehouse is slow for a minute at a time (exports.log), so one retry catches most timeouts."
+          }
+        }
+      ]
+    },
+    {
+      "heading": "How it works",
+      "content": [
+        {
+          "chart": {
+            "title": "How it decides",
+            "steps": [
+              { "text": "The export asks the warehouse for order 1042", "kind": "start" },
+              {
+                "text": "Did it time out?",
+                "kind": "question",
+                "answers": [
+                  {
+                    "label": "yes, the first time",
+                    "steps": [
+                      { "text": "wait 30 seconds and ask again" }
+                    ]
+                  },
+                  {
+                    "label": "yes, again",
+                    "steps": [
+                      { "text": "\"Export failed\"", "result": "bad" }
+                    ]
+                  },
+                  {
+                    "label": "no",
+                    "steps": [
+                      { "text": "the file downloads", "result": "ok" }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "heading": "Names on this page",
+      "content": [
+        {
+          "names": [
+            { "name": "export", "text": "the file of an order's lines that a shop owner downloads" },
+            { "name": "warehouse service", "also": ["warehouse"], "text": "the service that holds stock and answers each export's questions" }
+          ]
+        }
+      ]
+    }
+  ]
+}

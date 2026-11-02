@@ -1,0 +1,295 @@
+/* global process */
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { execFileSync, spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { formatJson, readJson } from "./json.mjs";
+import { readDocument } from "./read.mjs";
+import { questionsFor } from "./check.mjs";
+import { inline } from "./render.mjs";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const script = path.join(here, "page.mjs");
+
+// A repository with one commit holding orders.ts, and a plan that changes exportOrder in it.
+function repo() {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "page-test-"));
+  const git = (...a) => execFileSync("git", ["-C", dir, ...a], { encoding: "utf8" });
+  git("init", "-q", "-b", "main");
+  git("config", "user.email", "test@example.com");
+  git("config", "user.name", "Test");
+  writeFileSync(path.join(dir, "orders.ts"), "export function exportOrder() {}\nexport function loadOrder() {}\n");
+  git("add", ".");
+  git("commit", "-q", "-m", "orders");
+  mkdirSync(path.join(dir, "docs/plans"), { recursive: true });
+  return dir;
+}
+
+const plan = () => ({
+  title: "Retry an export that times out",
+  sections: [
+    { heading: "What I'm asking", content: [{ p: "Approve the retry. No questions are open." }] },
+    { heading: "The case", content: [{ case: [{ p: "An export that times out fails today." }] }] },
+    {
+      heading: "What you'd see",
+      content: [{
+        screens: {
+          title: "Exporting order 1042",
+          columns: [
+            { title: "Today", steps: [{ text: "Ana exports order 1042", kind: "start" }, { text: '"Export failed"', result: "bad" }] },
+            { title: "After", steps: [{ text: "Ana exports order 1042", kind: "start" }, { text: "It tries once more", change: "Retry once", result: "ok" }] },
+          ],
+        },
+      }],
+    },
+    {
+      heading: "Check your reading",
+      content: [
+        { question: { question: "Ana's export times out twice. What does she see?", options: ["The file", '"Export failed"', "Nothing"], answer: "B", read: "How it's built", why: "It retries once." } },
+        { question: { question: "Ben's order doesn't exist. What happens?", options: ['"Export failed" at once', "A retry after 30 seconds, then failure", "Endless retries"], answer: "A", read: "exportOrder", why: "Only a timeout is retried." } },
+        { question: { question: "Cy's export finishes in 2 seconds. How many times is the warehouse asked?", options: ["Twice, to be sure", "Three times", "Once"], answer: "C", read: "Export an order", why: "Only a timeout asks again." } },
+      ],
+    },
+    { heading: "The changes and why", content: [{ changes: [{ title: "Retry once", gets: "Ana gets her file", why: "The warehouse is slow for a minute at a time" }] }] },
+    {
+      heading: "How it's built",
+      content: [{
+        flow: {
+          name: "Export an order",
+          steps: [
+            { keyword: "Starts", text: "Ana presses Export", where: "exportOrder" },
+            { keyword: "Step", text: "Load the order", where: "loadOrder" },
+            {
+              keyword: "Check", text: "Did the warehouse time out?", mark: "+",
+              answers: [{ label: "yes", steps: [{ keyword: "Step", text: "Wait 30 seconds and try once more", mark: "+", lookClosely: [{ kind: "External call", text: "the warehouse is asked twice" }] }] }],
+            },
+            { keyword: "Returns", text: "the file" },
+          ],
+        },
+      }],
+    },
+  ],
+});
+
+const write = (dir, data) => {
+  const file = path.join(dir, "docs/plans/retry.json");
+  writeFileSync(file, `${formatJson(data)}\n`);
+  return file;
+};
+const draw = (dir, kind, file, ...args) => spawnSync(process.execPath, [script, kind, path.join(dir, file), ...args], { encoding: "utf8" });
+const lineOf = (file, words) => readFileSync(file, "utf8").split("\n").findIndex((l) => l.includes(words)) + 1;
+
+test("a plan that passes every check is drawn, and the page shows each of its steps", () => {
+  const dir = repo();
+  write(dir, plan());
+  const out = path.join(dir, "page.html");
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
+  assert.equal(run.status, 0, run.stderr);
+  const result = JSON.parse(run.stdout);
+  assert.equal(result.changedSteps, 2);
+  assert.equal(result.questions, 3);
+  const html = readFileSync(out, "utf8");
+  for (const words of ["Ana exports order 1042", "Check: Did the warehouse time out?", "Step: Load the order", "the warehouse is asked twice"]) {
+    assert.ok(html.includes(words), words);
+  }
+  assert.match(html, /data-line="Approve plan [0-9a-f]{7}"/);
+});
+
+test("each option of a plan's question for the author is a button giving its number and letter", () => {
+  const dir = repo();
+  const data = plan();
+  data.sections[0].content[0].p = "Approve the retry. 1 question is open.";
+  data.sections.splice(4, 0, { heading: "Questions from plan-flows", content: [
+    { p: "1 question. Pick an option to answer it." },
+    { choice: {
+      number: 1, question: "Ana's export times out twice. Is it retried again?", recommended: "No: one retry, then \"Export failed\"", alternatives: ["Yes: retry until it answers"],
+      options: [
+        { name: "Retry once", steps: [{ text: "Ana sees \"Export failed\" after one retry", kind: "start" }] },
+        { name: "Retry until it answers", steps: [{ text: "Ana waits until the warehouse answers", kind: "start" }] },
+      ],
+      why: "A warehouse that is down would hold her export forever.",
+    } },
+  ] });
+  write(dir, data);
+  const out = path.join(dir, "page.html");
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
+  assert.equal(run.status, 0, run.stderr);
+  const html = readFileSync(out, "utf8");
+  assert.match(html, /<button type="button" class="pick" aria-pressed="false" data-line="1 A"><span class="letter">A<\/span><span><span class="tag rec">recommended<\/span> <strong>No: one retry/);
+  assert.match(html, /data-line="1 B"><span class="letter">B<\/span><span>Yes: retry until it answers<\/span>/);
+  assert.match(html, /<p class="ask">Pick an option on each question to copy your answers/);
+});
+
+test("a step marked as existing whose name the code doesn't have stops the drawing, naming its line", () => {
+  const dir = repo();
+  const data = plan();
+  data.sections[5].content[0].flow.steps[1].where = "loadOrders";
+  const file = write(dir, data);
+  const out = path.join(dir, "page.html");
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
+  assert.equal(run.status, 1);
+  assert.match(run.stderr, new RegExp(`line ${lineOf(file, '"loadOrders"')}: "where": "loadOrders" is on a step marked as existing`));
+  assert.equal(existsSync(out), false);
+});
+
+test("every broken rule is reported at once, each with its line", () => {
+  const dir = repo();
+  const data = plan();
+  data.sections[2].content[0].screens.columns[1].steps[1].change = "Retry twice";
+  data.sections[5].content[0].flow.steps[2].answers[0].steps[0].lookClosely[0].kind = "Slow";
+  data.sections[3].content[0].question.options[2] = "The file";
+  const file = write(dir, data);
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", path.join(dir, "page.html"));
+  assert.equal(run.status, 1);
+  assert.match(run.stderr, new RegExp(`line ${lineOf(file, "Retry twice")}: "change": "Retry twice" names no row`));
+  assert.match(run.stderr, /Look closely's kind "Slow"/);
+  assert.match(run.stderr, /three different options/);
+});
+
+test("the plan asks as many reading questions as its changed steps call for", () => {
+  assert.deepEqual([0, 1, 2, 3, 4, 8, 16, 32, 64, 500].map(questionsFor), [2, 2, 3, 3, 4, 5, 6, 7, 8, 8]);
+  const dir = repo();
+  const data = plan();
+  data.sections[3].content.pop();
+  write(dir, data);
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", path.join(dir, "page.html"));
+  assert.match(run.stderr, /asks 2 reading questions, and its 2 changed steps call for 3/);
+});
+
+test("the fingerprint leaves out approved, reviewPage and spacing, and a plan approved at it shows Approved", () => {
+  const dir = repo();
+  write(dir, plan());
+  const fp = draw(dir, "fingerprint", "docs/plans/retry.json").stdout.trim();
+  assert.match(fp, /^[0-9a-f]{7}$/);
+  const file = path.join(dir, "docs/plans/retry.json");
+  writeFileSync(file, JSON.stringify({ ...plan(), approved: `Ana · 2026-11-01 · ${fp}`, reviewPage: "https://example.com/p" }));
+  assert.equal(draw(dir, "fingerprint", "docs/plans/retry.json").stdout.trim(), fp);
+  const out = path.join(dir, "page.html");
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
+  assert.equal(JSON.parse(run.stdout).approved, true);
+  const html = readFileSync(out, "utf8");
+  assert.ok(html.includes('<span class="approved">Approved</span>'));
+  assert.ok(!html.includes('class="approve-btn"'));
+  assert.ok(!html.includes("https://example.com/p"));
+});
+
+test("a drawing outlines only what changed since the author last read the plan, and nothing before they have", () => {
+  const dir = repo();
+  write(dir, plan());
+  const out = path.join(dir, "page.html");
+  assert.equal(JSON.parse(draw(dir, "plan", "docs/plans/retry.json", "--out", out).stdout).outlined, 0);
+  draw(dir, "seen", "docs/plans/retry.json");
+  const data = plan();
+  data.sections[5].content[0].flow.steps[1].text = "Load the order and its lines";
+  data.sections[3].content[0].question.answer = "A";
+  data.sections[3].content[0].question.options = ['"Export failed"', "The file", "Nothing"];
+  write(dir, data);
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
+  assert.equal(run.status, 0, run.stderr);
+  assert.equal(JSON.parse(run.stdout).outlined, 2);
+  const html = readFileSync(out, "utf8");
+  assert.match(html, /class="n since">Step: Load the order and its lines/);
+  assert.match(html, /Outlined: changed since the page you last read/);
+});
+
+test("an explanation is drawn without a repository, its names linked by the page", () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "page-test-"));
+  const out = path.join(dir, "page.html");
+  const run = spawnSync(process.execPath, [script, "explain", path.join(here, "fixtures/explain.json"), "--out", out, "--whole"], { encoding: "utf8" });
+  assert.equal(run.status, 0, run.stderr);
+  const html = readFileSync(out, "utf8");
+  assert.match(html, /^<!doctype html>/);
+  assert.match(html, /<dt id="n-warehouse-service" data-also="warehouse">/);
+  assert.match(html, /class="n here">A timed-out export is retried/);
+  assert.match(html, /<p class="ask">Should an export that times out be retried\? Pick an option to copy your answer, or answer in the chat\.<\/p>/);
+  assert.match(html, /<button type="button" class="pick" aria-pressed="false" data-line="A · Retry once">/);
+  assert.ok(!html.includes('class="cmt"'), "an explanation has no Comment buttons");
+});
+
+test("an explanation's question must name a part of the page", () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "page-test-"));
+  const file = path.join(dir, "e.json");
+  const data = JSON.parse(readFileSync(path.join(here, "fixtures/explain.json"), "utf8"));
+  data.sections.find((s) => s.heading === "Check your reading").content[1].question.read = "Nowhere";
+  writeFileSync(file, formatJson(data));
+  const run = spawnSync(process.execPath, [script, "explain", file, "--out", path.join(dir, "p.html")], { encoding: "utf8" });
+  assert.equal(run.status, 1);
+  assert.match(run.stderr, /"read": "Nowhere" names no chart/);
+});
+
+test("a JSON mistake names its line and what was expected there", () => {
+  const cases = [
+    ['{\n  "title": "t"\n  "sections": []\n}', /line 3: expected , or } after the value of "title"/],
+    ['{\n  "title": "t",\n  "sections": [],\n}', /line 4: expected a "key" in quotes, found "}" \(a comma before } is not allowed\)/],
+    ['{\n  "title": "a\nb",\n  "sections": []\n}', /line 2: a string runs past the end of its line/],
+    ['{\n  "title": "t",\n  "title": "u",\n  "sections": []\n}', /line 3: "title" appears twice/],
+    ['{\n  "title": "t",\n  "sections": [1, 2,]\n}', /line 3: a comma before \] is not allowed/],
+  ];
+  for (const [text, message] of cases) assert.throws(() => readJson(text), message);
+});
+
+test("a key the format doesn't give, or answers on a step that asks nothing, is refused at its line", () => {
+  const unknown = '{\n  "title": "t",\n  "sections": [\n    { "heading": "s", "content": [ { "p": "x", "colour": "red" } ] }\n  ]\n}';
+  assert.throws(() => readDocument(unknown), /line 4: each item of "content" is one object with one key/);
+  const typo = '{\n  "title": "t",\n  "sectons": []\n}';
+  assert.throws(() => readDocument(typo), /line 3: "sectons" is not a key here/);
+  const answers = formatJson({ title: "t", sections: [{ heading: "s", content: [{ chart: { steps: [{ text: "A step", answers: [{ label: "yes", steps: [{ text: "x" }] }] }] } }] }] });
+  assert.throws(() => readDocument(answers), /only a step of "kind": "question" has answers/);
+});
+
+test("answers under a question fan out, one answer sits beside it, and inner steps go in a box of their own", () => {
+  const { doc } = readDocument(formatJson({
+    title: "t",
+    sections: [{ heading: "s", content: [{ chart: { steps: [
+      { text: "Many?", kind: "question", answers: [{ label: "yes", steps: [{ text: "one" }] }, { label: "no", steps: [{ text: "two" }] }] },
+      { text: "One?", kind: "question", answers: [{ label: "yes", steps: [{ text: "only" }] }] },
+      { text: "A step", inner: [{ text: "under it" }] },
+    ] } }] }],
+  }));
+  const [many, one, step] = doc.sections[0].nodes[0].chart.items;
+  assert.deepEqual(many.lanes.map((l) => [l.label, l.items[0].text]), [["yes", "one"], ["no", "two"]]);
+  assert.equal(one.lanes.length, 1);
+  assert.equal(step.inner[0].text, "under it");
+});
+
+test("a link goes only to the web, mail or the page itself", () => {
+  assert.equal(inline("[x](javascript:alert(1))"), "x)");
+  assert.equal(inline("(*a [l](http://h/x*y)"), '(*a <a href="http://h/x*y">l</a>');
+  assert.equal(inline("[see](#s-names) **it**"), '<a href="#s-names">see</a> <strong>it</strong>');
+});
+
+const reviewPage = (extra) => JSON.stringify({
+  title: "A review", ...extra,
+  sections: [{ heading: "Questions", content: [
+    { question: { question: "Which?", options: ["one", "two", "three"], answer: "A", read: "Questions", why: "It is.", source: "map" } },
+    { question: { question: "Which now?", options: ["one", "two", "three"], answer: "B", read: "Questions", why: "It is.", source: "test ran" } }
+  ] }]
+});
+const drawn = (data) => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "page-review-"));
+  const file = path.join(dir, "review.json");
+  writeFileSync(file, data);
+  const run = spawnSync(process.execPath, [script, "explain", file, "--out", path.join(dir, "page.html")], { encoding: "utf8" });
+  return { run, html: run.status === 0 ? readFileSync(path.join(dir, "page.html"), "utf8") : "" };
+};
+
+test("a page offers Send answers only when its data says so, and each question says where its answer came from", () => {
+  const sent = drawn(reviewPage({ send: true }));
+  assert.equal(sent.run.status, 0, sent.run.stderr);
+  assert.match(sent.html, /<button type="button" id="send-answers">Send answers<\/button>/);
+  assert.match(sent.html, /data-source="map"/);
+  assert.match(sent.html, /<span class="src">· the map<\/span>/);
+  assert.match(sent.html, /<span class="src">· test ran<\/span>/);
+  const quiet = drawn(reviewPage({}));
+  assert.equal(quiet.run.status, 0, quiet.run.stderr);
+  assert.doesNotMatch(quiet.html, /<button type="button" id="send-answers"/);
+});
+
+test("a question's source is one of the four the page knows", () => {
+  const { run } = drawn(reviewPage({}).replace('"map"', '"a guess"'));
+  assert.equal(run.status, 1);
+  assert.match(run.stderr, /"source" is one of map, test ran, test read, reading/);
+});

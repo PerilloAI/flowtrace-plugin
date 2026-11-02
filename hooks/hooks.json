@@ -1,0 +1,18 @@
+{
+  "description": "explain: the Claude app's next-step box asks no choice between ways until a page for it is out; a go-ahead passes",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__ccd_turn__wrap_up",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/explain-before-ask.mjs"],
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "claim": "The Codex CLI adds a marketplace from a folder that has only .claude-plugin/marketplace.json (it reads the plugin entry's string source \"./\", the marketplace's own folder, as a local source, with install policy AVAILABLE and auth policy ON_INSTALL), and when the folder also has .agents/plugins/marketplace.json it takes that file instead. It reads a plugin's .claude-plugin/plugin.json when that is its only manifest, and takes .codex-plugin/plugin.json when both are there. `codex plugin add` copies the plugin into $CODEX_HOME/plugins/cache/<marketplace>/<plugin>/<version>/ and enables it in $CODEX_HOME/config.toml; the model is shown each skill as <plugin>:<skill> from that copy. An edit to the source reaches the model only after `codex plugin add` is run again.",
+  "source": "Codex CLI 0.154.0 (codex-cli on macOS)",
+  "observed": "2026-11-02",
+  "how": "node observations/codex/plugin-marketplace-and-manifest.probe.mjs (beside this record). It copies this repository's .claude-plugin/marketplace.json and two manifests into scratch folders with one probe skill, varying which manifests and marketplace files are there and their versions, and runs `codex plugin marketplace add`, `codex plugin list` (with --json --available), `codex plugin add` and `codex debug prompt-input hello` (the model-visible input, which lists the skills) with a throwaway CODEX_HOME each. No command calls a model. Scratch paths are written <scratch>.",
+  "recheckWhen": "Codex is upgraded, or the marketplace or a manifest changes shape.",
+  "evidence": [
+    {
+      "step": "this repository's .claude-plugin/marketplace.json and both manifests as committed; no .agents/plugins/marketplace.json",
+      "marketplaceAdd": {
+        "command": "codex plugin marketplace add <scratch>/committed",
+        "exitCode": 0,
+        "stdout": "Added marketplace `flowtrace` from <scratch>/committed.\nInstalled marketplace root: <scratch>/committed",
+        "stderr": ""
+      },
+      "list": {
+        "command": "codex plugin list -m flowtrace",
+        "exitCode": 0,
+        "stdout": "Marketplace `flowtrace`\n<scratch>/committed/.claude-plugin/marketplace.json\n\nPLUGIN               STATUS         VERSION  SOURCE\nflowtrace@flowtrace  not installed           <scratch>/committed",
+        "stderr": ""
+      },
+      "available": [
+        {
+          "pluginId": "flowtrace@flowtrace",
+          "version": "0.6.0",
+          "source": {
+            "source": "local",
+            "path": "<scratch>/committed"
+          },
+          "installPolicy": "AVAILABLE",
+          "authPolicy": "ON_INSTALL"
+        }
+      ]
+    },
+    {
+      "step": "install",
+      "pluginAdd": {
+        "command": "codex plugin add flowtrace@flowtrace",
+        "exitCode": 0,
+        "stdout": "Added plugin `flowtrace` from marketplace `flowtrace`.\nInstalled plugin root: <scratch>/codex-home-Ojavmi/plugins/cache/flowtrace/flowtrace/0.6.0",
+        "stderr": ""
+      },
+      "configToml": "[marketplaces.flowtrace]\nsource_type = \"local\"\nsource = \"<scratch>/committed\"\n\n[plugins.\"flowtrace@flowtrace\"]\nenabled = true\n",
+      "installedFiles": [
+        "flowtrace/flowtrace/0.6.0/.claude-plugin/marketplace.json",
+        "flowtrace/flowtrace/0.6.0/.claude-plugin/plugin.json",
+        "flowtrace/flowtrace/0.6.0/.codex-plugin/plugin.json",
+        "flowtrace/flowtrace/0.6.0/skills/probe-skill/SKILL.md"
+      ],
+      "modelVisibleSkills": [
+        "- flowtrace:probe-skill: A probe skill used only to see where a harness puts a plugin skill. (file: r2/flowtrace/0.6.0/skills/probe-skill/SKILL.md)"
+      ]
+    },
+    {
+      "step": "the source skill's description edited, before anything else is run",
+      "modelVisibleSkills": [
+        "- flowtrace:probe-skill: A probe skill used only to see where a harness puts a plugin skill. (file: r2/flowtrace/0.6.0/skills/probe-skill/SKILL.md)"
+      ]
+    },
+    {
+      "step": "after running codex plugin add flowtrace@flowtrace again",
+      "pluginAdd": {
+        "command": "codex plugin add flowtrace@flowtrace",
+        "exitCode": 0,
+        "stdout": "Added plugin `flowtrace` from marketplace `flowtrace`.\nInstalled plugin root: <scratch>/codex-home-Ojavmi/plugins/cache/flowtrace/flowtrace/0.6.0",
+        "stderr": ""
+      },
+      "modelVisibleSkills": [
+        "- flowtrace:probe-skill: An EDITED probe skill used only to see where a harness puts a plugin skill. (file: r2/flowtrace/0.6.0/skills/probe-skill/SKILL.md)"
+      ]
+    },
+    {
+      "step": "claude-manifest-only: {\"manifests\":[\".claude-plugin\"],\"versions\":{\".claude-plugin\":\"2.0.0-claude\"}}",
+      "available": [
+        {
+          "pluginId": "flowtrace@flowtrace",
+          "version": "2.0.0-claude",
+          "source": {
+            "source": "local",
+            "path": "<scratch>/claude-manifest-only"
+          },
+          "installPolicy": "AVAILABLE",
+          "authPolicy": "ON_INSTALL"
+        }
+      ],
+      "pluginAdd": "Added plugin `flowtrace` from marketplace `flowtrace`.\nInstalled plugin root: <scratch>/codex-home-7zInW9/plugins/cache/flowtrace/flowtrace/2.0.0-claude"
+    },
+    {
+      "step": "both-manifests: {\"versions\":{\".claude-plugin\":\"2.0.0-claude\",\".codex-plugin\":\"3.0.0-codex\"}}",
+      "available": [
+        {
+          "pluginId": "flowtrace@flowtrace",
+          "version": "3.0.0-codex",
+          "source": {
+            "source": "local",
+            "path": "<scratch>/both-manifests"
+          },
+          "installPolicy": "AVAILABLE",
+          "authPolicy": "ON_INSTALL"
+        }
+      ],
+      "pluginAdd": "Added plugin `flowtrace` from marketplace `flowtrace`.\nInstalled plugin root: <scratch>/codex-home-ckrwJg/plugins/cache/flowtrace/flowtrace/3.0.0-codex"
+    },
+    {
+      "step": "both marketplace files: this repository's .claude-plugin/marketplace.json (name flowtrace) and an .agents/plugins/marketplace.json named flowtrace-agents",
+      "marketplaceAdd": {
+        "command": "codex plugin marketplace add <scratch>/both-marketplaces",
+        "exitCode": 0,
+        "stdout": "Added marketplace `flowtrace-agents` from <scratch>/both-marketplaces.\nInstalled marketplace root: <scratch>/both-marketplaces",
+        "stderr": ""
+      }
+    }
+  ]
+}

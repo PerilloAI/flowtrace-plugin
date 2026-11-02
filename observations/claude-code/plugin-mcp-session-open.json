@@ -1,0 +1,129 @@
+{
+  "claim": "When a session opens, Claude Code contacts a plugin's remote MCP server before any tool is used: a POST of initialize, with its client name, title, version, description, website and capabilities, and nothing about the folder or the code. Answered 401, it then asks the server's well-known addresses where to sign in, and the turn goes on without the server.",
+  "source": "Claude Code 2.1.316 on macOS",
+  "observed": "2026-11-02",
+  "how": "node observations/claude-code/plugin-mcp-session-open.probe.mjs (beside this record). It runs one `claude -p` turn from an empty folder, with a throwaway plugin whose .mcp.json names a server on this machine that answers everything 401, and prints what reached the server. The turn calls a model.",
+  "recheckWhen": "Claude Code is upgraded, or .mcp.json changes shape.",
+  "evidence": {
+    "exitCode": 0,
+    "answer": "ok",
+    "requests": [
+      {
+        "method": "POST",
+        "url": "/mcp",
+        "headerNames": [
+          "accept",
+          "accept-encoding",
+          "connection",
+          "content-length",
+          "content-type",
+          "host",
+          "user-agent"
+        ],
+        "body": {
+          "method": "initialize",
+          "params": {
+            "protocolVersion": "2025-11-25",
+            "capabilities": {
+              "roots": {
+                "listChanged": true
+              },
+              "elicitation": {
+                "form": {},
+                "url": {}
+              }
+            },
+            "clientInfo": {
+              "name": "claude-code",
+              "title": "Claude Code",
+              "version": "2.1.316",
+              "description": "Anthropic's agentic coding tool",
+              "websiteUrl": "https://claude.com/claude-code"
+            }
+          },
+          "jsonrpc": "2.0",
+          "id": 0
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/.well-known/oauth-protected-resource/mcp",
+        "headerNames": [
+          "accept",
+          "accept-encoding",
+          "connection",
+          "host",
+          "mcp-protocol-version",
+          "user-agent"
+        ],
+        "body": null
+      },
+      {
+        "method": "GET",
+        "url": "/.well-known/oauth-protected-resource",
+        "headerNames": [
+          "accept",
+          "accept-encoding",
+          "connection",
+          "host",
+          "mcp-protocol-version",
+          "user-agent"
+        ],
+        "body": null
+      },
+      {
+        "method": "GET",
+        "url": "/.well-known/oauth-authorization-server",
+        "headerNames": [
+          "accept",
+          "accept-encoding",
+          "connection",
+          "host",
+          "mcp-protocol-version",
+          "user-agent"
+        ],
+        "body": null
+      },
+      {
+        "method": "GET",
+        "url": "/.well-known/openid-configuration",
+        "headerNames": [
+          "accept",
+          "accept-encoding",
+          "connection",
+          "host",
+          "mcp-protocol-version",
+          "user-agent"
+        ],
+        "body": null
+      },
+      {
+        "method": "POST",
+        "url": "/register",
+        "headerNames": [
+          "accept",
+          "accept-encoding",
+          "connection",
+          "content-length",
+          "content-type",
+          "host",
+          "user-agent"
+        ],
+        "body": {
+          "client_name": "Claude Code (plugin:mcp-open-probe:probe)",
+          "redirect_uris": [
+            "http://localhost:3118/callback"
+          ],
+          "grant_types": [
+            "authorization_code",
+            "refresh_token"
+          ],
+          "response_types": [
+            "code"
+          ],
+          "token_endpoint_auth_method": "none"
+        }
+      }
+    ]
+  }
+}

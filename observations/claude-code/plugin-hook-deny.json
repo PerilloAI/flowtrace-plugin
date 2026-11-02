@@ -1,0 +1,71 @@
+{
+  "claim": "A plugin's PreToolUse hook, declared in its hooks/hooks.json in exec form with ${CLAUDE_PLUGIN_ROOT} in args, runs before the tool it matches and reads a JSON event on stdin whose keys include transcript_path, tool_name and tool_input. When it prints {\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"deny\", \"permissionDecisionReason\": <reason>}}, the tool does not run: Claude gets a tool_result with is_error true whose content ends with the reason, and goes on with the same turn.",
+  "source": "Claude Code 2.1.316 (claude CLI on macOS), model claude-haiku-5-5",
+  "observed": "2026-11-01",
+  "how": "node observations/claude-code/plugin-hook-deny.probe.mjs (beside this record). It writes a throwaway plugin with one PreToolUse hook on Bash that saves the keys of its stdin event and refuses, then runs `claude -p --plugin-dir <plugin> --model haiku --output-format json --max-turns 3` with the prompt on stdin, asking Claude to run `echo hi`. The turn calls a model, so Claude Code must be signed in.",
+  "recheckWhen": "Claude Code is upgraded, or hooks/hooks.json changes how it declares a hook.",
+  "evidence": {
+    "hooks/hooks.json": {
+      "hooks": {
+        "PreToolUse": [
+          {
+            "matcher": "Bash",
+            "hooks": [
+              {
+                "type": "command",
+                "command": "node",
+                "args": [
+                  "${CLAUDE_PLUGIN_ROOT}/hooks/deny.mjs"
+                ],
+                "timeout": 10
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "the hook's output": {
+      "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": "deny",
+        "permissionDecisionReason": "Refused by hook-probe: draw the page first, then ask again."
+      }
+    },
+    "prompt": "Run the shell command `echo hi` with the Bash tool. If it is refused, reply with REFUSED: and the reason you were given, word for word.",
+    "what the hook read on stdin": [
+      {
+        "tool_name": "Bash",
+        "keys": [
+          "session_id",
+          "transcript_path",
+          "cwd",
+          "scratchpad_dir",
+          "prompt_id",
+          "permission_mode",
+          "effort",
+          "hook_event_name",
+          "tool_name",
+          "tool_input",
+          "tool_use_id"
+        ]
+      }
+    ],
+    "the refused call's tool_result": [
+      {
+        "type": "tool_result",
+        "content": "PreToolUse:Bash hook error: Refused by hook-probe: draw the page first, then ask again.",
+        "is_error": true
+      }
+    ],
+    "Claude's reply": "REFUSED: draw the page first, then ask again.",
+    "permission_denials": [
+      {
+        "tool_name": "Bash",
+        "tool_input": {
+          "command": "echo hi",
+          "description": "Print hi via echo"
+        }
+      }
+    ]
+  }
+}
