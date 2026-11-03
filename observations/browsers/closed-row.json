@@ -1,0 +1,67 @@
+{
+  "claim": "On a plan's page, a link opens the closed row around its target and the target ends in view, a link to a row itself keeps the row's line in view though the row is taller than the screen, Back returns to the link and reopens a row closed since, a click on a row's line opens and closes it, and a row's line holds no link to Names while its chart does. Seen in Chrome and in the Mac's WebKit. Safari itself has not run it: its remote automation is off.",
+  "source": "Google Chrome 156 headless, and WebKit 21624 in a WKWebView on macOS 26.5, where Safari 26.5.2 is installed",
+  "observed": "2026-11-03",
+  "how": "node observations/browsers/closed-row.probe.mjs on a Mac. It also runs Safari once Safari's Settings allow remote automation (Developer section), and says on stderr when they don't.",
+  "recheckWhen": "page/page.js's links or Names walker change, or how page/render.mjs draws a flow's row changes.",
+  "evidence": [
+    {
+      "name": "Google Chrome 156.0.8078.80",
+      "closedAtLoad": true,
+      "linkToRow": {
+        "opened": true,
+        "lineInView": true,
+        "focused": true,
+        "backShown": true
+      },
+      "backToLink": {
+        "linkInView": true,
+        "rowStaysOpen": true
+      },
+      "linkIntoRow": {
+        "opened": true,
+        "targetInView": true,
+        "focused": true
+      },
+      "backIntoClosedRow": {
+        "reopened": true,
+        "linkInView": true
+      },
+      "clickOnLine": {
+        "opens": true,
+        "closes": true
+      },
+      "namesOnLine": 0,
+      "namesInChart": true
+    },
+    {
+      "name": "WebKit 21624.2.5.11.8 in a WKWebView",
+      "closedAtLoad": true,
+      "linkToRow": {
+        "opened": true,
+        "lineInView": true,
+        "focused": true,
+        "backShown": true
+      },
+      "backToLink": {
+        "linkInView": true,
+        "rowStaysOpen": true
+      },
+      "linkIntoRow": {
+        "opened": true,
+        "targetInView": true,
+        "focused": true
+      },
+      "backIntoClosedRow": {
+        "reopened": true,
+        "linkInView": true
+      },
+      "clickOnLine": {
+        "opens": true,
+        "closes": true
+      },
+      "namesOnLine": 0,
+      "namesInChart": true
+    }
+  ]
+}

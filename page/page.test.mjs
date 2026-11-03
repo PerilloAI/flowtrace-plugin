@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { observation } from "../observations/observation.mjs";
 import { formatJson, readJson } from "./json.mjs";
 import { readDocument } from "./read.mjs";
 import { questionsFor } from "./check.mjs";
@@ -209,6 +210,83 @@ test("a drawing outlines only what changed since the author last read the plan, 
   const html = readFileSync(out, "utf8");
   assert.match(html, /class="n since">Step: Load the order and its lines/);
   assert.match(html, /Outlined: changed since the page you last read/);
+});
+
+// The page drawn once `change` has edited what the plan holds under How it's built.
+const drawnWithFlows = (change) => {
+  const dir = repo();
+  const data = plan();
+  change(data.sections[6].content);
+  write(dir, data);
+  const out = path.join(dir, "page.html");
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
+  assert.equal(run.status, 0, run.stderr);
+  return readFileSync(out, "utf8");
+};
+
+test("a plan's flow is a closed row whose line gives its name, its counts of marked steps and its number of steps", () => {
+  const html = drawnWithFlows((content) => {
+    const { steps } = content[0].flow;
+    steps[1].mark = "~";
+    steps[3].mark = "-";
+  });
+  assert.ok(html.includes('<details class="flowbox" id="f-export-an-order"><summary><h3>Export an order</h3><span class="row-meta"><span class="mk new">+2 new</span><span class="mk chg">~1 changed</span><span class="mk gone">−1 removed</span><span>5 steps</span></span></summary><figure>'));
+});
+
+test("a flow marked as a whole has its tag on its row's line, and no counts", () => {
+  const html = drawnWithFlows((content) => {
+    content.push({ flow: { name: "Import an order", mark: "+", steps: [{ keyword: "Starts", text: "Ana presses Import" }] } });
+    content.push({ flow: { name: "Print an order", mark: "-", steps: [{ keyword: "Starts", text: "Ana presses Print" }, { keyword: "Returns", text: "the print" }] } });
+  });
+  assert.ok(html.includes('<summary><h3><span class="tag rec">new flow</span> Import an order</h3><span class="row-meta"><span>1 step</span></span></summary>'));
+  assert.ok(html.includes('<summary><h3><span class="tag alt">removed flow</span> Print an order</h3><span class="row-meta"><span>2 steps</span></span></summary>'));
+});
+
+test("a flow with no marked step has only its number of steps on its row's line", () => {
+  const html = drawnWithFlows((content) => {
+    content.push({ flow: { name: "Load an order", steps: [{ keyword: "Starts", text: "Ana opens an order" }, { keyword: "Step", text: "Load the order" }, { keyword: "Returns", text: "the order" }] } });
+  });
+  assert.ok(html.includes('<summary><h3>Load an order</h3><span class="row-meta"><span>3 steps</span></span></summary>'));
+});
+
+test("Where to look reaches a closed row by its id, and a step's where by an id inside it", () => {
+  const html = drawnWithFlows(() => {});
+  assert.ok(html.includes('Where to look: <a href="#f-export-an-order">'));
+  assert.ok(html.includes('Where to look: <a href="#w-exportorder">'));
+  assert.ok(html.includes('<details class="flowbox" id="f-export-an-order">'));
+  const row = html.slice(html.indexOf('<details class="flowbox"'), html.indexOf("</details>"));
+  assert.ok(row.includes('id="w-exportorder"'));
+});
+
+test("in each browser tried, a link opens the closed row around its target, and a row's line holds no name's link", () => {
+  const seen = observation("browsers/closed-row").evidence;
+  assert.ok(seen.length >= 2);
+  for (const browser of seen) {
+    const { name, ...checks } = browser;
+    assert.deepEqual(checks, {
+      closedAtLoad: true,
+      linkToRow: { opened: true, lineInView: true, focused: true, backShown: true },
+      backToLink: { linkInView: true, rowStaysOpen: true },
+      linkIntoRow: { opened: true, targetInView: true, focused: true },
+      backIntoClosedRow: { reopened: true, linkInView: true },
+      clickOnLine: { opens: true, closes: true },
+      namesOnLine: 0,
+      namesInChart: true,
+    }, name);
+  }
+});
+
+test("an explanation's and a review's flows stay drawn in full", () => {
+  for (const extra of [{}, { send: true }]) {
+    const { run, html } = drawn(JSON.stringify({
+      title: "A page", ...extra,
+      sections: [{ heading: "How it's built", content: [{ flow: { name: "Export an order", steps: [{ keyword: "Starts", text: "Ana presses Export", mark: "+" }] } }] }],
+    }));
+    assert.equal(run.status, 0, run.stderr);
+    assert.ok(html.includes('<section class="flowbox" id="f-export-an-order"><h3>Export an order</h3><figure>'));
+    assert.ok(html.includes("Starts: Ana presses Export"));
+    assert.doesNotMatch(html, /<details/);
+  }
 });
 
 test("an explanation is drawn without a repository, its names linked by the page", () => {

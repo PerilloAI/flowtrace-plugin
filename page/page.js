@@ -28,7 +28,8 @@
   });
 })();
 
-// Every mention of a name links to its line under Names on this page, outside headings, buttons and links.
+// Every mention of a name links to its line under Names on this page, outside headings, buttons, links and a row's
+// line, where a click opens the row.
 (() => {
   const spellings = [];
   document.querySelectorAll(".names dt[id]").forEach((dt) => {
@@ -44,7 +45,7 @@
   const texts = [];
   const walk = document.createTreeWalker(document.querySelector(".wrap") || document.body, NodeFilter.SHOW_TEXT);
   while (walk.nextNode()) {
-    if (!walk.currentNode.parentElement.closest("a, button, header, h1, h2, h3, h4, dt, script, style")) texts.push(walk.currentNode);
+    if (!walk.currentNode.parentElement.closest("a, button, summary, header, h1, h2, h3, h4, dt, script, style")) texts.push(walk.currentNode);
   }
   texts.forEach((node) => {
     const dd = node.parentElement.closest(".names dd");
@@ -120,8 +121,9 @@
   });
 })();
 
-// A link within the page (a name, Where to look, See it) scrolls to what it names and lights it; Back returns to the
-// link clicked. Links followed from inside Names on this page add to the way back, so Back retraces them in turn.
+// A link within the page (a name, Where to look, See it) opens the row around what it names, scrolls to it and lights
+// it; Back returns to the link clicked. Links followed from inside Names on this page add to the way back, so Back
+// retraces them in turn.
 (() => {
   const back = document.createElement("button");
   back.type = "button";
@@ -136,7 +138,10 @@
     lit.forEach((el) => el.classList.remove("hit"));
     lit = light;
     light.forEach((el) => el.classList.add("hit"));
-    target.scrollIntoView({ behavior: motion, block: "center" });
+    const row = target.closest("details");
+    if (row) row.open = true;
+    // A row taller than the screen, centred, would hide its own line.
+    target.scrollIntoView({ behavior: motion, block: target === row ? "start" : "center" });
     if (!target.matches("a, button")) target.setAttribute("tabindex", "-1");
     target.focus({ preventScroll: true });
     back.hidden = !trail.length;

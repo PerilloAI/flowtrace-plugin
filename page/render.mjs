@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { blocks, readTarget } from "./check.mjs";
+import { blocks, boxes, readTarget } from "./check.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CSS = readFileSync(path.join(here, "page.css"), "utf8");
@@ -156,7 +156,16 @@ export function render(doc, o) {
         const newFlow = b.nameMark === "+";
         where = [where[0], b.name];
         const tag = newFlow ? '<span class="tag rec">new flow</span> ' : b.nameMark === "-" ? '<span class="tag alt">removed flow</span> ' : "";
-        return `<section class="flowbox" id="${b.id}"><h3${cls(`Flow: ${b.name}`)}>${tag}${inline(b.name)}</h3><figure><div class="chart">${col(b.items, newFlow)}</div></figure></section>`;
+        const heading = `<h3${cls(`Flow: ${b.name}`)}>${tag}${inline(b.name)}</h3>`;
+        const chart = `<figure><div class="chart">${col(b.items, newFlow)}</div></figure>`;
+        if (!o.plan) return `<section class="flowbox" id="${b.id}">${heading}${chart}</section>`;
+        // On a plan, a closed row: its line says what opening it shows. A flow marked as a whole has its tag, not counts.
+        const all = boxes(b.items);
+        const counts = b.nameMark !== " " ? "" : [["+", "+", "new", "new"], ["~", "~", "chg", "changed"], ["-", "−", "gone", "removed"]].map(([mark, sign, c, word]) => {
+          const n = all.filter((x) => x.flowMark === mark).length;
+          return n ? `<span class="mk ${c}">${sign}${n} ${word}</span>` : "";
+        }).join("");
+        return `<details class="flowbox" id="${b.id}"><summary>${heading}<span class="row-meta">${counts}<span>${all.length} step${all.length === 1 ? "" : "s"}</span></span></summary>${chart}</details>`;
       }
     }
     return "";
