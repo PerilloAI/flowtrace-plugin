@@ -8,6 +8,7 @@ export const PLAN_SECTIONS = [
   "Check your reading",
   "Questions from plan-flows",
   "Questions from plan-check",
+  "What this rests on",
   "The changes and why",
   "Already settled",
   "How it works, traced with",
@@ -18,6 +19,7 @@ export const PLAN_SECTIONS = [
   "Plan changes",
   "Names",
 ];
+export const PREMISE_HEAD = ["The plan rests on", "How it was proved", "Where"];
 export const LOOK_CLOSELY = ["Breaking", "No undo", "Access check", "Default changed", "External call", "Migration", "Error hidden", "Side effect"];
 
 // 2 questions for 0 or 1 changed steps, one more each time they double, at most 8.
@@ -119,6 +121,11 @@ export function check(doc, { plan, nameFound }) {
     else last = k;
   }
   if (doc.sections[0]?.heading !== "What I'm asking") at(doc.sections[0]?.line ?? doc.titleLine, "What I'm asking comes first");
+
+  const rests = doc.sections.find((s) => s.heading === "What this rests on");
+  const premises = rests?.nodes.find((n) => n.type === "table" && PREMISE_HEAD.every((h, i) => n.head[i] === h) && n.head.length === PREMISE_HEAD.length);
+  if (!premises) at(rests?.line ?? doc.titleLine, `a plan has a "What this rests on" section holding a table headed ${PREMISE_HEAD.join(", ")} (plan-format.md)`);
+  else if (premises.rows.some((row) => row.some((cell) => !cell.trim()))) at(premises.line, "every premise under What this rests on says what it is, how it was proved and where");
 
   const steps = changedSteps(doc);
   if (questions.length !== questionsFor(steps)) {

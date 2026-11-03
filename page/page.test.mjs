@@ -53,6 +53,7 @@ const plan = () => ({
         { question: { question: "Cy's export finishes in 2 seconds. How many times is the warehouse asked?", options: ["Twice, to be sure", "Three times", "Once"], answer: "C", read: "Export an order", why: "Only a timeout asks again." } },
       ],
     },
+    { heading: "What this rests on", content: [{ table: { head: ["The plan rests on", "How it was proved", "Where"], rows: [["Every export loads its order first", "Traced from the Export button", "exportOrder"]] } }] },
     { heading: "The changes and why", content: [{ changes: [{ title: "Retry once", gets: "Ana gets her file", why: "The warehouse is slow for a minute at a time" }] }] },
     {
       heading: "How it's built",
@@ -126,7 +127,7 @@ test("each option of a plan's question for the author is a button giving its num
 test("a step marked as existing whose name the code doesn't have stops the drawing, naming its line", () => {
   const dir = repo();
   const data = plan();
-  data.sections[5].content[0].flow.steps[1].where = "loadOrders";
+  data.sections[6].content[0].flow.steps[1].where = "loadOrders";
   const file = write(dir, data);
   const out = path.join(dir, "page.html");
   const run = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
@@ -139,7 +140,7 @@ test("every broken rule is reported at once, each with its line", () => {
   const dir = repo();
   const data = plan();
   data.sections[2].content[0].screens.columns[1].steps[1].change = "Retry twice";
-  data.sections[5].content[0].flow.steps[2].answers[0].steps[0].lookClosely[0].kind = "Slow";
+  data.sections[6].content[0].flow.steps[2].answers[0].steps[0].lookClosely[0].kind = "Slow";
   data.sections[3].content[0].question.options[2] = "The file";
   const file = write(dir, data);
   const run = draw(dir, "plan", "docs/plans/retry.json", "--out", path.join(dir, "page.html"));
@@ -157,6 +158,21 @@ test("the plan asks as many reading questions as its changed steps call for", ()
   write(dir, data);
   const run = draw(dir, "plan", "docs/plans/retry.json", "--out", path.join(dir, "page.html"));
   assert.match(run.stderr, /asks 2 reading questions, and its 2 changed steps call for 3/);
+});
+
+test("a plan names what it rests on, each premise with how it was proved and where", () => {
+  const refused = (change, message) => {
+    const dir = repo();
+    const data = plan();
+    change(data);
+    write(dir, data);
+    const run = draw(dir, "plan", "docs/plans/retry.json", "--out", path.join(dir, "page.html"));
+    assert.equal(run.status, 1);
+    assert.match(run.stderr, message);
+  };
+  refused((d) => d.sections.splice(4, 1), /a plan has a "What this rests on" section/);
+  refused((d) => { d.sections[4].content = [{ p: "It rests on the code." }]; }, /a plan has a "What this rests on" section holding a table/);
+  refused((d) => { d.sections[4].content[0].table.rows[0][1] = " "; }, /every premise under What this rests on says/);
 });
 
 test("the fingerprint leaves out approved, reviewPage and spacing, and a plan approved at it shows Approved", () => {
@@ -183,7 +199,7 @@ test("a drawing outlines only what changed since the author last read the plan, 
   assert.equal(JSON.parse(draw(dir, "plan", "docs/plans/retry.json", "--out", out).stdout).outlined, 0);
   draw(dir, "seen", "docs/plans/retry.json");
   const data = plan();
-  data.sections[5].content[0].flow.steps[1].text = "Load the order and its lines";
+  data.sections[6].content[0].flow.steps[1].text = "Load the order and its lines";
   data.sections[3].content[0].question.answer = "A";
   data.sections[3].content[0].question.options = ['"Export failed"', "The file", "Nothing"];
   write(dir, data);

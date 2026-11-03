@@ -6,7 +6,7 @@ change before you make it or approve it, by drawing a page you can read, answer 
 | Skill | What it does |
 |---|---|
 | `plan-flows` | Plans a change before any code, from the code it touches. You read the plan's page, answer its questions and approve it. |
-| `plan-check` | Has a fresh subagent question the approved plan for the cases it leaves open, then asks you each one. |
+| `plan-check` | Has a fresh subagent test what the approved plan takes as true and find the cases it leaves open, then asks you each one. |
 | `explain` | Explains how something works, or asks you to choose, with one worked example traced through before and after flowcharts. |
 | `pr-review` | Reviews a pull request or merge request from a copy of its code, and checks your reading with questions a second reader has answered blind. |
 

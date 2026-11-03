@@ -1,13 +1,13 @@
 ---
 name: plan-check
-description: Question a plan before any code; running it approves the plan. A fresh subagent finds the edge cases the plan doesn't handle and the gaps it leaves; each becomes a question on the plan's page, charted on a real case with the recommendation first, and the author answers by number and letter. The answers go into the plan, and the build starts as soon as the last is in. Runs when plan-flows approves a plan, or by hand on any plan in docs/plans, which it approves.
+description: Question a plan before any code; running it approves the plan. A fresh subagent tries to prove the plan's premises false, and finds the edge cases the plan doesn't handle and the gaps it leaves; each becomes a question on the plan's page, charted on a real case with the recommendation first, and the author answers by number and letter. The answers go into the plan, and the build starts as soon as the last is in. Runs when plan-flows approves a plan, or by hand on any plan in docs/plans, which it approves.
 ---
 
 # Plan check
 
 plan-check runs between the author's approval and the first line of code. Running it is the approval: the author is
-moving on from planning to building. Each **finding** is a behaviour the plan leaves open. The author decides every
-finding, and the plan records each answer before anything is built.
+moving on from planning to building. Each **finding** is a premise of the plan that doesn't hold, or a behaviour the
+plan leaves open. The author decides every finding, and the plan records each answer before anything is built.
 
 Git stays with the author. While planning, write the plan file and nothing else: make no commit, and make or switch no branch. The
 author commits the plan when they choose.
@@ -30,16 +30,24 @@ together with plan-check's.
 
 Start one fresh subagent the way this harness starts one (in Claude Code, the Agent tool with a general-purpose agent),
 so the plan is questioned by someone who didn't write it. Give it this brief, with nothing from this chat, and the
-paths filled in: the plan's, and blocks.md's and plan-format.md's in full (`../../page/blocks.md` and
-`../plan-flows/plan-format.md` from this skill's folder):
+paths filled in: the plan's, and premises.md's, blocks.md's and plan-format.md's in full (`../premises.md`,
+`../../page/blocks.md` and `../plan-flows/plan-format.md` from this skill's folder):
 
-> Read the plan at `<plan>` and the repository's code as it is now. Read only, and change nothing.
+> Read the plan at `<plan>`, `<premises.md>` and the repository's code as it is now. Read only, and change nothing.
 >
-> For every step or check the plan marks `+`, `~` or `-`, read the code it touches, every caller of that code, the
-> tests that run it, and the repository's docs and recorded decisions that describe it. Then list each finding: a
-> behaviour the plan leaves open whose answer changes what someone gets, such as a response, a page, an exit status,
-> an error, a write or an event. Look for each kind:
+> First, try to prove the plan's premises false: each row of What this rests on, and whatever else its flows, traces
+> and changes take as true. Treat its citations as claims. Trace the plan's example yourself from its way in, and check
+> what it says of an outside thing in that thing's own docs.
 >
+> Then, for every step or check the plan marks `+`, `~` or `-`, read the code it touches, every caller of that code, the
+> tests that run it, and the repository's docs and recorded decisions that describe it. List each finding: a premise
+> that doesn't hold or can't be proved, or a behaviour the plan leaves open, whose answer changes what someone gets,
+> such as a response, a page, an exit status, an error, a write or an event. Look for each kind:
+>
+> - **A false premise**: the code or an outside thing's docs show otherwise, such as the case taking another path, or
+>   an endpoint serving another kind of request. Say what the plan believes, what is true, and what that does to it.
+> - **An unproved premise**: the plan relies on something neither the code nor the docs can show. Only the author can
+>   say.
 > - **Another way in**: a caller, route, job, command or public function that reaches a changed step, which no flow
 >   covers.
 > - **An unhandled input or state**: empty, missing, duplicate, too large, another person's, or a record in another
@@ -51,9 +59,9 @@ paths filled in: the plan's, and blocks.md's and plan-format.md's in full (`../.
 > - **A contradiction**: a doc, recorded decision or comment the plan contradicts, or two parts of the plan that
 >   disagree.
 >
-> Leave out what the plan's Already settled section answers, what its Questions sections already ask, and any finding
-> whose answer changes nothing anyone gets. Done when every changed step has been checked for each kind, and every
-> caller and test of the code it touches has been read.
+> Leave out what the author settled under Already settled, what the plan's Questions sections already ask, and any
+> finding whose answer changes nothing anyone gets. Done when every premise has been traced or looked up, every changed
+> step has been checked for each kind, and every caller and test of the code it touches has been read.
 >
 > Return the findings, with the one that changes most for the people using the code first, each as:
 >
@@ -65,7 +73,7 @@ paths filled in: the plan's, and blocks.md's and plan-format.md's in full (`../.
 >   charting the case to what the person gets, a step of code carrying its `where` (`file:line`, or "new code").
 >   Recommend first the one that the code, a test, a doc or the plan's own reason supports, and say which in `why` (a
 >   test by name, `file:line`, a doc, a decision). When nothing supports any of them, recommend the safest one for the
->   people using the code, and say so.
+>   people using the code, and say so. What an outside thing does under an option comes from its docs, linked in `why`.
 >
 > Then a `names` item for each name your findings use that the plan's Names has no item for. Return "Nothing to ask"
 > when there is no finding.
@@ -83,10 +91,11 @@ When the subagent returns:
 
 1. Check each finding against the code yourself before it goes on the page, by reading the places its `why` and
    its steps' `where` cite. Correct a case or an option the code contradicts, and drop a finding the plan already
-   answers.
+   answers. A false premise is settled by the code, never by what the plan says, which is the claim in question.
 2. Put each finding's `choice` under Questions from plan-check, in the subagent's order, numbered on from the highest
    question still open. Open the section with a paragraph saying how many findings there are and how to answer. Add
-   the subagent's `names` items under Names.
+   the subagent's `names` items under Names. A plan with no What this rests on gets the section now, holding the
+   premises the subagent traced and found true.
 3. Say in What I'm asking how many questions are open.
 4. Draw the page by plan-flows' step 3 (`../plan-flows/SKILL.md`); its one cold read covers the new questions. Ask
    at once, while it runs: the author answers each question by picking an option on the page, which copies the

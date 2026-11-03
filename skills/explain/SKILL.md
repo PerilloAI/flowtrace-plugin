@@ -18,8 +18,8 @@ this skill; a run needn't open it):
   under Names on this page; in the chat, a few words where it first appears. A name that doesn't help the reader is
   replaced by what it does. A step number, a branch, a tool or an error code always comes with what it is.
 - **One worked example** with real values, followed through before and after charts side by side.
-- **Where each fact comes from** (`file:line`, a test, a record, a document, a person, or your own reading), so
-  checking it costs a click.
+- **Where each fact comes from** (`file:line`, a test, a record, a document or a person), so checking it costs a
+  click. What you inferred and couldn't prove says so where it is used.
 - **Short and focused**: a chart holds only the steps the example needs, one idea a box; what matters most comes
   first.
 - **Questions that check the reading**, each answer saying why: reading an explanation feels like understanding even
@@ -48,8 +48,13 @@ in order and the state of each (done, in progress on which branch, waiting, not 
 may know by name. Check each against its source (`git status`, `git log`, the forge, the plan, the code), reading only
 what the explanation will say, with independent reads at once.
 
+Then prove the explanation's premises, as [premises.md](../premises.md) says: which path the case takes, what each
+outside thing does there. The cold read can't catch a wrong one, since it reads only what you wrote. A cause ("why a
+bug happened") is proved by a trace or by running it, along with what rules out the other causes it could have been. A
+premise you can't prove is marked as unproved where you use it, and on a page goes under Still open too.
+
 Done when you can say in two sentences, that a newcomer would follow, what this is and why it matters to the reader,
-and each name you will use has a plain description.
+each name you will use has a plain description, and every premise is proved from its source or marked unproved.
 
 ## 3. Pick the worked example
 

@@ -21,11 +21,14 @@ First check that this session has the code: a git repository in the working dire
 The author says what they need, and may not know the way that is known to work best. A plan that builds exactly what
 they asked reads well to them even when a better way exists, so research it first, while you read the code.
 
-**Start the research.** From the author's request, list the design choices the change makes that many projects have
-made before and written about: how to retry an outside call, sign people in, page through a list, cache, migrate a
-database, show a form's errors, make a screen accessible, or shape a command's output. Keep at most three, the ones
-whose answer changes most what someone gets. When the change makes none (a rename, a bug with one obvious fix, a
-change that follows a pattern the code already uses throughout), research nothing.
+**Start the research.** Start from the problem behind the author's request: what they want someone to be able to do,
+stop or fix. Their words and the code show one way to solve it, and a specialist may know a far better one, so the
+first choice to research is the problem itself (a request for a cache asks how to make this page fast). Then list the
+design choices the change makes that many projects have made before and written about: how to retry an outside call,
+sign people in, page through a list, cache, migrate a database, show a form's errors, make a screen accessible, or
+shape a command's output. Keep at most three in all, the ones whose answer changes most what someone gets. When the
+change makes none (a rename, a bug with one obvious fix, a change that follows a pattern the code already uses
+throughout and lets no one do anything new), research nothing.
 
 Read the stack from the repository's manifests (such as `package.json`, `pyproject.toml`, a `.csproj`, `go.mod`): its
 languages, frameworks and their versions. Then start one fresh subagent per choice, all at once, the way this harness
@@ -33,19 +36,22 @@ starts one (in Claude Code, the Agent tool with a general-purpose agent, which r
 the web), with this brief:
 
 > Find how this is best done: `<the choice, in a sentence>`. The author asked for: `<their request, in their words>`.
-> The stack: `<languages, frameworks, versions>`. Read only, and change nothing in the repository. Search the web, and
+> The problem behind it: `<what they want someone to be able to do, stop or fix>`. The stack, which is what exists today
+> and no limit on the answer: `<languages, frameworks, versions>`. Read only, and change nothing in the repository.
+> Search the web, and
 > prefer the framework's or library's own docs for these versions, standards and specifications, and guides from teams
 > known for the subject; use a blog post or forum answer only where those say nothing.
 >
 > Return, in under 300 words:
 >
-> - **Established way**: what well-built projects do, in two or three sentences, and what it gives the people using
->   the code.
+> - **Established way**: what a specialist in this would reach for today, even when neither the request nor the stack
+>   suggests it, in two or three sentences, and what it gives the people using the code.
 > - **The obvious way, and what it costs**: what someone who doesn't know the practice would build, and what goes wrong
 >   with it, on one concrete case.
 > - **Alternatives**: other sound ways, each with when it fits better.
 > - **Pitfalls**: the mistakes the sources warn about.
-> - **Sources**: each a link and the claim it supports. Mark a claim "unsourced" when no source says it.
+> - **Sources**: each a link and the claim it supports, with the versions or modes it holds for. Mark a claim
+>   "unsourced" when no source says it.
 >
 > Return "No established way" when the sources disagree or say nothing, and say what they disagree about.
 
@@ -76,13 +82,22 @@ ways:
   migration, more work): a question under Questions from plan-flows. The established way comes first unless the code
   or a recorded decision speaks against it, the author's request is one of the options, each is charted on the plan's
   case, and `why` links the sources. Never swap the request for it silently: the author decides, and the page shows
-  them there was a better way.
-- **It doesn't fit this code**: leave it out.
+  them there was a better way. The way that would change most what people get is question 1, and What I'm asking says
+  so. Keep the page short: another way gets an option only when it gives people something clearly different.
+- **It doesn't fit this code**: leave it out. The code or a recorded decision has to rule it out. Its cost doesn't,
+  since that is for the author to weigh.
 
 When a research subagent fails, plan without it, and say in the chat which choice wasn't researched.
 
+**Prove the plan's premises**, as [premises.md](../premises.md) says, before you write anything: which path the
+example takes today, what each outside thing does there, and each research finding the plan will use. Each goes in the
+plan under What this rests on, with how it was proved. A premise found false changes the plan you are about to write,
+so read again from there. A premise nothing here can prove is a question under Questions from plan-flows, the author
+being the one who can answer it.
+
 Done when every step you will mark as existing, changed or removed names a function or file you have read, you know
-which tests pin what each one does today, and every research subagent has returned and its findings are weighed.
+which tests pin what each one does today, every research subagent has returned and its findings are weighed, and every
+premise is proved from its source or is a question.
 
 ## 2. Write the plan
 
@@ -97,11 +112,14 @@ Done when all of these hold:
 - Every name a newcomer to the code wouldn't know has its item under Names.
 - There is a screen for each thing a person does that the plan changes.
 - Every question can be answered from the plan alone.
+- What this rests on names every premise, so an author who knows better can see it at a glance.
 - Every open decision, every open behaviour you noted that the code doesn't settle, and every better way the research
   found than the one asked for, is a question under Questions from plan-flows: one real case, the recommendation
   first, a chart of the case under each option, and why. No other section asks the author to decide.
 - Every design choice the research covered is built the established way with its source linked, asked as a question,
-  or left out because it doesn't fit the code.
+  or left out because the code or a recorded decision rules it out.
+- A reader of What I'm asking alone learns of the best way the research found to solve their problem, when it isn't
+  what they asked for.
 
 ## 3. Draw the page
 
@@ -147,7 +165,7 @@ An answer to a question, from either Questions section, arrives as its number an
 
 1. Add `{ "who": "<the author's name>", "text": "<the behaviour, in the plan's terms>" }` under Already settled.
 2. Change each part of the plan the answer decides (a flow's steps and checks, marked `+` or `~`, a screen, a trace, a
-   row of the changes), and remove the question, and its section once it's empty.
+   row of the changes or of What this rests on), and remove the question, and its section once it's empty.
 3. When the changed steps then call for a different number of reading questions, add or rework them to match. They
    test the plan, so a new behaviour can be one.
 
@@ -193,7 +211,8 @@ answers. Before asking the author anything while building, look for the answer i
 and Tests, and when it's there, build that.
 
 1. When the code must settle something the plan leaves open, make the call the plan's reasons and the code support,
-   and write it into the plan as a plan change (step 6, its first step). Ask the author nothing about it yet.
+   and write it into the plan as a plan change (step 6, its first step). Ask the author nothing about it yet. A premise
+   the build finds false is such a change: say what the plan believed and what the code shows.
 2. Ask the author during the build only for what needs their own hands, such as signing in to something.
 3. When the code is done, draw the page once (step 6, its second step) and show the author every plan change with the
    code's changes, before anything is committed.

@@ -44,7 +44,8 @@ A plan is **approved at its current fingerprint** when the fingerprint in its `a
 
 **Checked**: the sections stand in this order, and What I'm asking comes first. Each is a `heading` as written here.
 
-1. `What I'm asking`: one or two plain sentences saying what the author approves and how many questions are open.
+1. `What I'm asking`: one or two plain sentences saying what the author approves and how many questions are open, and
+   the better way the research found, when there is one.
 2. `The case`: one `case`.
 3. `What you'd see`: a paragraph introducing the example change that the screens and traces follow, then the
    `screens`. When nobody using the code would notice the plan, a paragraph says so in place of the screens.
@@ -54,14 +55,15 @@ A plan is **approved at its current fingerprint** when the fingerprint in its `a
    for that its research found. Leave the section out when none is open. Every decision waiting on the author is a
    question here or under Questions from plan-check; no other section asks the author to decide.
 6. `Questions from plan-check`: the same, for each finding plan-check's subagents returned that is still open.
-7. `The changes and why`: one `changes`.
-8. `Already settled`: one `settled`.
-9. `How it works, traced with <the example>`: the `trace`s.
-10. `How it's built`: the `flow`s.
-11. `Order of work`, `Tests`, `What comes next`: paragraphs and lists. What comes next lists later work, each item
+7. `What this rests on`: one `table` of the plan's premises (below).
+8. `The changes and why`: one `changes`.
+9. `Already settled`: one `settled`.
+10. `How it works, traced with <the example>`: the `trace`s.
+11. `How it's built`: the `flow`s.
+12. `Order of work`, `Tests`, `What comes next`: paragraphs and lists. What comes next lists later work, each item
     saying who decides it and when.
-12. `Plan changes`: only once an approved plan has changed.
-13. `Names`, last: one `names`.
+13. `Plan changes`: only once an approved plan has changed.
+14. `Names`, last: one `names`.
 
 ## Charts
 
@@ -119,6 +121,21 @@ recommendation first, each option charted on one real case, then the reason.
 - The case uses real values, from the code or the plan's example.
 - Write it in plain English, as the flows are: a reader who has never seen the code can answer it from the question
   and its charts alone.
+
+## What this rests on
+
+The premises the plan is built on ([premises.md](../premises.md)), the one that changes most if false first, so the
+author can spot a wrong one at a glance and plan-check knows what to try to break.
+
+```json
+{ "table": { "head": ["The plan rests on", "How it was proved", "Where"], "rows": [
+  ["Reminders go out through the queue's worker", "Traced from the schedule to the call; the other sender has one caller, a one-off script", "jobs/remind.ts:12, mail/send.ts:30"]
+] } }
+```
+
+**Checked**: the section is on every plan, and its table has these three headings, with every cell filled in. Write
+the premise in plain words and its code in Where. An answer from the author is a proof: its Where is their name. A
+premise still unproved is a question, not a row.
 
 ## changes
 
