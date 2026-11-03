@@ -1,4 +1,4 @@
-/* global crypto, document, navigator, matchMedia, NodeFilter, sendPrompt, innerHeight, scrollX, scrollY */
+/* global crypto, CSS, document, navigator, matchMedia, NodeFilter, sendPrompt, innerHeight, scrollX, scrollY */
 // Each question locks on its first pick; once all are answered, the score says how many were right first time.
 (() => {
   const cards = [...document.querySelectorAll(".qz")];
@@ -91,6 +91,11 @@
     const dt = document.getElementById(decodeURIComponent(term.getAttribute("href").slice(1)));
     if (!dt || shown === term) return;
     hide();
+    // In the modal, which sits above everything else on the page, the tip goes with it and stays put as it does.
+    const host = term.closest("dialog") || document.body;
+    if (tip.parentElement !== host) host.append(tip);
+    const [dx, dy] = host === document.body ? [scrollX, scrollY] : [0, 0];
+    tip.style.position = host === document.body ? "" : "fixed";
     const name = document.createElement("strong");
     name.textContent = dt.textContent;
     tip.replaceChildren(name, " ", ...[...dt.nextElementSibling.childNodes].map((n) => n.cloneNode(true)));
@@ -102,8 +107,8 @@
     const width = tip.offsetWidth;
     const left = Math.min(Math.max(8, at.left), document.documentElement.clientWidth - width - 8);
     const below = at.bottom + 6 + tip.offsetHeight < innerHeight;
-    tip.style.left = `${left + scrollX}px`;
-    tip.style.top = `${(below ? at.bottom + 6 : at.top - 6 - tip.offsetHeight) + scrollY}px`;
+    tip.style.left = `${left + dx}px`;
+    tip.style.top = `${(below ? at.bottom + 6 : at.top - 6 - tip.offsetHeight) + dy}px`;
   };
   document.addEventListener("pointerover", (event) => {
     const term = event.pointerType === "mouse" && event.target.closest("a.term");
@@ -121,9 +126,11 @@
   });
 })();
 
-// A link within the page (a name, Where to look, See it) opens the row around what it names, scrolls to it and lights
-// it; Back returns to the link clicked. Links followed from inside Names on this page add to the way back, so Back
-// retraces them in turn.
+// A link within the page (a name, a change, Seen in) scrolls to what it names and lights it; Back returns to the link
+// clicked. Links followed from inside Names on this page add to the way back, so Back retraces them in turn.
+// A link to a flow or a flow's step (How it's built, Where to look, See it) opens a copy of the flow in a modal over the
+// page instead, whole, with the step lit. Esc, the close button or a click outside closes it, and the page is where it
+// was. A link inside the modal to anywhere else leaves it, and Back returns to the link that opened it.
 (() => {
   const back = document.createElement("button");
   back.type = "button";
@@ -131,6 +138,13 @@
   back.textContent = "↩ Back to where you were";
   back.hidden = true;
   document.body.append(back);
+  const modal = document.createElement("dialog");
+  modal.className = "flow-modal";
+  modal.innerHTML = '<div class="modal-bar"><div class="modal-title"></div><button type="button" class="modal-close">✕ Close</button></div><div class="modal-body"></div>';
+  document.body.append(modal);
+  const body = modal.querySelector(".modal-body");
+  const copies = new Map();
+  let opener = null;
   const trail = [];
   const motion = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
   let lit = [];
@@ -141,20 +155,65 @@
     // A link on a row's line is in view with the row closed, so going back to one leaves the row as it is.
     const row = target.closest("summary") ? null : target.closest("details");
     if (row) row.open = true;
-    // A row taller than the screen, centred, would hide its own line.
-    target.scrollIntoView({ behavior: motion, block: target === row ? "start" : "center" });
+    target.scrollIntoView({ behavior: motion, block: "center" });
     if (!target.matches("a, button")) target.setAttribute("tabindex", "-1");
     target.focus({ preventScroll: true });
     back.hidden = !trail.length;
+  };
+  // What a flow's line says and its chart, each id kept as data-from so the page's links still reach the page's own parts.
+  // One copy for each flow, kept while the page is open, so a comment begun in it stays.
+  const copyOf = (row) => {
+    if (!copies.has(row)) {
+      const copy = document.createElement("section");
+      copy.className = "flowbox";
+      copy.append(row.querySelector(".row-meta").cloneNode(true), row.querySelector("figure").cloneNode(true));
+      copy.querySelectorAll("[id]").forEach((el) => {
+        el.dataset.from = el.id;
+        el.removeAttribute("id");
+      });
+      copy.querySelectorAll(".cmt-box").forEach((el) => el.remove());
+      copies.set(row, copy);
+    }
+    return copies.get(row);
+  };
+  const openFlow = (row, target, link) => {
+    const copy = copyOf(row);
+    copy.querySelectorAll(".hit").forEach((el) => el.classList.remove("hit"));
+    body.replaceChildren(copy);
+    // The flow's name stays in the bar as the flow scrolls under it to the step.
+    const name = row.querySelector("h3");
+    modal.querySelector(".modal-title").replaceChildren(name.cloneNode(true));
+    modal.setAttribute("aria-label", name.textContent);
+    if (!modal.open) {
+      opener = link;
+      modal.showModal();
+    }
+    const step = target === row ? null : copy.querySelector(`[data-from="${CSS.escape(target.id)}"]`);
+    if (step) step.classList.add("hit");
+    body.scrollTop = step ? body.scrollTop + step.getBoundingClientRect().top - body.getBoundingClientRect().top - body.clientHeight / 3 : 0;
   };
   document.addEventListener("click", (event) => {
     const link = event.target.closest('a[href^="#"]');
     const target = link && document.getElementById(decodeURIComponent(link.getAttribute("href").slice(1)));
     if (!target) return;
     event.preventDefault();
-    if (!link.closest(".names")) trail.length = 0;
-    trail.push(link);
+    const row = target.closest("details.flowbox");
+    if (row) return openFlow(row, target, link);
+    const from = modal.contains(link) ? opener : link;
+    opener = null;
+    modal.close();
+    if (!from.closest(".names")) trail.length = 0;
+    trail.push(from);
     show(target, target.matches(".names dt") ? [target, target.nextElementSibling] : [target]);
+  });
+  // A browser gives the focus back only where a click on a link gave it to the link, which Safari's doesn't.
+  modal.addEventListener("close", () => {
+    if (opener) opener.focus({ preventScroll: true });
+    opener = null;
+  });
+  modal.querySelector(".modal-close").addEventListener("click", () => modal.close());
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) modal.close();
   });
   back.addEventListener("click", () => {
     const link = trail.pop();
@@ -182,9 +241,11 @@ const give = async (line, code, desc, button) => {
   if (button) button.textContent = typeof sendPrompt === "function" ? "Sent" : "Copied";
 };
 
-// Comment, on every box of a plan: a place under the box for the author's words, given to the chat with the box's
-// words and where it sits.
-document.querySelectorAll("button.cmt").forEach((button) => button.addEventListener("click", () => {
+// Comment, on every box of a plan, on the page or in the modal: a place under the box for the author's words, given to
+// the chat with the box's words and where it sits.
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("button.cmt");
+  if (!button) return;
   const cell = button.closest(".cell");
   let box = cell.querySelector(".cmt-box");
   if (box) {
@@ -210,7 +271,7 @@ document.querySelectorAll("button.cmt").forEach((button) => button.addEventListe
     if (!area.value.trim()) return;
     give(`Comment on "${button.dataset.words}" (${button.dataset.at}): ${area.value.trim()}`, code, desc);
   });
-}));
+});
 
 const approve = document.querySelector(".approve-btn");
 if (approve) {

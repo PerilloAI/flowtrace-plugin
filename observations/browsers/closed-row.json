@@ -1,5 +1,5 @@
 {
-  "claim": "On a plan's page, a link opens the closed row around its target and the target ends in view, a link to a row itself keeps the row's line in view though the row is taller than the screen, Back returns to the link and reopens a row closed since, a click on a row's line opens and closes it, a screen's link to a flow opens the row and lights the step, a row's Seen in link leaves the row closed both ways, and a row's line links no name while its chart does. Seen in Chrome and in the Mac's WebKit. Safari itself has not run it: its remote automation is off.",
+  "claim": "On a plan's page, a link to a flow or a flow's step opens a copy of the flow in a modal, whole, with the step lit and in view, its row left closed and the page where it was. The close button, a click outside and, with real input in Chrome, Esc close it and give the focus back to the link. Only the flow scrolls while it is open. A tip and Comment work in the copy, and a link out of the modal leaves it, with Back returning to the link that opened it. A row's line still opens and closes it in place, and links no name. Seen in Chrome and in the Mac's WebKit. Safari itself has not run it: its remote automation is off. WebKit's page was hidden at this capture (the screen was off), so its scrolls were not smooth, and it has not had a real Esc, wheel or click.",
   "source": "Google Chrome 156 headless, and WebKit 21624 in a WKWebView on macOS 26.5, where Safari 26.5.2 is installed",
   "observed": "2026-11-03",
   "how": "node observations/browsers/closed-row.probe.mjs on a Mac. It also runs Safari once Safari's Settings allow remote automation (Developer section), and says on stderr when they don't.",
@@ -7,20 +7,61 @@
   "evidence": [
     {
       "name": "Google Chrome 156.0.8078.80",
+      "pageHidden": false,
       "closedAtLoad": true,
       "linkToRow": {
-        "opened": true,
-        "lineInView": true,
-        "focused": true,
+        "modalOpen": true,
+        "rowStaysClosed": true,
+        "pageStays": true,
+        "nameInBar": true,
+        "wholeFlow": true,
+        "atTop": true,
+        "stepLit": false,
+        "idsUnique": true,
+        "focusInModal": true
+      },
+      "closeButton": {
+        "closed": true,
+        "pageStays": true,
+        "focusBack": true
+      },
+      "linkToStep": {
+        "modalOpen": true,
+        "stepLit": true,
+        "stepInView": true,
+        "rowStaysClosed": true,
+        "pageStays": true
+      },
+      "clickOutside": {
+        "closed": true,
+        "pageStays": true,
+        "focusBack": true
+      },
+      "screenLink": {
+        "modalOpen": true,
+        "stepLit": true,
+        "stepInView": true,
+        "scrolledToStep": true,
+        "rowStaysClosed": true,
+        "pageStays": true
+      },
+      "tipInModal": {
+        "shown": true,
+        "inModal": true,
+        "besideName": true
+      },
+      "commentInCopy": {
+        "shown": true,
+        "keptOnReopening": true,
+        "notOnPage": true
+      },
+      "linkOutOfModal": {
+        "closed": true,
+        "targetInView": true,
         "backShown": true
       },
-      "backToLink": {
+      "backToOpener": {
         "linkInView": true,
-        "rowStaysOpen": true
-      },
-      "linkIntoRow": {
-        "opened": true,
-        "targetInView": true,
         "focused": true
       },
       "backIntoClosedRow": {
@@ -30,11 +71,6 @@
       "clickOnLine": {
         "opens": true,
         "closes": true
-      },
-      "screenLink": {
-        "opened": true,
-        "stepInView": true,
-        "lit": true
       },
       "seenInLink": {
         "rowStaysClosed": true,
@@ -42,24 +78,87 @@
         "backLeavesRowClosed": true
       },
       "namesOnLine": 0,
-      "namesInChart": true
+      "namesInChart": true,
+      "realInput": {
+        "wheelOnDimmedPage": {
+          "pageStays": true
+        },
+        "wheelOnFlow": {
+          "flowMoves": true,
+          "pageStays": true
+        },
+        "esc": {
+          "closed": true,
+          "pageStays": true,
+          "focusBack": true
+        },
+        "clickOutside": {
+          "closed": true,
+          "pageStays": true,
+          "focusBack": true
+        },
+        "wheelAfterClosing": {
+          "pageMoves": true
+        }
+      }
     },
     {
       "name": "WebKit 21624.2.5.11.8 in a WKWebView",
+      "pageHidden": true,
       "closedAtLoad": true,
       "linkToRow": {
-        "opened": true,
-        "lineInView": true,
-        "focused": true,
+        "modalOpen": true,
+        "rowStaysClosed": true,
+        "pageStays": true,
+        "nameInBar": true,
+        "wholeFlow": true,
+        "atTop": true,
+        "stepLit": false,
+        "idsUnique": true,
+        "focusInModal": true
+      },
+      "closeButton": {
+        "closed": true,
+        "pageStays": true,
+        "focusBack": true
+      },
+      "linkToStep": {
+        "modalOpen": true,
+        "stepLit": true,
+        "stepInView": true,
+        "rowStaysClosed": true,
+        "pageStays": true
+      },
+      "clickOutside": {
+        "closed": true,
+        "pageStays": true,
+        "focusBack": true
+      },
+      "screenLink": {
+        "modalOpen": true,
+        "stepLit": true,
+        "stepInView": true,
+        "scrolledToStep": true,
+        "rowStaysClosed": true,
+        "pageStays": true
+      },
+      "tipInModal": {
+        "shown": true,
+        "inModal": true,
+        "besideName": true
+      },
+      "commentInCopy": {
+        "shown": true,
+        "keptOnReopening": true,
+        "notOnPage": true
+      },
+      "linkOutOfModal": {
+        "closed": true,
+        "targetInView": true,
         "backShown": true
       },
-      "backToLink": {
+      "backToOpener": {
         "linkInView": true,
-        "rowStaysOpen": true
-      },
-      "linkIntoRow": {
-        "opened": true,
-        "targetInView": true,
         "focused": true
       },
       "backIntoClosedRow": {
@@ -69,11 +168,6 @@
       "clickOnLine": {
         "opens": true,
         "closes": true
-      },
-      "screenLink": {
-        "opened": true,
-        "stepInView": true,
-        "lit": true
       },
       "seenInLink": {
         "rowStaysClosed": true,
