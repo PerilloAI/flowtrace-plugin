@@ -103,7 +103,12 @@ and `git status` are as they were.
 Read `git diff --stat <base> <head>` and the whole diff, then each changed file in `$RUN/head`, the tests the change
 adds or edits, and the description. Save the diff as `$RUN/change.diff` for the subagents.
 
-Done when you can say what each changed file now does differently.
+Then prove the review's premises, as [premises.md](../premises.md) says: which path each case takes, what each outside
+thing the change calls does there, and what the description says the change does. The diff shows what changed; the head,
+and the map when there is one, show whether a case runs it.
+
+Done when you can say what each changed file now does differently, and every premise is proved from its source or
+marked unproved.
 
 ## 5. Ask the map how far each change reaches
 
@@ -162,7 +167,8 @@ Done when every changed file is on a flow or named as changing no behaviour.
 ## 7. Write why the change was made
 
 When the description gives a reason, write it in plain words under "From the author". When it gives none, write "The
-author gave no reason." and then your reading of the code, which the page marks as yours.
+author gave no reason." and then your reading of the code, which the page marks as yours. A claim in the description
+that the code contradicts is a warning on the step it is about, naming the file and lines that show otherwise.
 
 ## 8. Write the worked examples
 
@@ -174,7 +180,8 @@ flow. Mark the step where the before and after part with its `result`.
 
 Put each warning in `lookClosely` on the changed step it is about, under its kind: Breaking, No undo, Access check,
 Default changed, External call, Migration, Error hidden or Side effect. Say what the reviewer should check, in one
-sentence.
+sentence. A premise you couldn't prove, whose answer would change the review, is a warning too, saying what would show
+it.
 
 ## 10. Write the questions
 
