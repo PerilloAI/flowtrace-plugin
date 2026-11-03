@@ -66,7 +66,7 @@ const plan = () => ({
             { keyword: "Step", text: "Load the order", where: "loadOrder" },
             {
               keyword: "Check", text: "Did the warehouse time out?", mark: "+",
-              answers: [{ label: "yes", steps: [{ keyword: "Step", text: "Wait 30 seconds and try once more", mark: "+", lookClosely: [{ kind: "External call", text: "the warehouse is asked twice" }] }] }],
+              answers: [{ label: "yes", steps: [{ keyword: "Step", text: "Wait 30 seconds and try once more", mark: "+", change: "Retry once", lookClosely: [{ kind: "External call", text: "the warehouse is asked twice" }] }] }],
             },
             { keyword: "Returns", text: "the file" },
           ],
@@ -212,11 +212,11 @@ test("a drawing outlines only what changed since the author last read the plan, 
   assert.match(html, /Outlined: changed since the page you last read/);
 });
 
-// The page drawn once `change` has edited what the plan holds under How it's built.
-const drawnWithFlows = (change) => {
+// The page drawn once `change` has edited what the plan holds under How it's built, or anywhere else in it.
+const drawnPlan = (change) => {
   const dir = repo();
   const data = plan();
-  change(data.sections[6].content);
+  change(data.sections[6].content, data);
   write(dir, data);
   const out = path.join(dir, "page.html");
   const run = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
@@ -225,32 +225,32 @@ const drawnWithFlows = (change) => {
 };
 
 test("a plan's flow is a closed row whose line gives its name, its counts of marked steps and its number of steps", () => {
-  const html = drawnWithFlows((content) => {
+  const html = drawnPlan((content) => {
     const { steps } = content[0].flow;
     steps[1].mark = "~";
     steps[3].mark = "-";
   });
-  assert.ok(html.includes('<details class="flowbox" id="f-export-an-order"><summary><h3>Export an order</h3><span class="row-meta"><span class="mk new">+2 new</span><span class="mk chg">~1 changed</span><span class="mk gone">−1 removed</span><span>5 steps</span></span></summary><figure>'));
+  assert.ok(html.includes('<details class="flowbox" id="f-export-an-order"><summary><h3>Export an order</h3><span class="row-meta"><span class="mk new">+2 new</span><span class="mk chg">~1 changed</span><span class="mk gone">−1 removed</span><span>5 steps</span><span>Seen in: <a href="#v-exporting-order-1042">Exporting order 1042</a></span></span></summary><figure>'));
 });
 
 test("a flow marked as a whole has its tag on its row's line, and no counts", () => {
-  const html = drawnWithFlows((content) => {
+  const html = drawnPlan((content) => {
     content.push({ flow: { name: "Import an order", mark: "+", steps: [{ keyword: "Starts", text: "Ana presses Import" }] } });
     content.push({ flow: { name: "Print an order", mark: "-", steps: [{ keyword: "Starts", text: "Ana presses Print" }, { keyword: "Returns", text: "the print" }] } });
   });
-  assert.ok(html.includes('<summary><h3><span class="tag rec">new flow</span> Import an order</h3><span class="row-meta"><span>1 step</span></span></summary>'));
-  assert.ok(html.includes('<summary><h3><span class="tag alt">removed flow</span> Print an order</h3><span class="row-meta"><span>2 steps</span></span></summary>'));
+  assert.ok(html.includes('<summary><h3><span class="tag rec">new flow</span> Import an order</h3><span class="row-meta"><span>1 step</span><span>No screen links here</span></span></summary>'));
+  assert.ok(html.includes('<summary><h3><span class="tag alt">removed flow</span> Print an order</h3><span class="row-meta"><span>2 steps</span><span>No screen links here</span></span></summary>'));
 });
 
 test("a flow with no marked step has only its number of steps on its row's line", () => {
-  const html = drawnWithFlows((content) => {
+  const html = drawnPlan((content) => {
     content.push({ flow: { name: "Load an order", steps: [{ keyword: "Starts", text: "Ana opens an order" }, { keyword: "Step", text: "Load the order" }, { keyword: "Returns", text: "the order" }] } });
   });
-  assert.ok(html.includes('<summary><h3>Load an order</h3><span class="row-meta"><span>3 steps</span></span></summary>'));
+  assert.ok(html.includes('<summary><h3>Load an order</h3><span class="row-meta"><span>3 steps</span><span>No screen links here</span></span></summary>'));
 });
 
 test("Where to look reaches a closed row by its id, and a step's where by an id inside it", () => {
-  const html = drawnWithFlows(() => {});
+  const html = drawnPlan(() => {});
   assert.ok(html.includes('Where to look: <a href="#f-export-an-order">'));
   assert.ok(html.includes('Where to look: <a href="#w-exportorder">'));
   assert.ok(html.includes('<details class="flowbox" id="f-export-an-order">'));
@@ -270,10 +270,74 @@ test("in each browser tried, a link opens the closed row around its target, and 
       linkIntoRow: { opened: true, targetInView: true, focused: true },
       backIntoClosedRow: { reopened: true, linkInView: true },
       clickOnLine: { opens: true, closes: true },
+      screenLink: { opened: true, stepInView: true, lit: true },
+      seenInLink: { rowStaysClosed: true, screenInView: true, backLeavesRowClosed: true },
       namesOnLine: 0,
       namesInChart: true,
     }, name);
   }
+});
+
+test("a screen's step links to each flow naming its change, at the first step naming it there", () => {
+  const html = drawnPlan((content) => {
+    content[0].flow.steps[1].change = "Retry once";
+    content.push({ flow: { name: "Retry a failed export", mark: "+", steps: [{ keyword: "Starts", text: "The retry timer fires", change: "Retry once" }] } });
+  });
+  const links = [...html.matchAll(/<a class="to-flow" href="#([^"]+)">([^<]+)<\/a>/g)].map((m) => [m[1], m[2]]);
+  assert.deepEqual(links, [["w-loadorder", "How it's built: Export an order"], ["w-retry-once", "How it's built: Retry a failed export"]]);
+  assert.ok(html.includes('<div class="cell" id="w-retry-once"><div class="n start">Starts: The retry timer fires'));
+  assert.ok(html.includes('<div class="cell" id="w-loadorder">'));
+});
+
+test("a chart's step naming a change gets no link to a flow, and doesn't put its chart on the flow's row", () => {
+  const html = drawnPlan((_, data) => {
+    data.sections[2].content.push({ trace: { title: "Ana's second try", steps: [{ text: "It tries once more", change: "Retry once" }] } });
+  });
+  assert.equal(html.split('class="to-flow"').length - 1, 1);
+  assert.ok(html.includes('<span>Seen in: <a href="#v-exporting-order-1042">Exporting order 1042</a></span>'));
+});
+
+test("a flow's row lists each screen that links to it, once", () => {
+  const html = drawnPlan((content, data) => {
+    content[0].flow.steps[1].change = "Retry once";
+    data.sections[2].content.push({ screens: { title: "Retrying an export", columns: [{ title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } });
+  });
+  assert.ok(html.includes('<span>Seen in: <a href="#v-exporting-order-1042">Exporting order 1042</a>, <a href="#v-retrying-an-export">Retrying an export</a></span>'));
+});
+
+test("a screen's step naming a change no flow's step names stops the drawing, naming its line", () => {
+  const dir = repo();
+  const data = plan();
+  delete data.sections[6].content[0].flow.steps[2].answers[0].steps[0].change;
+  const file = write(dir, data);
+  const out = path.join(dir, "page.html");
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
+  assert.equal(run.status, 1);
+  assert.match(run.stderr, new RegExp(`line ${lineOf(file, "It tries once more")}: "change": "Retry once" is on a screen's step, and no flow's step names it`));
+  assert.equal(existsSync(out), false);
+});
+
+test("a screen's step naming a title no change has is told that once, not also that no flow names it", () => {
+  const dir = repo();
+  const data = plan();
+  data.sections[2].content[0].screens.columns[1].steps[1].change = "Retry twice";
+  write(dir, data);
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", path.join(dir, "page.html"));
+  assert.equal(run.status, 1);
+  assert.match(run.stderr, /"change": "Retry twice" names no row/);
+  assert.doesNotMatch(run.stderr, /no flow's step names it/);
+});
+
+test("an explanation isn't held to its screen's change being on a flow's step", () => {
+  const { run, html } = drawn(JSON.stringify({
+    title: "A page",
+    sections: [
+      { heading: "What you'd see", content: [{ screens: { title: "Exporting", columns: [{ title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } }] },
+      { heading: "The changes", content: [{ changes: [{ title: "Retry once", gets: "A file", why: "It is slow" }] }] },
+    ],
+  }));
+  assert.equal(run.status, 0, run.stderr);
+  assert.doesNotMatch(html, /class="to-flow"/);
 });
 
 test("an explanation's and a review's flows stay drawn in full", () => {

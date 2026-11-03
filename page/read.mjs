@@ -195,7 +195,8 @@ export function readDocument(text) {
   return { doc, value };
 }
 
-// Gives every heading, chart, flow, choice, change, name and first [where] the id links reach it by, each id once.
+// Gives every heading, chart, flow, choice, change, name, first [where] and each flow's first step naming a change the
+// id links reach it by, each id once.
 function assignIds(doc) {
   const used = new Set();
   const unique = (id) => {
@@ -215,10 +216,15 @@ function assignIds(doc) {
     if (node.kind === "names") for (const row of node.rows) row.id = unique(`n-${slug(row.name)}`);
     if (node.kind === "flow") {
       node.id = unique(`f-${slug(node.name)}`);
+      const named = new Set();
       const walk = (items) => items.forEach((b) => {
         if (b.where && !wheres.has(b.where)) {
           wheres.add(b.where);
           b.whereId = unique(`w-${slug(b.where)}`);
+        }
+        if (b.change && !named.has(b.change)) {
+          named.add(b.change);
+          b.whereId ??= unique(`w-${slug(b.change)}`);
         }
         walk(b.inner ?? []);
         (b.lanes ?? []).forEach((l) => walk(l.items));

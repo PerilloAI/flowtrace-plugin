@@ -138,7 +138,8 @@
     lit.forEach((el) => el.classList.remove("hit"));
     lit = light;
     light.forEach((el) => el.classList.add("hit"));
-    const row = target.closest("details");
+    // A link on a row's line is in view with the row closed, so going back to one leaves the row as it is.
+    const row = target.closest("summary") ? null : target.closest("details");
     if (row) row.open = true;
     // A row taller than the screen, centred, would hide its own line.
     target.scrollIntoView({ behavior: motion, block: target === row ? "start" : "center" });

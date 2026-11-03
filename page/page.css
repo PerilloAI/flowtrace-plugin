@@ -69,7 +69,8 @@ figure { margin: 14px 0 22px; }
 .n.end { border-radius: 999px; }
 .n.removed { text-decoration: line-through; opacity: .75; }
 .n .where { display: block; font: 400 11px/1.4 var(--mono); color: var(--muted); margin-top: 3px; }
-.n .to-change { display: block; font-size: 12px; margin-top: 3px; }
+.n .to-change, .n .to-flow { display: block; font-size: 12px; margin-top: 3px; }
+.n .to-flow { font-weight: 500; }
 .mk { display: inline-block; font: 600 10.5px/1.5 var(--body); letter-spacing: .04em; text-transform: uppercase; padding: 0 6px; border-radius: 999px; margin-right: 6px; vertical-align: 1px; text-decoration: none; }
 .mk.new { color: var(--ok); border: 1px solid var(--ok); } .mk.chg { color: var(--chg); border: 1px solid var(--chg); } .mk.gone { color: var(--bad); border: 1px solid var(--bad); }
 .warn { font-size: 12.5px; line-height: 1.4; background: var(--note-soft); border: 1px solid var(--note); color: var(--fg); border-radius: 6px; padding: 5px 9px; text-align: left; }
