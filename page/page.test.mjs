@@ -265,10 +265,11 @@ test("in each browser tried, a link to a flow opens it in a modal over the page,
     const { name, pageHidden: _, realInput: __, ...checks } = browser;
     assert.deepEqual(checks, {
       closedAtLoad: true,
-      linkToRow: { modalOpen: true, rowStaysClosed: true, pageStays: true, nameInBar: true, wholeFlow: true, atTop: true, stepLit: false, idsUnique: true, focusInModal: true },
+      linkToRow: { modalOpen: true, rowStaysClosed: true, pageStays: true, nameInBar: true, wholeFlow: true, atTop: true, stepLit: false, idsUnique: true, focusInModal: true, focusOnFlow: true },
       closeButton: { closed: true, pageStays: true, focusBack: true },
-      linkToStep: { modalOpen: true, stepLit: true, stepInView: true, rowStaysClosed: true, pageStays: true },
+      linkToStep: { modalOpen: true, stepLit: true, stepInView: true, rowStaysClosed: true, pageStays: true, focusOnStep: true },
       clickOutside: { closed: true, pageStays: true, focusBack: true },
+      stepInWideChart: { scrolledSideways: true, inViewSideways: true, focusOnStep: true, pageStays: true },
       screenLink: { modalOpen: true, stepLit: true, stepInView: true, scrolledToStep: true, rowStaysClosed: true, pageStays: true },
       tipInModal: { shown: true, inModal: true, besideName: true },
       commentInCopy: { shown: true, keptOnReopening: true, notOnPage: true },
@@ -283,13 +284,15 @@ test("in each browser tried, a link to a flow opens it in a modal over the page,
   }
 });
 
-test("with real input in Chrome, Esc and a click outside close the modal, and only the flow scrolls while it is open", () => {
+test("with real input in Chrome, Esc and a click outside close the modal, a drag let go outside doesn't, the keys scroll from the lit step, and only the flow scrolls while it is open", () => {
   const chrome = observation("browsers/closed-row").evidence.find((browser) => browser.realInput);
   assert.deepEqual(chrome.realInput, {
     wheelOnDimmedPage: { pageStays: true },
     wheelOnFlow: { flowMoves: true, pageStays: true },
     esc: { closed: true, pageStays: true, focusBack: true },
     clickOutside: { closed: true, pageStays: true, focusBack: true },
+    keysOnLitStep: { focusOnStep: true, pageDownMovesFlow: true, pageStays: true },
+    dragOutOfModal: { staysOpen: true, clickOutsideStillCloses: true },
     wheelAfterClosing: { pageMoves: true },
   });
 });

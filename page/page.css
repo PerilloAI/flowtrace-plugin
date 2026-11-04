@@ -120,6 +120,7 @@ details.flowbox > figure { margin: 4px 14px 14px; }
 .modal-close:hover { border-color: var(--line); }
 .modal-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .modal-body { overflow: auto; overscroll-behavior: contain; padding: 14px 18px 18px; }
+.modal-body:focus { outline: none; }
 .modal-body .flowbox { margin: 0; }
 .modal-body .row-meta { margin-bottom: 4px; }
 @media (max-width: 640px) {

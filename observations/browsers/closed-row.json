@@ -1,9 +1,9 @@
 {
-  "claim": "On a plan's page, a link to a flow or a flow's step opens a copy of the flow in a modal, whole, with the step lit and in view, its row left closed and the page where it was. The close button, a click outside and, with real input in Chrome, Esc close it and give the focus back to the link. Only the flow scrolls while it is open. A tip and Comment work in the copy, and a link out of the modal leaves it, with Back returning to the link that opened it. A row's line still opens and closes it in place, and links no name. Seen in Chrome and in the Mac's WebKit. Safari itself has not run it: its remote automation is off. WebKit's page was hidden at this capture (the screen was off), so its scrolls were not smooth, and it has not had a real Esc, wheel or click.",
+  "claim": "On a plan's page, a link to a flow or a flow's step opens a copy of the flow in a modal, whole, with the step lit, in view both ways and holding the focus, so the keys scroll from it, its row left closed and the page where it was. The close button, a click outside and, with real input in Chrome, Esc close it and give the focus back to the link, while a drag let go outside leaves it open. Only the flow scrolls while it is open. A tip and Comment work in the copy, and a link out of the modal leaves it, with Back returning to the link that opened it. A row's line still opens and closes it in place, and links no name. Seen in Chrome and in the Mac's WebKit. Safari itself has not run it: its remote automation is off. WebKit has not had a real Esc, wheel or click.",
   "source": "Google Chrome 156 headless, and WebKit 21624 in a WKWebView on macOS 26.5, where Safari 26.5.2 is installed",
   "observed": "2026-11-03",
   "how": "node observations/browsers/closed-row.probe.mjs on a Mac. It also runs Safari once Safari's Settings allow remote automation (Developer section), and says on stderr when they don't.",
-  "recheckWhen": "page/page.js's links or Names walker change, or how page/render.mjs draws a flow's row changes.",
+  "recheckWhen": "page/page.js's links or Names walker change, page/page.css's rules for rows or the modal change, or how page/render.mjs draws a flow's row changes.",
   "evidence": [
     {
       "name": "Google Chrome 156.0.8078.80",
@@ -18,7 +18,8 @@
         "atTop": true,
         "stepLit": false,
         "idsUnique": true,
-        "focusInModal": true
+        "focusInModal": true,
+        "focusOnFlow": true
       },
       "closeButton": {
         "closed": true,
@@ -30,12 +31,19 @@
         "stepLit": true,
         "stepInView": true,
         "rowStaysClosed": true,
-        "pageStays": true
+        "pageStays": true,
+        "focusOnStep": true
       },
       "clickOutside": {
         "closed": true,
         "pageStays": true,
         "focusBack": true
+      },
+      "stepInWideChart": {
+        "scrolledSideways": true,
+        "inViewSideways": true,
+        "focusOnStep": true,
+        "pageStays": true
       },
       "screenLink": {
         "modalOpen": true,
@@ -97,6 +105,15 @@
           "pageStays": true,
           "focusBack": true
         },
+        "keysOnLitStep": {
+          "focusOnStep": true,
+          "pageDownMovesFlow": true,
+          "pageStays": true
+        },
+        "dragOutOfModal": {
+          "staysOpen": true,
+          "clickOutsideStillCloses": true
+        },
         "wheelAfterClosing": {
           "pageMoves": true
         }
@@ -104,7 +121,7 @@
     },
     {
       "name": "WebKit 21624.2.5.11.8 in a WKWebView",
-      "pageHidden": true,
+      "pageHidden": false,
       "closedAtLoad": true,
       "linkToRow": {
         "modalOpen": true,
@@ -115,7 +132,8 @@
         "atTop": true,
         "stepLit": false,
         "idsUnique": true,
-        "focusInModal": true
+        "focusInModal": true,
+        "focusOnFlow": true
       },
       "closeButton": {
         "closed": true,
@@ -127,12 +145,19 @@
         "stepLit": true,
         "stepInView": true,
         "rowStaysClosed": true,
-        "pageStays": true
+        "pageStays": true,
+        "focusOnStep": true
       },
       "clickOutside": {
         "closed": true,
         "pageStays": true,
         "focusBack": true
+      },
+      "stepInWideChart": {
+        "scrolledSideways": true,
+        "inViewSideways": true,
+        "focusOnStep": true,
+        "pageStays": true
       },
       "screenLink": {
         "modalOpen": true,
