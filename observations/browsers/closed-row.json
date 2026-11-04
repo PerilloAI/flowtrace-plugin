@@ -1,5 +1,5 @@
 {
-  "claim": "On a plan's page, a click on a name or a step's change shows its line or row beside it and moves nothing, on the page or in the modal, and a click anywhere else closes it. With real input in Chrome, a click does this for both and a tap for a name. A link to a flow or a flow's step opens a copy of the flow in a modal, whole, with the step lit and in view, its row left closed and the page where it was. The close button, a click outside and, with real input in Chrome, Esc close it and give the focus back to the link. Only the flow scrolls while it is open. Comment works in the copy, and a link out of the modal leaves it, with Back returning to the link that opened it. A row's line still opens and closes it in place, and links no name. Seen in Chrome and in the Mac's WebKit, which has had no real input. Safari itself has not run it: its remote automation is off.",
+  "claim": "On a plan's page, a link to a flow, a step, a screen or a section opens a copy of it in a modal, the step lit and in view, any row left closed and the page where it was. Inside the modal, a link to somewhere the reader has been goes back there and forgets what came after, the modal's Back retraces the rest and keeps each place's scroll, and a link to the part holding the link that opened the modal closes it. A link to what the modal can't show closes it and scrolls, with the page's Back returning to the link that opened it. The close button, a click outside and, with real input in Chrome, Esc close it and give the focus back to the link. Only the modal scrolls while it is open. A click on a name or a step's change shows its line or row beside it and moves nothing, on the page or in the modal, and a click anywhere else closes it. With real input in Chrome, a click does this for both and a tap for a name. Comment works in a copy. A row's line still opens and closes it in place, and links no name. Seen in Chrome and in the Mac's WebKit, which has had no real input. Safari itself has not run it: its remote automation is off.",
   "source": "Google Chrome 156 headless, and WebKit 21624 in a WKWebView on macOS 26.5, where Safari 26.5.2 is installed",
   "observed": "2026-11-03",
   "how": "node observations/browsers/closed-row.probe.mjs on a Mac. It also runs Safari once Safari's Settings allow remote automation (Developer section), and says on stderr when they don't.",
@@ -66,6 +66,37 @@
         "keptOnReopening": true,
         "notOnPage": true
       },
+      "seenInToWhereYouCameFrom": {
+        "closed": true,
+        "pageStays": true,
+        "focusBack": true
+      },
+      "seenInToSomewhereNew": {
+        "modalOpen": true,
+        "screenInModal": true,
+        "chartInModal": true,
+        "backHiddenAtFirst": true,
+        "backShown": true,
+        "pageStays": true
+      },
+      "modalBack": {
+        "onFlow": true,
+        "backGone": true,
+        "placeKept": true
+      },
+      "noRepeats": {
+        "onFlow": true,
+        "backGone": true,
+        "stepLit": true,
+        "pageStays": true
+      },
+      "sectionInModal": {
+        "modalOpen": true,
+        "sectionInBar": true,
+        "tableInModal": true,
+        "backShown": true,
+        "pageStays": true
+      },
       "linkOutOfModal": {
         "closed": true,
         "targetInView": true,
@@ -84,9 +115,13 @@
         "closes": true
       },
       "seenInLink": {
+        "modalOpen": true,
+        "screenInModal": true,
         "rowStaysClosed": true,
-        "screenInView": true,
-        "backLeavesRowClosed": true
+        "pageStays": true,
+        "howItsBuiltOpensTheClosedRowsFlow": true,
+        "seenInGoesBack": true,
+        "closes": true
       },
       "nameClick": {
         "pageStays": true,
@@ -143,6 +178,11 @@
           "focusBack": true
         },
         "clickOutside": {
+          "closed": true,
+          "pageStays": true,
+          "focusBack": true
+        },
+        "seenInClosesTheCircle": {
           "closed": true,
           "pageStays": true,
           "focusBack": true
@@ -213,6 +253,37 @@
         "keptOnReopening": true,
         "notOnPage": true
       },
+      "seenInToWhereYouCameFrom": {
+        "closed": true,
+        "pageStays": true,
+        "focusBack": true
+      },
+      "seenInToSomewhereNew": {
+        "modalOpen": true,
+        "screenInModal": true,
+        "chartInModal": true,
+        "backHiddenAtFirst": true,
+        "backShown": true,
+        "pageStays": true
+      },
+      "modalBack": {
+        "onFlow": true,
+        "backGone": true,
+        "placeKept": true
+      },
+      "noRepeats": {
+        "onFlow": true,
+        "backGone": true,
+        "stepLit": true,
+        "pageStays": true
+      },
+      "sectionInModal": {
+        "modalOpen": true,
+        "sectionInBar": true,
+        "tableInModal": true,
+        "backShown": true,
+        "pageStays": true
+      },
       "linkOutOfModal": {
         "closed": true,
         "targetInView": true,
@@ -231,9 +302,13 @@
         "closes": true
       },
       "seenInLink": {
+        "modalOpen": true,
+        "screenInModal": true,
         "rowStaysClosed": true,
-        "screenInView": true,
-        "backLeavesRowClosed": true
+        "pageStays": true,
+        "howItsBuiltOpensTheClosedRowsFlow": true,
+        "seenInGoesBack": true,
+        "closes": true
       },
       "nameClick": {
         "pageStays": true,

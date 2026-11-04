@@ -107,23 +107,22 @@ details.flowbox > summary h3 { display: inline; margin: 0; font-size: 1.1rem; }
 .row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 4px; font-size: 13px; color: var(--muted); }
 .row-meta .mk { margin-right: 0; }
 details.flowbox > figure { margin: 4px 14px 14px; }
-/* A flow opened from a link: a copy over the dimmed page, or a sheet across the bottom at phone width. */
-.flow-modal { box-sizing: border-box; width: min(980px, calc(100vw - 32px)); max-width: none; max-height: 86vh; padding: 0; overflow: hidden; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 40px rgb(0 0 0 / .3); }
-.flow-modal[open] { display: flex; flex-direction: column; }
-.flow-modal::backdrop { background: rgb(0 0 0 / .28); }
-/* The page behind stays still, and keeps the room its scrollbar takes: only the flow scrolls. */
-:root:has(.flow-modal[open]) { overflow: hidden; scrollbar-gutter: stable; }
-.modal-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 8px 8px 18px; background: var(--card); border-bottom: 1px solid var(--line); }
-.modal-title { min-width: 0; }
-.modal-title h3 { margin: 0; font-size: 1.1rem; }
-.modal-close { flex: none; font: 500 13px var(--body); color: var(--accent); background: none; border: 1px solid transparent; border-radius: 6px; padding: 3px 8px; cursor: pointer; }
-.modal-close:hover { border-color: var(--line); }
-.modal-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* What a link names, opened over the dimmed page, or in a sheet across the bottom at phone width. */
+.modal { box-sizing: border-box; width: min(980px, calc(100vw - 32px)); max-width: none; max-height: 86vh; padding: 0; overflow: hidden; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 40px rgb(0 0 0 / .3); }
+.modal[open] { display: flex; flex-direction: column; }
+.modal::backdrop { background: rgb(0 0 0 / .28); }
+/* The page behind stays still, and keeps the room its scrollbar takes: only the modal scrolls. */
+:root:has(.modal[open]) { overflow: hidden; scrollbar-gutter: stable; }
+.modal-bar { display: flex; align-items: center; gap: 8px; padding: 8px; background: var(--card); border-bottom: 1px solid var(--line); }
+.modal-title { flex: 1; min-width: 0; padding-left: 8px; font: 600 1.1rem/1.25 var(--display); }
+.modal-bar button { flex: none; font: 500 13px var(--body); color: var(--accent); background: none; border: 1px solid transparent; border-radius: 6px; padding: 3px 8px; cursor: pointer; }
+.modal-bar button:hover { border-color: var(--line); }
+.modal-bar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .modal-body { overflow: auto; overscroll-behavior: contain; padding: 14px 18px 18px; }
-.modal-body .flowbox { margin: 0; }
+.modal-body > div > :first-child { margin-top: 0; }
 .modal-body .row-meta { margin-bottom: 4px; }
 @media (max-width: 640px) {
-  .flow-modal { width: 100%; max-height: 85vh; margin: auto 0 0; border-radius: 12px 12px 0 0; }
+  .modal { width: 100%; max-height: 85vh; margin: auto 0 0; border-radius: 12px 12px 0 0; }
   .modal-body { padding: 12px 12px calc(16px + env(safe-area-inset-bottom, 0px)); }
 }
 
