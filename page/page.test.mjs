@@ -229,6 +229,7 @@ test("a plan's flow is a closed row whose line gives its name, its counts of mar
     const { steps } = content[0].flow;
     steps[1].mark = "~";
     steps[3].mark = "-";
+    delete steps[2].answers[0].steps[0].lookClosely;
   });
   assert.ok(html.includes('<details class="flowbox" id="f-export-an-order"><summary><h3>Export an order</h3><span class="row-meta"><span class="mk new">+2 new</span><span class="mk chg">~1 changed</span><span class="mk gone">−1 removed</span><span>5 steps</span><span>Seen in: <a href="#v-exporting-order-1042">Exporting order 1042</a></span></span></summary><figure>'));
 });
@@ -421,6 +422,51 @@ test("a flow's row lists each screen that links to it, once", () => {
   assert.ok(html.includes('<span>Seen in: <a href="#v-exporting-order-1042">Exporting order 1042</a>, <a href="#v-retrying-an-export">Retrying an export</a></span>'));
 });
 
+const rowLine = (html, id) => {
+  const start = html.indexOf(`<details class="flowbox" id="${id}">`);
+  return html.slice(start, html.indexOf("</summary>", start));
+};
+
+test("a closed row shows each Look closely warning of its flow under its line, and each stays on its step", () => {
+  const html = drawnPlan((content) => {
+    content[0].flow.steps[1].lookClosely = [{ kind: "Breaking", text: "It breaks old exports" }];
+  });
+  const line = rowLine(html, "f-export-an-order");
+  const under = line.slice(line.indexOf('<span class="row-warns">'));
+  assert.equal(under.split('class="warn"').length - 1, 2);
+  assert.ok(under.includes('<span class="warn"><b>Look closely · Breaking</b>: It breaks old exports</span>'));
+  assert.ok(under.includes("<b>Look closely · External call</b>"));
+  const chart = html.slice(html.indexOf("</summary>", html.indexOf('<details class="flowbox" id="f-export-an-order">')));
+  assert.ok(chart.includes('<div class="warn"><b>Look closely · Breaking</b>: It breaks old exports</div>'));
+  assert.ok(chart.includes('<div class="warn"><b>Look closely · External call</b>'));
+});
+
+test("a warning changed since the last read is outlined on its row too, which adds nothing to the count", () => {
+  const dir = repo();
+  const data = plan();
+  data.sections[6].content[0].flow.steps[1].lookClosely = [{ kind: "Breaking", text: "It breaks old exports" }];
+  write(dir, data);
+  const out = path.join(dir, "page.html");
+  assert.equal(draw(dir, "plan", "docs/plans/retry.json", "--out", out).status, 0);
+  draw(dir, "seen", "docs/plans/retry.json");
+  data.sections[6].content[0].flow.steps[1].lookClosely[0].text = "It breaks every export";
+  write(dir, data);
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
+  // The step, whose words include its warnings, and the warning on it.
+  assert.equal(JSON.parse(run.stdout).outlined, 2);
+  const html = readFileSync(out, "utf8");
+  assert.ok(rowLine(html, "f-export-an-order").includes('<span class="warn since"><b>Look closely · Breaking</b>: It breaks every export</span>'));
+  assert.ok(html.includes('<div class="warn since"><b>Look closely · Breaking</b>: It breaks every export</div>'));
+});
+
+test("in each browser tried, a flow's warnings show on its closed row and go once it opens, when they sit on their steps", () => {
+  const seen = observation("browsers/closed-row").evidence;
+  assert.ok(seen.length >= 2);
+  for (const browser of seen) {
+    assert.deepEqual(browser.warningOnRow, { shownClosed: true, stepsNotShownClosed: true, clickOpensRow: true, goesOnceOpen: true, showsOnItsStep: true, copyHoldsItOnceOnItsStep: true }, browser.name);
+  }
+});
+
 test("a link in a flow's name or a screen's title shows as its words inside the links to them, which can't hold another", () => {
   const html = drawnPlan((content, data) => {
     content.push({ flow: { name: "Retry, see [the docs](https://example.com/docs)", mark: "+", steps: [{ keyword: "Starts", text: "The retry timer fires", change: "Retry once" }] } });
@@ -471,12 +517,14 @@ test("an explanation's and a review's flows stay drawn in full", () => {
   for (const extra of [{}, { send: true }]) {
     const { run, html } = drawn(JSON.stringify({
       title: "A page", ...extra,
-      sections: [{ heading: "How it's built", content: [{ flow: { name: "Export an order", steps: [{ keyword: "Starts", text: "Ana presses Export", mark: "+" }] } }] }],
+      sections: [{ heading: "How it's built", content: [{ flow: { name: "Export an order", steps: [{ keyword: "Starts", text: "Ana presses Export", mark: "+", lookClosely: [{ kind: "Breaking", text: "It breaks old exports" }] }] } }] }],
     }));
     assert.equal(run.status, 0, run.stderr);
     assert.ok(html.includes('<section class="flowbox" id="f-export-an-order"><h3>Export an order</h3><figure>'));
     assert.ok(html.includes("Starts: Ana presses Export"));
     assert.doesNotMatch(html, /<details/);
+    assert.ok(html.includes('<div class="warn"><b>Look closely · Breaking</b>: It breaks old exports</div>'));
+    assert.doesNotMatch(html, /class="row-warns"/);
   }
 });
 

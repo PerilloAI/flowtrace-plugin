@@ -106,6 +106,9 @@ details.flowbox > summary:focus-visible { outline: 2px solid var(--accent); outl
 details.flowbox > summary h3 { display: inline; margin: 0; font-size: 1.1rem; }
 .row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 4px; font-size: 13px; color: var(--muted); }
 .row-meta .mk { margin-right: 0; }
+/* A flow's warnings stay readable under its closed row. Opened, they sit on their steps. */
+.row-warns { display: grid; gap: 4px; margin-top: 6px; max-width: 90ch; }
+details[open] > summary .row-warns { display: none; }
 details.flowbox > figure { margin: 4px 14px 14px; }
 /* What a link names, opened over the dimmed page, or in a sheet across the bottom at phone width. */
 .modal { box-sizing: border-box; width: min(980px, calc(100vw - 32px)); max-width: none; max-height: 86vh; padding: 0; overflow: hidden; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 40px rgb(0 0 0 / .3); }

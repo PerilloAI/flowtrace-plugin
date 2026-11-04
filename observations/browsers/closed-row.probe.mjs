@@ -39,7 +39,7 @@ const plan = {
         ...Array.from({ length: 40 }, (_, k) => ({ keyword: "Step", text: k === 30 ? "Do part 31, as [the changes say](#s-the-changes-and-why) in [its row](#c-retry-once)" : `Do part ${k + 1}`, ...(k === 30 ? { change: "Retry once" } : {}) })),
         { keyword: "Returns", text: "the file" },
       ] } },
-      { flow: { name: "Load an order", steps: [{ keyword: "Starts", text: "Ana opens an order" }, { keyword: "Step", text: "Load the order", where: "loadOrder" }] } },
+      { flow: { name: "Load an order", steps: [{ keyword: "Starts", text: "Ana opens an order" }, { keyword: "Step", text: "Load the order", where: "loadOrder", lookClosely: [{ kind: "Side effect", text: "Loading marks the order as read" }] }] } },
       { flow: { name: "Answer an order", steps: [{ keyword: "Starts", text: "Ana asks" }, { keyword: "Check", text: "Which answer?", answers: Array.from({ length: 8 }, (_, k) => ({ label: `answer ${k + 1}`, steps: [{ keyword: "Step", text: `Give answer ${k + 1}`, ...(k === 7 ? { where: "lastAnswer" } : {}) }] })) }] } },
     ] },
     { heading: "Names", content: [{ names: [{ name: "step", text: "one thing a flow does, as [the docs](https://example.com/docs) say" }, { name: "flow", text: "the steps of a behaviour" }] }] },
@@ -201,6 +201,22 @@ const checks = `
   back.click();
   await settled();
   out.backIntoClosedRow = { reopened: row.open, linkInView: inView(inRow) };
+
+  // A flow's warnings show on its closed row, and go once it opens, when they sit on their steps.
+  closeAll();
+  const warned = step.closest("details");
+  const onLine = warned.querySelector(".row-warns .warn");
+  const onStep = warned.querySelector("figure .warn");
+  out.warningOnRow = { shownClosed: onLine.checkVisibility(), stepsNotShownClosed: !onStep.checkVisibility() };
+  onLine.click();
+  out.warningOnRow.clickOpensRow = warned.open;
+  out.warningOnRow.goesOnceOpen = !onLine.checkVisibility();
+  out.warningOnRow.showsOnItsStep = onStep.checkVisibility();
+  closeAll();
+  await follow(toStep);
+  out.warningOnRow.copyHoldsItOnceOnItsStep = body.querySelectorAll(".warn").length === 1 && !body.querySelector(".row-warns");
+  modal.querySelector(".modal-close").click();
+  await wait(100);
 
   closeAll();
   row.querySelector(".row-meta span").click();

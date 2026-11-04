@@ -1,5 +1,5 @@
 {
-  "claim": "On a plan's page, a link to a flow, a step, a screen or a section opens a copy of it in a modal, the step lit, in view both ways and holding the focus, so the keys scroll from it, any row left closed and the page where it was. Inside the modal, a link to somewhere the reader has been goes back there and forgets what came after, the modal's Back retraces the rest and keeps each place's scroll, and a link naming the part holding the link that opened the modal closes it, while one naming a step in that part, on an open row, shows the step. A link to what the modal can't show closes it and scrolls, with the page's Back returning to the link that opened it. The close button, a click outside and, with real input in Chrome, Esc close it and give the focus back to the link, while a drag let go outside leaves it open. Only the modal scrolls while it is open. A click on a name or a step's change shows its line or row beside it and moves nothing, on the page or in the modal, and a click anywhere else closes it. With real input in Chrome, a click does this for both and a tap for a name, the line or row stays as the pointer leaves after a click, the pointer can cross to a line it points at, a name or a link in a line works by mouse and keys, a change's row leaves How it's built to be clicked, and Esc closes a line before the modal under it. Comment works in a copy and moves to the next copy of that part, each copy holds what has been answered on the page, and a question in a copy looks disabled and says where to answer it. A row's line still opens and closes it in place, and links no name. Seen in Chrome and in the Mac's WebKit, which has had no real input. Safari itself has not run it: its remote automation is off.",
+  "claim": "On a plan's page, a link to a flow, a step, a screen or a section opens a copy of it in a modal, the step lit, in view both ways and holding the focus, so the keys scroll from it, any row left closed and the page where it was. Inside the modal, a link to somewhere the reader has been goes back there and forgets what came after, the modal's Back retraces the rest and keeps each place's scroll, and a link naming the part holding the link that opened the modal closes it, while one naming a step in that part, on an open row, shows the step. A link to what the modal can't show closes it and scrolls, with the page's Back returning to the link that opened it. The close button, a click outside and, with real input in Chrome, Esc close it and give the focus back to the link, while a drag let go outside leaves it open. Only the modal scrolls while it is open. A click on a name or a step's change shows its line or row beside it and moves nothing, on the page or in the modal, and a click anywhere else closes it. With real input in Chrome, a click does this for both and a tap for a name, the line or row stays as the pointer leaves after a click, the pointer can cross to a line it points at, a name or a link in a line works by mouse and keys, a change's row leaves How it's built to be clicked, and Esc closes a line before the modal under it. Comment works in a copy and moves to the next copy of that part, each copy holds what has been answered on the page, and a question in a copy looks disabled and says where to answer it. A row's line still opens and closes it in place, and links no name. A flow's Look closely warnings show under its closed row, go once it opens, when they sit on their steps, and a copy holds them only on their steps. Seen in Chrome and in the Mac's WebKit, which has had no real input. Safari itself has not run it: its remote automation is off.",
   "source": "Google Chrome 156 headless, and WebKit 21624 in a WKWebView on macOS 26.5, where Safari 26.5.2 is installed",
   "observed": "2026-11-03",
   "how": "node observations/browsers/closed-row.probe.mjs on a Mac. It also runs Safari once Safari's Settings allow remote automation (Developer section), and says on stderr when they don't.",
@@ -117,6 +117,14 @@
       "backIntoClosedRow": {
         "reopened": true,
         "linkInView": true
+      },
+      "warningOnRow": {
+        "shownClosed": true,
+        "stepsNotShownClosed": true,
+        "clickOpensRow": true,
+        "goesOnceOpen": true,
+        "showsOnItsStep": true,
+        "copyHoldsItOnceOnItsStep": true
       },
       "clickOnLine": {
         "opens": true,
@@ -356,6 +364,14 @@
       "backIntoClosedRow": {
         "reopened": true,
         "linkInView": true
+      },
+      "warningOnRow": {
+        "shownClosed": true,
+        "stepsNotShownClosed": true,
+        "clickOpensRow": true,
+        "goesOnceOpen": true,
+        "showsOnItsStep": true,
+        "copyHoldsItOnceOnItsStep": true
       },
       "clickOnLine": {
         "opens": true,

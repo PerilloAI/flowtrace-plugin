@@ -39,9 +39,10 @@ export function render(doc, o) {
   const keys = new Set();
   let outlined = 0;
   // Marks a part changed since the copy the reader last saw, by its source words.
+  const changedSince = (key) => Boolean(o.previous) && !o.previous.has(key);
   const since = (key) => {
     keys.add(key);
-    if (!o.previous || o.previous.has(key)) return "";
+    if (!changedSince(key)) return "";
     outlined++;
     return " since";
   };
@@ -51,6 +52,7 @@ export function render(doc, o) {
     return c ? ` class="${c}"` : "";
   };
   const comments = o.plan;
+  const warnWords = (f) => `<b>Look closely · ${esc(f.kind)}</b>: ${inline(f.text)}`;
   const changeIds = new Map(blocks(doc, "changes").flatMap((b) => b.rows.map((r) => [r.title, r.id])));
   let where = [];
   let inScreen = false;
@@ -102,7 +104,7 @@ export function render(doc, o) {
     const whereSpan = b.where ? `<span class="where">${esc(b.where)}</span>` : "";
     const change = b.change ? `<a class="to-change" href="#${changeIds.get(b.change) ?? ""}">change: ${esc(b.change)}</a>` : "";
     const toFlow = inScreen ? (flowsOf.get(b.change) ?? []).map((f) => `<a class="to-flow" href="#${f.step}">How it's built: ${inlineInLink(f.name)}</a>`).join("") : "";
-    const warns = (b.flags ?? []).map((f) => `<div class="warn${since(`${f.kind}: ${f.text}`)}"><b>Look closely · ${esc(f.kind)}</b>: ${inline(f.text)}</div>`).join("");
+    const warns = (b.flags ?? []).map((f) => `<div class="warn${since(`${f.kind}: ${f.text}`)}">${warnWords(f)}</div>`).join("");
     const id = b.whereId ? ` id="${b.whereId}"` : "";
     const onlyLane = b.lanes?.length === 1 ? b.lanes[0] : null;
     const side = onlyLane ? `<div class="side"><div class="exit">${esc(onlyLane.label)}</div>${col(onlyLane.items, newFlow)}</div>` : "";
@@ -181,15 +183,18 @@ export function render(doc, o) {
         const heading = `<h3${cls(`Flow: ${b.name}`)}>${tag}${inline(b.name)}</h3>`;
         const chart = `<figure><div class="chart">${col(b.items, newFlow)}</div></figure>`;
         if (!o.plan) return `<section class="flowbox" id="${b.id}">${heading}${chart}</section>`;
-        // On a plan, a closed row: its line says what opening it shows. A flow marked as a whole has its tag, not counts.
+        // On a plan, a closed row: its line says what opening it shows, and its warnings stand under the line until it opens,
+        // when they sit on their steps. A flow marked as a whole has its tag, not counts.
         const all = boxes(b.items);
         const counts = b.nameMark !== " " ? "" : [["+", "+", "new", "new"], ["~", "~", "chg", "changed"], ["-", "−", "gone", "removed"]].map(([mark, sign, c, word]) => {
           const n = all.filter((x) => x.flowMark === mark).length;
           return n ? `<span class="mk ${c}">${sign}${n} ${word}</span>` : "";
         }).join("");
+        // The step's own drawing counts a changed warning as outlined, so this one, the same warning, doesn't count again.
+        const warnings = all.flatMap((x) => x.flags ?? []).map((f) => `<span class="warn${changedSince(`${f.kind}: ${f.text}`) ? " since" : ""}">${warnWords(f)}</span>`).join("");
         const screens = seenIn.get(b.id) ?? [];
         const seen = screens.length ? `Seen in: ${screens.map((s) => `<a href="#${s.id}">${inlineInLink(s.title)}</a>`).join(", ")}` : "No screen links here";
-        return `<details class="flowbox" id="${b.id}"><summary>${heading}<span class="row-meta">${counts}<span>${all.length} step${all.length === 1 ? "" : "s"}</span><span>${seen}</span></span></summary>${chart}</details>`;
+        return `<details class="flowbox" id="${b.id}"><summary>${heading}<span class="row-meta">${counts}<span>${all.length} step${all.length === 1 ? "" : "s"}</span><span>${seen}</span></span>${warnings ? `<span class="row-warns">${warnings}</span>` : ""}</summary>${chart}</details>`;
       }
     }
     return "";

@@ -163,7 +163,8 @@ traces come in this order:
 The flows are the contract the code is written to. Write one for each way in that the change adds or touches.
 
 On the page each flow is a closed row that opens in place. Its line shows the flow's name, its new or removed tag or its
-counts of marked steps, its number of steps, and the screens that link to it (`Seen in`, or `No screen links here`). A
+counts of marked steps, its number of steps, and the screens that link to it (`Seen in`, or `No screen links here`). The
+flow's Look closely warnings stand under that line while the row is closed, and sit on their steps once it is open. A
 question's `read`, or any other link, that names a flow or a step's `where` opens a copy of the flow in a modal over the
 page, with the step lit.
 
