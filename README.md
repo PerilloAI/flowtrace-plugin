@@ -134,10 +134,14 @@ Send answers on a page. Neither carries your name. Perillo's general privacy pol
 (`*.probe.mjs`). Those probes are for people working on this plugin. The plugin never runs them, and each says what it
 runs: `plugin-hook-deny.probe.mjs` and `plugin-mcp-session-open.probe.mjs` each run one `claude -p` turn, which calls a
 model; `transcript-rows.probe.mjs` reads the transcripts you name; `plugin-marketplace-and-manifest.probe.mjs` runs the
-Codex CLI on scratch folders, with no model; `import-meta-dirname.probe.mjs` prints what Node gives.
+Codex CLI on scratch folders, with no model; `import-meta-dirname.probe.mjs` prints what Node gives;
+`closed-row.probe.mjs` draws a scratch plan and clicks through it in Chrome, the Mac's WebKit and, once its Settings allow
+remote automation, Safari. With `--check` it runs Chrome alone and compares the answers with its record, which CI does on
+every pull request.
 
 ```bash
 node --test hooks/*.test.mjs page/*.test.mjs scripts/*.test.mjs
+node observations/browsers/closed-row.probe.mjs --check
 ```
 
 `AGENTS.md` gives the rules for changing the plugin.
