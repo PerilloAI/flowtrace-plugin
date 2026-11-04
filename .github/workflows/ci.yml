@@ -32,8 +32,8 @@ jobs:
       - run: claude plugin validate . --strict --profile directory
 
   page:
-    # Runs page/page.js in the runner's Chrome. A Mac, as the record was captured on one: on Linux, a tap reaches the page
-    # as touch events with no click after them.
+    # Runs page/page.js in the runner's Chrome. A Mac, as the record was captured on one: on a Linux runner, the probe's
+    # tap arrives as touch events with no click after them.
     runs-on: macos-latest
     timeout-minutes: 5
     steps:
