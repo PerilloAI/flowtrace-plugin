@@ -175,11 +175,12 @@
   }, true);
 })();
 
-// A link within the page (Seen in, or Where to look to a chart or section) scrolls to what it names and lights it; Back
-// returns to the link clicked. Links followed from inside Names on this page add to the way back, so Back retraces them in turn.
-// A link to a flow or a flow's step (How it's built, Where to look, See it) opens a copy of the flow in a modal over the
-// page instead, whole, with the step lit. Esc, the close button or a click outside closes it, and the page is where it
-// was. A link inside the modal to anywhere else leaves it, and Back returns to the link that opened it.
+// A link to a part of the page (How it's built, Where to look, See it, Seen in) opens a copy of it in a modal over the
+// page, which stays where it is: a flow whole with the step lit, a chart, or a section. Esc, the close button or a click
+// outside closes the modal. Inside it, a link to somewhere the reader has been goes back there, so going round in a circle
+// never builds up, and a link naming the part that holds the link that opened the modal just closes it, while one naming
+// a step in that part shows the step. The modal's own Back retraces the rest. A link to anything else (a table's row, say) closes the modal and scrolls to what it names, lit, and
+// the page's Back returns to the link clicked. Links followed from inside Names on this page add to that way back.
 (() => {
   const back = document.createElement("button");
   back.type = "button";
@@ -188,11 +189,15 @@
   back.hidden = true;
   document.body.append(back);
   const modal = document.createElement("dialog");
-  modal.className = "flow-modal";
-  modal.innerHTML = '<div class="modal-bar"><div class="modal-title"></div><button type="button" class="modal-close">✕ Close</button></div><div class="modal-body"></div>';
+  modal.className = "modal";
+  modal.innerHTML = '<div class="modal-bar"><button type="button" class="modal-back" hidden>↩ Back</button><div class="modal-title"></div><button type="button" class="modal-close">✕ Close</button></div><div class="modal-body"></div>';
   document.body.append(modal);
+  const modalBack = modal.querySelector(".modal-back");
+  const close = modal.querySelector(".modal-close");
+  const title = modal.querySelector(".modal-title");
   const body = modal.querySelector(".modal-body");
   const copies = new Map();
+  const way = [];
   let opener = null;
   const trail = [];
   const motion = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
@@ -209,37 +214,63 @@
     target.focus({ preventScroll: true });
     back.hidden = !trail.length;
   };
-  // What a flow's line says and its chart, each id kept as data-from so the page's links still reach the page's own parts.
-  // One copy for each flow, kept while the page is open, so a comment begun in it stays.
-  const copyOf = (row) => {
-    if (!copies.has(row)) {
-      const copy = document.createElement("section");
-      copy.className = "flowbox";
-      copy.append(row.querySelector(".row-meta").cloneNode(true), row.querySelector("figure").cloneNode(true));
-      copy.querySelectorAll("[id]").forEach((el) => {
-        el.dataset.from = el.id;
-        el.removeAttribute("id");
-      });
-      copy.querySelectorAll(".cmt-box").forEach((el) => el.remove());
-      copies.set(row, copy);
+  // What the modal can show of a link's target: the flow around a step, or a chart's or section's heading.
+  const partOf = (target) => target.closest(".flowbox") || (target.matches("h2, h3") ? target : null);
+  // A part's heading, and what it holds under it.
+  const contents = (part) => {
+    if (part.matches(".flowbox")) return { heading: part.querySelector("h3"), held: [part.querySelector(".row-meta"), part.querySelector("figure")].filter(Boolean) };
+    if (part.matches("h2")) return { heading: part, held: [...part.parentElement.children].filter((el) => el !== part) };
+    const held = [];
+    for (let n = part.nextElementSibling; n && !n.matches("h2, h3"); n = n.nextElementSibling) {
+      held.push(n);
+      if (n.matches("figure")) break;
     }
-    return copies.get(row);
+    return { heading: part, held };
   };
-  const openFlow = (row, target, link) => {
-    const copy = copyOf(row);
+  // Whether closing the modal leaves the reader at this part, which holds the link that opened the modal and isn't a closed row.
+  const around = (part) => {
+    const { heading, held } = contents(part);
+    return part.open !== false && [heading, ...held].some((el) => el.contains(opener));
+  };
+  // What a part holds, each id kept as data-from so the page's links still reach the page's own parts. Copied afresh each
+  // time it's shown, so what has been answered on the page since is there, and a comment begun in the last copy moves over.
+  // A question in a copy is answered on the page, and a copy holding an open one says so.
+  const copyOf = (part) => {
+    const copy = document.createElement("div");
+    copy.append(...contents(part).held.map((el) => el.cloneNode(true)));
+    copy.querySelectorAll("[id]").forEach((el) => {
+      el.dataset.from = el.id;
+      el.removeAttribute("id");
+    });
+    copy.querySelectorAll(".cmt-box").forEach((el) => el.remove());
+    const asks = [...copy.querySelectorAll("button.opt, button.pick, .approve-btn, .send button")];
+    if (asks.some((button) => !button.disabled)) copy.prepend(Object.assign(document.createElement("p"), { className: "desc modal-note", textContent: "To answer, close this and use the page." }));
+    asks.forEach((button) => {
+      button.disabled = true;
+    });
+    const cells = copy.querySelectorAll(".cell");
+    copies.get(part)?.querySelectorAll(".cell").forEach((cell, k) => {
+      const box = cell.querySelector(":scope > .cmt-box");
+      if (box) cells[k].append(box);
+    });
+    copies.set(part, copy);
+    return copy;
+  };
+  // Shows the last place on the way, where the reader left it, or else at its step.
+  const showPlace = () => {
+    const { part, target, y } = way[way.length - 1];
+    const copy = copyOf(part);
     copy.querySelectorAll(".hit").forEach((el) => el.classList.remove("hit"));
     body.replaceChildren(copy);
-    // The flow's name stays in the bar as the flow scrolls under it to the step.
-    const name = row.querySelector("h3");
-    modal.querySelector(".modal-title").replaceChildren(name.cloneNode(true));
-    modal.setAttribute("aria-label", name.textContent);
-    if (!modal.open) {
-      opener = link;
-      modal.showModal();
-    }
-    const step = target === row ? null : copy.querySelector(`[data-from="${CSS.escape(target.id)}"]`);
+    // The name stays in the bar as the part scrolls under it.
+    const { heading } = contents(part);
+    title.replaceChildren(...[...heading.childNodes].map((n) => n.cloneNode(true)));
+    modal.setAttribute("aria-label", heading.textContent);
+    modalBack.hidden = way.length < 2;
+    if (!modal.open) modal.showModal();
+    const step = target === part ? null : copy.querySelector(`[data-from="${CSS.escape(target.id)}"]`);
     if (step) step.classList.add("hit");
-    body.scrollTop = step ? body.scrollTop + step.getBoundingClientRect().top - body.getBoundingClientRect().top - body.clientHeight / 3 : 0;
+    body.scrollTop = y ?? (step ? body.scrollTop + step.getBoundingClientRect().top - body.getBoundingClientRect().top - body.clientHeight / 3 : 0);
     // A wide chart scrolls sideways on its own, so the step may need bringing in that way too.
     const chart = step && step.closest(".chart");
     if (chart) chart.scrollLeft += step.getBoundingClientRect().left - chart.getBoundingClientRect().left - (chart.clientWidth - step.offsetWidth) / 2;
@@ -255,8 +286,24 @@
     event.preventDefault();
     // A link in a tip is gone once the tip closes, so the way back is to the mention the tip opened from.
     const clicked = link.closest(".tip")?.from ?? link;
-    const row = target.closest("details.flowbox");
-    if (row) return openFlow(row, target, clicked);
+    const part = partOf(target);
+    if (part) {
+      if (!modal.open) {
+        opener = clicked;
+        way.length = 0;
+      } else if (target === part && around(part)) {
+        return modal.close();
+      } else {
+        way[way.length - 1].y = body.scrollTop;
+      }
+      const been = way.findIndex((place) => place.part === part);
+      if (been < 0) way.push({ part, target });
+      else {
+        way.length = been + 1;
+        if (way[been].target !== target) way[been] = { part, target };
+      }
+      return showPlace();
+    }
     const from = modal.contains(link) ? opener : clicked;
     opener = null;
     modal.close();
@@ -269,7 +316,12 @@
     if (opener) opener.focus({ preventScroll: true });
     opener = null;
   });
-  modal.querySelector(".modal-close").addEventListener("click", () => modal.close());
+  modalBack.addEventListener("click", () => {
+    way.pop();
+    showPlace();
+    if (!modalBack.hidden) modalBack.focus({ preventScroll: true });
+  });
+  close.addEventListener("click", () => modal.close());
   // A press that began inside isn't a click outside, wherever it's let go: a drag, or a comment box being resized.
   let pressedInside = false;
   modal.addEventListener("pointerdown", (event) => {

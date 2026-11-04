@@ -99,6 +99,8 @@ A question that checks the reading.
 
 A review's question also takes `source`, where its answer comes from: `map`, `test ran`, `test read` or `reading`.
 
+On the page, the link to `read` opens what it names in a modal over the page, so the reader keeps their place.
+
 Write the options about the same length, so the right one doesn't stand out. **Checked**: three different options,
 `answer` the right one's letter, and a `read` that names a part of the page. Across the page, the right option doesn't
 sit in the same place every time.

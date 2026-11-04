@@ -262,38 +262,59 @@ test("in each browser tried, a link to a flow opens it in a modal over the page,
   const seen = observation("browsers/closed-row").evidence;
   assert.ok(seen.length >= 2);
   for (const browser of seen) {
-    const { name, pageHidden: _, realInput: __, nameClick: ___, nameClickInModal: ____, changeClick: _____, changeClickInModal: ______, ...checks } = browser;
-    assert.deepEqual(checks, {
+    const { closedAtLoad, linkToRow, closeButton, linkToStep, clickOutside, screenLink, tipInModal, commentInCopy, backIntoClosedRow, clickOnLine, namesOnLine, namesInChart } = browser;
+    assert.deepEqual({ closedAtLoad, linkToRow, closeButton, linkToStep, clickOutside, screenLink, tipInModal, commentInCopy, backIntoClosedRow, clickOnLine, namesOnLine, namesInChart }, {
       closedAtLoad: true,
       linkToRow: { modalOpen: true, rowStaysClosed: true, pageStays: true, nameInBar: true, wholeFlow: true, atTop: true, stepLit: false, idsUnique: true, focusInModal: true, focusOnFlow: true },
       closeButton: { closed: true, pageStays: true, focusBack: true },
       linkToStep: { modalOpen: true, stepLit: true, stepInView: true, rowStaysClosed: true, pageStays: true, focusOnStep: true },
       clickOutside: { closed: true, pageStays: true, focusBack: true },
-      stepInWideChart: { scrolledSideways: true, inViewSideways: true, focusOnStep: true, pageStays: true },
       screenLink: { modalOpen: true, stepLit: true, stepInView: true, scrolledToStep: true, rowStaysClosed: true, pageStays: true },
       tipInModal: { shown: true, inModal: true, besideName: true },
       commentInCopy: { shown: true, keptOnReopening: true, notOnPage: true },
-      linkOutOfModal: { closed: true, targetInView: true, backShown: true },
-      backToOpener: { linkInView: true, focused: true },
       backIntoClosedRow: { reopened: true, linkInView: true },
       clickOnLine: { opens: true, closes: true },
-      seenInLink: { rowStaysClosed: true, screenInView: true, backLeavesRowClosed: true },
       namesOnLine: 0,
       namesInChart: true,
-    }, name);
+    }, browser.name);
+  }
+});
+
+test("in each browser tried, going round a circle of links in the modal never builds up", () => {
+  for (const browser of observation("browsers/closed-row").evidence) {
+    const { seenInToWhereYouCameFrom, seenInToSomewhereNew, modalBack, noRepeats } = browser;
+    assert.deepEqual({ seenInToWhereYouCameFrom, seenInToSomewhereNew, modalBack, noRepeats }, {
+      seenInToWhereYouCameFrom: { closed: true, pageStays: true, focusBack: true },
+      seenInToSomewhereNew: { modalOpen: true, screenInModal: true, chartInModal: true, backHiddenAtFirst: true, backShown: true, pageStays: true },
+      modalBack: { onFlow: true, backGone: true, placeKept: true },
+      noRepeats: { onFlow: true, backGone: true, stepLit: true, pageStays: true },
+    }, browser.name);
+  }
+});
+
+test("in each browser tried, Seen in and a link to a section open in the modal, and only what it can't show scrolls", () => {
+  for (const browser of observation("browsers/closed-row").evidence) {
+    const { seenInLink, sectionInModal, linkOutOfModal, backToOpener } = browser;
+    assert.deepEqual({ seenInLink, sectionInModal, linkOutOfModal, backToOpener }, {
+      seenInLink: { modalOpen: true, screenInModal: true, rowStaysClosed: true, pageStays: true, howItsBuiltOpensTheClosedRowsFlow: true, seenInGoesBack: true, closes: true },
+      sectionInModal: { modalOpen: true, sectionInBar: true, tableInModal: true, backShown: true, pageStays: true },
+      linkOutOfModal: { closed: true, targetInView: true, backShown: true },
+      backToOpener: { linkInView: true, focused: true },
+    }, browser.name);
   }
 });
 
 test("with real input in Chrome, Esc and a click outside close the modal, a drag let go outside doesn't, the keys scroll from the lit step, and only the flow scrolls while it is open", () => {
   const chrome = observation("browsers/closed-row").evidence.find((browser) => browser.realInput);
-  const { nameClick: _, clickElsewhere: __, nameTap: ___, tapElsewhere: ____, tip: _____, changeClick: ______, changeClickElsewhere: _______, changeTip: ________, ...modal } = chrome.realInput;
-  assert.deepEqual(modal, {
+  const { wheelOnDimmedPage, wheelOnFlow, esc, clickOutside, keysOnLitStep, dragOutOfModal, seenInClosesTheCircle, wheelAfterClosing } = chrome.realInput;
+  assert.deepEqual({ wheelOnDimmedPage, wheelOnFlow, esc, clickOutside, keysOnLitStep, dragOutOfModal, seenInClosesTheCircle, wheelAfterClosing }, {
     wheelOnDimmedPage: { pageStays: true },
     wheelOnFlow: { flowMoves: true, pageStays: true },
     esc: { closed: true, pageStays: true, focusBack: true },
     clickOutside: { closed: true, pageStays: true, focusBack: true },
     keysOnLitStep: { focusOnStep: true, pageDownMovesFlow: true, pageStays: true },
     dragOutOfModal: { staysOpen: true, clickOutsideStillCloses: true },
+    seenInClosesTheCircle: { closed: true, pageStays: true, focusBack: true },
     wheelAfterClosing: { pageMoves: true },
   });
 });
@@ -315,6 +336,16 @@ test("with a real click and a real tap in Chrome, a name shows its line, the pag
     nameTap: { pageStays: true, tipShown: true },
     tapElsewhere: { tipHidden: true },
   });
+});
+
+test("in each browser tried, How it's built on an open row shows its step, and a copy keeps up with the page and says where to answer", () => {
+  const seen = observation("browsers/closed-row").evidence;
+  assert.ok(seen.length >= 2);
+  for (const browser of seen) {
+    assert.deepEqual(browser.seenInOnOpenRow, { modalOpen: true, onFlow: true, stepLit: true, stepInView: true, pageStays: true, closes: true }, browser.name);
+    assert.deepEqual(browser.questionInCopy, { disabled: true, looksDisabled: true, saysWhere: true, answerShowsNext: true }, browser.name);
+    assert.deepEqual(browser.stepInWideChart, { scrolledSideways: true, inViewSideways: true, focusOnStep: true, pageStays: true }, browser.name);
+  }
 });
 
 test("with real input in Chrome, a name's line stays for the pointer to reach, and a link in it can be followed by mouse and keys", () => {

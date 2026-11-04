@@ -22,7 +22,7 @@ const git = (...args) => run("git", ["-C", scratch, ...args]);
 const plan = {
   title: "Export an order",
   sections: [
-    { heading: "What I'm asking", content: [{ p: "Approve each step, and see [the last answer](#w-lastanswer)." }] },
+    { heading: "What I'm asking", content: [{ p: "Approve each step, and see [the last answer](#w-lastanswer) and [the questions](#s-check-your-reading)." }] },
     { heading: "What you'd see", content: [{ screens: { title: "Exporting an order", columns: [{ title: "Today", steps: [{ text: "It gives up" }] }, { title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } }] },
     { heading: "Check your reading", content: [
       { question: { question: "Where does it start?", options: ["At Export", "At Import", "At Print"], answer: "A", read: "Export an order", why: "It starts there." } },
@@ -36,7 +36,7 @@ const plan = {
     { heading: "How it's built", content: [
       { flow: { name: "Export an order", steps: [
         { keyword: "Starts", text: "Ana presses Export", where: "exportOrder" },
-        ...Array.from({ length: 40 }, (_, k) => ({ keyword: "Step", text: k === 30 ? "Do part 31, as [the changes say](#s-the-changes-and-why)" : `Do part ${k + 1}`, ...(k === 30 ? { change: "Retry once" } : {}) })),
+        ...Array.from({ length: 40 }, (_, k) => ({ keyword: "Step", text: k === 30 ? "Do part 31, as [the changes say](#s-the-changes-and-why) in [its row](#c-retry-once)" : `Do part ${k + 1}`, ...(k === 30 ? { change: "Retry once" } : {}) })),
         { keyword: "Returns", text: "the file" },
       ] } },
       { flow: { name: "Load an order", steps: [{ keyword: "Starts", text: "Ana opens an order" }, { keyword: "Step", text: "Load the order", where: "loadOrder" }] } },
@@ -68,7 +68,9 @@ const checks = `
   const toFlow = document.querySelector("a.to-flow");
   const row = rows[0];
   const step = document.getElementById(toStep.getAttribute("href").slice(1));
-  const modal = document.querySelector("dialog.flow-modal");
+  const modal = document.querySelector("dialog.modal");
+  const modalBack = modal.querySelector(".modal-back");
+  const titled = () => modal.querySelector(".modal-title").textContent;
   const body = modal.querySelector(".modal-body");
   const inModal = (el) => {
     const at = el.getBoundingClientRect();
@@ -92,7 +94,7 @@ const checks = `
     modalOpen: modal.open,
     rowStaysClosed: !row.open,
     pageStays: stayed(),
-    nameInBar: modal.querySelector(".modal-title h3").textContent === row.querySelector("h3").textContent,
+    nameInBar: titled() === row.querySelector("h3").textContent,
     wholeFlow: body.querySelectorAll(".n").length === row.querySelectorAll(".n").length,
     atTop: body.scrollTop === 0,
     stepLit: Boolean(body.querySelector(".hit")),
@@ -147,17 +149,50 @@ const checks = `
   stayed = await follow(toFlow);
   out.commentInCopy = { shown: commentShown, keptOnReopening: Boolean(body.querySelector(".cmt-box")), notOnPage: !row.querySelector(".cmt-box") };
 
-  const seenOnScreen = document.getElementById(body.querySelector(".row-meta a").getAttribute("href").slice(1));
+  // The circle. Opened from a step of that very screen, Seen in just closes the modal.
   body.querySelector(".row-meta a").click();
+  await wait(100);
+  out.seenInToWhereYouCameFrom = { closed: !modal.open, pageStays: stayed(), focusBack: document.activeElement === toFlow };
+
+  // Opened from anywhere else, Seen in shows the screen, Back retraces it, and going round adds nothing.
+  stayed = await follow(toRow);
+  const flowName = titled();
+  const backHiddenAtFirst = modalBack.hidden;
+  body.querySelector(".row-meta a").click();
+  await wait(100);
+  out.seenInToSomewhereNew = { modalOpen: modal.open, screenInModal: titled() === "Exporting an order", chartInModal: Boolean(body.querySelector("figure a.to-flow")), backHiddenAtFirst, backShown: !modalBack.hidden, pageStays: stayed() };
+  modalBack.click();
+  await wait(100);
+  out.modalBack = { onFlow: titled() === flowName, backGone: modalBack.hidden };
+  body.scrollTop = 200;
+  body.querySelector(".row-meta a").click();
+  await wait(100);
+  modalBack.click();
+  await wait(100);
+  out.modalBack.placeKept = body.scrollTop === 200;
+  body.querySelector(".row-meta a").click();
+  await wait(100);
+  body.querySelector("figure a.to-flow").click();
+  await wait(100);
+  out.noRepeats = { onFlow: titled() === flowName, backGone: modalBack.hidden, stepLit: Boolean(body.querySelector(".hit")), pageStays: stayed() };
+
+  // A section opens in the modal too, and what the modal can't show still scrolls, with the page's Back.
+  body.querySelector('a[href="#s-the-changes-and-why"]').click();
+  await wait(100);
+  out.sectionInModal = { modalOpen: modal.open, sectionInBar: titled() === "The changes and why", tableInModal: Boolean(body.querySelector("table")), backShown: !modalBack.hidden, pageStays: stayed() };
+  modalBack.click();
+  await wait(100);
+  const tableRow = document.getElementById("c-retry-once");
+  body.querySelector('a[href="#c-retry-once"]').click();
   await settled();
-  out.linkOutOfModal = { closed: !modal.open, targetInView: inView(seenOnScreen), backShown: !back.hidden };
+  out.linkOutOfModal = { closed: !modal.open, targetInView: inView(tableRow), backShown: !back.hidden };
   back.click();
   await settled();
-  out.backToOpener = { linkInView: inView(toFlow), focused: document.activeElement === toFlow };
+  out.backToOpener = { linkInView: inView(toRow), focused: document.activeElement === toRow };
 
   closeAll();
   row.open = true;
-  const inRow = row.querySelector('.chart a[href="#s-the-changes-and-why"]');
+  const inRow = row.querySelector('.chart a[href="#c-retry-once"]');
   inRow.scrollIntoView({ block: "center", behavior: "instant" });
   await wait(100);
   inRow.click();
@@ -175,16 +210,44 @@ const checks = `
 
   closeAll();
   const seenIn = row.querySelector("summary a");
-  const screen = document.getElementById(seenIn.getAttribute("href").slice(1));
-  seenIn.scrollIntoView({ block: "center", behavior: "instant" });
+  stayed = await follow(seenIn);
+  out.seenInLink = { modalOpen: modal.open, screenInModal: titled() === "Exporting an order", rowStaysClosed: !row.open, pageStays: stayed() };
+  body.querySelector("figure a.to-flow").click();
   await wait(100);
-  seenIn.click();
-  await settled();
-  const rowStaysClosed = !row.open;
-  const screenInView = inView(screen);
-  back.click();
-  await settled();
-  out.seenInLink = { rowStaysClosed, screenInView, backLeavesRowClosed: !row.open };
+  out.seenInLink.howItsBuiltOpensTheClosedRowsFlow = modal.open && titled() === row.querySelector("h3").textContent;
+  body.querySelector(".row-meta a").click();
+  await wait(100);
+  out.seenInLink.seenInGoesBack = modal.open && titled() === "Exporting an order" && modalBack.hidden;
+  modal.querySelector(".modal-close").click();
+  await wait(100);
+  out.seenInLink.closes = !modal.open && document.activeElement === seenIn && !row.open && stayed();
+
+  // With the row open, How it's built names a step the reader may not be looking at, so it shows that step.
+  row.open = true;
+  stayed = await follow(seenIn);
+  body.querySelector("figure a.to-flow").click();
+  await wait(100);
+  const openLit = body.querySelector(".hit");
+  out.seenInOnOpenRow = { modalOpen: modal.open, onFlow: titled() === row.querySelector("h3").textContent, stepLit: Boolean(openLit), stepInView: Boolean(openLit) && inModal(openLit), pageStays: stayed() };
+  modal.querySelector(".modal-close").click();
+  await wait(100);
+  out.seenInOnOpenRow.closes = !modal.open && document.activeElement === seenIn;
+  closeAll();
+
+  // A question in a copy looks disabled and says where to answer it, and a later copy holds an answer given on the page.
+  const toQuestions = document.querySelector('a[href="#s-check-your-reading"]');
+  const onPage = document.querySelector(".qz button.opt");
+  await follow(toQuestions);
+  const inCopyOpt = body.querySelector("button.opt");
+  const copyLook = getComputedStyle(inCopyOpt);
+  out.questionInCopy = { disabled: inCopyOpt.disabled, looksDisabled: copyLook.cursor === "not-allowed" && copyLook.opacity !== getComputedStyle(onPage).opacity, saysWhere: Boolean(body.querySelector(".modal-note")) };
+  modal.querySelector(".modal-close").click();
+  await wait(100);
+  onPage.click();
+  await follow(toQuestions);
+  out.questionInCopy.answerShowsNext = !body.querySelector(".qz .fb").hidden && Boolean(body.querySelector("button.opt.right"));
+  modal.querySelector(".modal-close").click();
+  await wait(100);
 
   const mention = document.querySelector("p a.term");
   mention.scrollIntoView({ block: "center", behavior: "instant" });
@@ -382,7 +445,7 @@ async function realInput(port, url) {
   out.changeTip.howItsBuiltOpensOnFirstClick = await read(`document.querySelector("dialog").open`);
   await esc();
   await move(1270, change.y);
-  const state = () => read(`({ open: document.querySelector("dialog.flow-modal").open, y: scrollY, flow: document.querySelector(".modal-body").scrollTop, focusBack: document.activeElement === document.querySelector("a.to-flow") })`);
+  const state = () => read(`({ open: document.querySelector("dialog.modal").open, y: scrollY, flow: document.querySelector(".modal-body").scrollTop, focusBack: document.activeElement === document.querySelector("a.to-flow") })`);
   const link = await read(`(async () => {
     const a = document.querySelector("a.to-flow");
     a.scrollIntoView({ block: "center", behavior: "instant" });
@@ -423,6 +486,16 @@ async function realInput(port, url) {
   out.dragOutOfModal = { staysOpen: (await state()).open };
   await click(20, 400);
   out.dragOutOfModal.clickOutsideStillCloses = !(await state()).open;
+  await click(link.x, link.y);
+  // Seen in sits above the lit step, so it takes scrolling up to reach.
+  const seenIn = await read(`(() => {
+    document.querySelector(".modal-body").scrollTop = 0;
+    const at = document.querySelector(".modal-body .row-meta a").getBoundingClientRect();
+    return { x: at.left + at.width / 2, y: at.top + at.height / 2 };
+  })()`);
+  await click(seenIn.x, seenIn.y);
+  const circled = await state();
+  out.seenInClosesTheCircle = { closed: !circled.open, pageStays: circled.y === opened.y, focusBack: circled.focusBack };
   await wheel(640, 400);
   out.wheelAfterClosing = { pageMoves: (await state()).y !== opened.y };
   socket.close();
