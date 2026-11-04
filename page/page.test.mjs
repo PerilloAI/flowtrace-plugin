@@ -258,24 +258,48 @@ test("Where to look reaches a closed row by its id, and a step's where by an id 
   assert.ok(row.includes('id="w-exportorder"'));
 });
 
-test("in each browser tried, a link opens the closed row around its target, and a row's line holds no name's link", () => {
+test("in each browser tried, a link to a flow opens it in a modal over the page, and a row still opens in place", () => {
   const seen = observation("browsers/closed-row").evidence;
   assert.ok(seen.length >= 2);
   for (const browser of seen) {
-    const { name, ...checks } = browser;
+    const { name, pageHidden: _, realInput: __, ...checks } = browser;
     assert.deepEqual(checks, {
       closedAtLoad: true,
-      linkToRow: { opened: true, lineInView: true, focused: true, backShown: true },
-      backToLink: { linkInView: true, rowStaysOpen: true },
-      linkIntoRow: { opened: true, targetInView: true, focused: true },
+      linkToRow: { modalOpen: true, rowStaysClosed: true, pageStays: true, nameInBar: true, wholeFlow: true, atTop: true, stepLit: false, idsUnique: true, focusInModal: true, focusOnFlow: true },
+      closeButton: { closed: true, pageStays: true, focusBack: true },
+      linkToStep: { modalOpen: true, stepLit: true, stepInView: true, rowStaysClosed: true, pageStays: true, focusOnStep: true },
+      clickOutside: { closed: true, pageStays: true, focusBack: true },
+      stepInWideChart: { scrolledSideways: true, inViewSideways: true, focusOnStep: true, pageStays: true },
+      screenLink: { modalOpen: true, stepLit: true, stepInView: true, scrolledToStep: true, rowStaysClosed: true, pageStays: true },
+      tipInModal: { shown: true, inModal: true, besideName: true },
+      commentInCopy: { shown: true, keptOnReopening: true, notOnPage: true },
+      linkOutOfModal: { closed: true, targetInView: true, backShown: true },
+      backToOpener: { linkInView: true, focused: true },
       backIntoClosedRow: { reopened: true, linkInView: true },
       clickOnLine: { opens: true, closes: true },
-      screenLink: { opened: true, stepInView: true, lit: true },
       seenInLink: { rowStaysClosed: true, screenInView: true, backLeavesRowClosed: true },
       namesOnLine: 0,
       namesInChart: true,
     }, name);
   }
+});
+
+test("with real input in Chrome, Esc and a click outside close the modal, a drag let go outside doesn't, the keys scroll from the lit step, and only the flow scrolls while it is open", () => {
+  const chrome = observation("browsers/closed-row").evidence.find((browser) => browser.realInput);
+  assert.deepEqual(chrome.realInput, {
+    wheelOnDimmedPage: { pageStays: true },
+    wheelOnFlow: { flowMoves: true, pageStays: true },
+    esc: { closed: true, pageStays: true, focusBack: true },
+    clickOutside: { closed: true, pageStays: true, focusBack: true },
+    keysOnLitStep: { focusOnStep: true, pageDownMovesFlow: true, pageStays: true },
+    dragOutOfModal: { staysOpen: true, clickOutsideStillCloses: true },
+    wheelAfterClosing: { pageMoves: true },
+  });
+});
+
+test("a flow's modal is the script's, so a page where the script doesn't run has none", () => {
+  const html = drawnPlan(() => {});
+  assert.doesNotMatch(html.slice(0, html.indexOf("<script>")), /<dialog/);
 });
 
 test("a screen's step links to each flow naming its change, at the first step naming it there", () => {

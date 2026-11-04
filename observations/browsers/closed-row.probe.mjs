@@ -1,7 +1,8 @@
-/* global console, fetch, process */
+/* global console, fetch, process, WebSocket */
 // Draws a plan with page.mjs, adds a script that follows the page's own links and clicks a row's line, and prints what
 // each browser did: Chrome, the Mac's WebKit in a WKWebView, and Safari itself once its Settings allow remote automation
-// (Developer section). macOS only; nothing is installed, and no setting or profile of the person's is touched.
+// (Developer section). Chrome then takes real wheel, key and mouse input, which a page's own script can't send. macOS
+// only, on Node 22 or later; nothing is installed, and no setting or profile of the person's is touched.
 //   node observations/browsers/closed-row.probe.mjs
 import { execFile, spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
@@ -21,7 +22,7 @@ const git = (...args) => run("git", ["-C", scratch, ...args]);
 const plan = {
   title: "Export an order",
   sections: [
-    { heading: "What I'm asking", content: [{ p: "Approve it." }] },
+    { heading: "What I'm asking", content: [{ p: "Approve it, and see [the last answer](#w-lastanswer)." }] },
     { heading: "What you'd see", content: [{ screens: { title: "Exporting an order", columns: [{ title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } }] },
     { heading: "Check your reading", content: [
       { question: { question: "Where does it start?", options: ["At Export", "At Import", "At Print"], answer: "A", read: "Export an order", why: "It starts there." } },
@@ -39,6 +40,7 @@ const plan = {
         { keyword: "Returns", text: "the file" },
       ] } },
       { flow: { name: "Load an order", steps: [{ keyword: "Starts", text: "Ana opens an order" }, { keyword: "Step", text: "Load the order", where: "loadOrder" }] } },
+      { flow: { name: "Answer an order", steps: [{ keyword: "Starts", text: "Ana asks" }, { keyword: "Check", text: "Which answer?", answers: Array.from({ length: 8 }, (_, k) => ({ label: `answer ${k + 1}`, steps: [{ keyword: "Step", text: `Give answer ${k + 1}`, ...(k === 7 ? { where: "lastAnswer" } : {}) }] })) }] } },
     ] },
     { heading: "Names", content: [{ names: [{ name: "step", text: "one thing a flow does" }] }] },
   ],
@@ -63,50 +65,104 @@ const checks = `
   const back = document.querySelector("button.back");
   const closeAll = () => rows.forEach((row) => { row.open = false; });
   const [toRow, toStep] = [...document.querySelectorAll(".qz .hint a:not(.term)")];
+  const toFlow = document.querySelector("a.to-flow");
   const row = rows[0];
   const step = document.getElementById(toStep.getAttribute("href").slice(1));
-  const out = { closedAtLoad: rows.every((r) => !r.open) };
+  const modal = document.querySelector("dialog.flow-modal");
+  const body = modal.querySelector(".modal-body");
+  const inModal = (el) => {
+    const at = el.getBoundingClientRect();
+    const box = body.getBoundingClientRect();
+    return at.top >= box.top && at.bottom <= box.bottom;
+  };
+  // Clicks a link with it in view, and says whether the page stayed where it was.
+  const follow = async (link) => {
+    link.scrollIntoView({ block: "center", behavior: "instant" });
+    await wait(100);
+    const y = scrollY;
+    link.click();
+    await wait(200);
+    return () => scrollY === y;
+  };
+  const out = { pageHidden: document.hidden, closedAtLoad: rows.every((r) => !r.open) };
 
-  toRow.click();
+  let stayed = await follow(toRow);
+  const ids = [...document.querySelectorAll("[id]")].map((el) => el.id);
+  out.linkToRow = {
+    modalOpen: modal.open,
+    rowStaysClosed: !row.open,
+    pageStays: stayed(),
+    nameInBar: modal.querySelector(".modal-title h3").textContent === row.querySelector("h3").textContent,
+    wholeFlow: body.querySelectorAll(".n").length === row.querySelectorAll(".n").length,
+    atTop: body.scrollTop === 0,
+    stepLit: Boolean(body.querySelector(".hit")),
+    idsUnique: new Set(ids).size === ids.length,
+    focusInModal: modal.contains(document.activeElement),
+    focusOnFlow: document.activeElement === body,
+  };
+  modal.querySelector(".modal-close").click();
+  await wait(100);
+  out.closeButton = { closed: !modal.open, pageStays: stayed(), focusBack: document.activeElement === toRow };
+
+  stayed = await follow(toStep);
+  out.linkToStep = { modalOpen: modal.open, stepLit: Boolean(body.querySelector(".hit")), stepInView: inModal(body.querySelector(".hit")), rowStaysClosed: !step.closest("details").open, pageStays: stayed(), focusOnStep: document.activeElement === body.querySelector(".hit") };
+  modal.click();
+  await wait(100);
+  out.clickOutside = { closed: !modal.open, pageStays: stayed(), focusBack: document.activeElement === toStep };
+
+  stayed = await follow(document.querySelector('a[href="#w-lastanswer"]'));
+  const wide = body.querySelector(".hit");
+  const wideChart = wide.closest(".chart").getBoundingClientRect();
+  const wideAt = wide.getBoundingClientRect();
+  out.stepInWideChart = { scrolledSideways: wide.closest(".chart").scrollLeft > 0, inViewSideways: wideAt.left >= wideChart.left && wideAt.right <= wideChart.right, focusOnStep: document.activeElement === wide, pageStays: stayed() };
+  modal.querySelector(".modal-close").click();
+  await wait(100);
+
+  stayed = await follow(toFlow);
+  const lit = body.querySelector(".hit");
+  out.screenLink = { modalOpen: modal.open, stepLit: Boolean(lit), stepInView: inModal(lit), scrolledToStep: body.scrollTop > 0, rowStaysClosed: !row.open, pageStays: stayed() };
+
+  const term = body.querySelector("a.term");
+  term.dispatchEvent(new PointerEvent("pointerover", { bubbles: true, pointerType: "mouse" }));
+  const tip = document.querySelector(".tip");
+  const tipAt = tip.getBoundingClientRect();
+  const termAt = term.getBoundingClientRect();
+  out.tipInModal = { shown: !tip.hidden, inModal: modal.contains(tip), besideName: Math.min(Math.abs(tipAt.top - termAt.bottom), Math.abs(termAt.top - tipAt.bottom)) <= 8 };
+  body.click();
+
+  const comment = body.querySelector("button.cmt");
+  comment.click();
+  const commentShown = Boolean(comment.closest(".cell").querySelector(".cmt-box"));
+  modal.close();
+  await wait(100);
+  stayed = await follow(toFlow);
+  out.commentInCopy = { shown: commentShown, keptOnReopening: Boolean(body.querySelector(".cmt-box")), notOnPage: !row.querySelector(".cmt-box") };
+
+  const name = document.getElementById(body.querySelector("a.term").getAttribute("href").slice(1));
+  body.querySelector("a.term").click();
   await settled();
-  out.linkToRow = { opened: row.open, lineInView: inView(row.querySelector("summary")), focused: document.activeElement === row, backShown: !back.hidden };
+  out.linkOutOfModal = { closed: !modal.open, targetInView: inView(name), backShown: !back.hidden };
   back.click();
   await settled();
-  out.backToLink = { linkInView: inView(toRow), rowStaysOpen: row.open };
-
-  closeAll();
-  toStep.click();
-  await settled();
-  out.linkIntoRow = { opened: step.closest("details").open, targetInView: inView(step), focused: document.activeElement === step };
-  back.click();
-  await settled();
+  out.backToOpener = { linkInView: inView(toFlow), focused: document.activeElement === toFlow };
 
   closeAll();
   row.open = true;
-  const name = row.querySelector(".chart a.term");
-  name.scrollIntoView({ block: "center", behavior: "instant" });
+  const inRow = row.querySelector(".chart a.term");
+  inRow.scrollIntoView({ block: "center", behavior: "instant" });
   await wait(100);
-  name.click();
+  inRow.click();
   await settled();
   row.open = false;
   back.click();
   await settled();
-  out.backIntoClosedRow = { reopened: row.open, linkInView: inView(name) };
+  out.backIntoClosedRow = { reopened: row.open, linkInView: inView(inRow) };
 
   closeAll();
   row.querySelector(".row-meta span").click();
   const opens = row.open;
   row.querySelector("h3").click();
   out.clickOnLine = { opens, closes: !row.open };
-
-  closeAll();
-  const toFlow = document.querySelector("a.to-flow");
-  const built = document.getElementById(toFlow.getAttribute("href").slice(1));
-  toFlow.click();
-  await settled();
-  out.screenLink = { opened: row.open, stepInView: inView(built), lit: built.classList.contains("hit") };
-  back.click();
-  await settled();
 
   closeAll();
   const seenIn = row.querySelector("summary a");
@@ -123,29 +179,103 @@ const checks = `
 
   out.namesOnLine = document.querySelectorAll("summary a.term").length;
   out.namesInChart = document.querySelectorAll("details.flowbox .chart a.term").length > 0;
-  document.title = "DONE:" + JSON.stringify(out);
+  await fetch("/", { method: "POST", body: JSON.stringify(out) });
+  document.title = "DONE";
 })();
 `;
 
-// Reads the title a browser's page ended on; the checks put their answer there.
-const answer = (title) => JSON.parse(/DONE:(.*)/.exec(title)[1]);
+// What the page next reports to this probe's server: the checks' answer.
+let report;
+const reported = () => new Promise((done, fail) => {
+  report = done;
+  setTimeout(() => fail(new Error("the page never finished its checks")), 90000).unref();
+});
 
-// Chrome runs in real time, its title read off its debugging port, which escapes quotes: the virtual time --dump-dom needs
-// never finishes a smooth scroll.
+// A real wheel, Esc and click outside on the modal, through Chrome's debugging port.
+async function realInput(port, url) {
+  const pages = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
+  const socket = new WebSocket(pages.find((page) => page.url === url).webSocketDebuggerUrl);
+  await new Promise((done) => { socket.onopen = done; });
+  const replies = new Map();
+  socket.onmessage = (message) => {
+    const { id, result } = JSON.parse(message.data);
+    if (id) replies.get(id)(result);
+  };
+  let last = 0;
+  const send = (method, params) => new Promise((done) => {
+    replies.set(++last, done);
+    socket.send(JSON.stringify({ id: last, method, params }));
+  });
+  const wait = (ms) => new Promise((done) => setTimeout(done, ms));
+  const read = async (expression) => (await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true })).result.value;
+  const wheel = async (x, y) => {
+    await send("Input.dispatchMouseEvent", { type: "mouseWheel", x, y, deltaX: 0, deltaY: 600 });
+    await wait(600);
+  };
+  const click = async (x, y) => {
+    for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, x, y, button: "left", clickCount: 1 });
+    await wait(400);
+  };
+  const press = async (key, windowsVirtualKeyCode) => {
+    for (const type of ["keyDown", "keyUp"]) await send("Input.dispatchKeyEvent", { type, key, code: key, windowsVirtualKeyCode });
+    await wait(600);
+  };
+  const esc = () => press("Escape", 27);
+  const drag = async (x, y, x2, y2) => {
+    await send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+    await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: x2, y: y2, button: "left", buttons: 1 });
+    await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x2, y: y2, button: "left", clickCount: 1 });
+    await wait(400);
+  };
+  const state = () => read(`({ open: document.querySelector("dialog.flow-modal").open, y: scrollY, flow: document.querySelector(".modal-body").scrollTop, focusBack: document.activeElement === document.querySelector("a.to-flow") })`);
+  const link = await read(`(async () => {
+    const a = document.querySelector("a.to-flow");
+    a.scrollIntoView({ block: "center", behavior: "instant" });
+    await new Promise((done) => setTimeout(done, 150));
+    const at = a.getBoundingClientRect();
+    return { x: at.left + at.width / 2, y: at.top + at.height / 2 };
+  })()`);
+  const out = {};
+  await click(link.x, link.y);
+  const opened = await state();
+  await wheel(20, 400);
+  out.wheelOnDimmedPage = { pageStays: (await state()).y === opened.y };
+  await wheel(640, 400);
+  const scrolled = await state();
+  out.wheelOnFlow = { flowMoves: scrolled.flow > opened.flow, pageStays: scrolled.y === opened.y };
+  await esc();
+  const escaped = await state();
+  out.esc = { closed: !escaped.open, pageStays: escaped.y === opened.y, focusBack: escaped.focusBack };
+  await click(link.x, link.y);
+  await click(20, 400);
+  const outside = await state();
+  out.clickOutside = { closed: !outside.open, pageStays: outside.y === opened.y, focusBack: outside.focusBack };
+  await click(link.x, link.y);
+  const lit = await state();
+  const focusOnStep = await read(`document.activeElement === document.querySelector(".modal-body .hit")`);
+  await press("PageDown", 34);
+  const paged = await state();
+  out.keysOnLitStep = { focusOnStep, pageDownMovesFlow: paged.flow > lit.flow, pageStays: paged.y === opened.y };
+  await drag(640, 400, 20, 400);
+  out.dragOutOfModal = { staysOpen: (await state()).open };
+  await click(20, 400);
+  out.dragOutOfModal.clickOutsideStillCloses = !(await state()).open;
+  await wheel(640, 400);
+  out.wheelAfterClosing = { pageMoves: (await state()).y !== opened.y };
+  socket.close();
+  return out;
+}
+
 async function chrome(url) {
   const bin = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
   const { stdout: version } = await run(bin, ["--version"]);
+  const answer = reported();
   const port = 47614;
+  // Real time, not the virtual time of --dump-dom, which never finishes a smooth scroll.
   const browser = spawn(bin, ["--headless=new", "--disable-gpu", "--no-first-run", `--user-data-dir=${path.join(scratch, "chrome")}`, `--remote-debugging-port=${port}`, "--window-size=1280,800", url], { stdio: "ignore" });
   try {
-    const stop = Date.now() + 90000;
-    while (Date.now() < stop) {
-      await new Promise((done) => setTimeout(done, 500));
-      const pages = await fetch(`http://127.0.0.1:${port}/json/list`).then((r) => r.json(), () => []);
-      const page = pages.find((p) => p.title.startsWith("DONE:"));
-      if (page) return { name: version.trim(), ...answer(page.title.replaceAll("&quot;", '"')) };
-    }
-    throw new Error("Chrome never finished the checks");
+    const checks = await answer;
+    return { name: version.trim(), ...checks, realInput: await realInput(port, url) };
   } finally {
     browser.kill();
   }
@@ -157,31 +287,33 @@ async function webkit(url) {
     ObjC.import("Cocoa");
     ObjC.import("WebKit");
     function run(argv) {
-      // A window on the screen, all but transparent, and the app's events pumped: WebKit holds back the timers of a page
-      // it thinks no one can see.
+      // WebKit stops the timers of a page it thinks no one can see, as with the screen off or a window in front. Its two
+      // private settings here keep them running.
       const app = $.NSApplication.sharedApplication;
       app.setActivationPolicy(1);
       app.finishLaunching;
       const frame = $.NSMakeRect(0, 0, 1280, 800);
       const window = $.NSWindow.alloc.initWithContentRectStyleMaskBackingDefer(frame, 0, 2, false);
-      const view = $.WKWebView.alloc.initWithFrameConfiguration(frame, $.WKWebViewConfiguration.alloc.init);
+      const configuration = $.WKWebViewConfiguration.alloc.init;
+      configuration.preferences._setPageVisibilityBasedProcessSuppressionEnabled(false);
+      configuration.preferences._setHiddenPageDOMTimerThrottlingEnabled(false);
+      const view = $.WKWebView.alloc.initWithFrameConfiguration(frame, configuration);
       window.contentView = view;
       window.alphaValue = 0.01;
       window.ignoresMouseEvents = true;
       window.orderFrontRegardless;
       view.loadRequest($.NSURLRequest.requestWithURL($.NSURL.URLWithString(argv[0])));
       const stop = Date.now() + 90000;
-      while (Date.now() < stop && !view.title.js.startsWith("DONE:")) {
+      while (Date.now() < stop && view.title.js !== "DONE") {
         const event = app.nextEventMatchingMaskUntilDateInModeDequeue($.NSEventMaskAny, $.NSDate.dateWithTimeIntervalSinceNow(0.1), $.NSDefaultRunLoopMode, true);
         if (!event.isNil()) app.sendEvent(event);
       }
-      const version = $.NSBundle.bundleWithIdentifier("com.apple.WebKit").infoDictionary.objectForKey("CFBundleVersion").js;
-      return JSON.stringify({ version, title: view.title.js });
+      return $.NSBundle.bundleWithIdentifier("com.apple.WebKit").infoDictionary.objectForKey("CFBundleVersion").js;
     }
   `);
-  const { stdout } = await run("osascript", ["-l", "JavaScript", file, url], { timeout: 100000 });
-  const { version, title } = JSON.parse(stdout);
-  return { name: `WebKit ${version} in a WKWebView`, ...answer(title) };
+  const answer = reported();
+  const { stdout: version } = await run("osascript", ["-l", "JavaScript", file, url], { timeout: 100000 });
+  return { name: `WebKit ${version.trim()} in a WKWebView`, ...(await answer) };
 }
 
 async function safari(url) {
@@ -194,16 +326,12 @@ async function safari(url) {
     if (!session.sessionId) return { skipped: session.message };
     const at = `/session/${session.sessionId}`;
     await call("POST", `${at}/window/rect`, { width: 1280, height: 800 });
+    const answer = reported();
     await call("POST", `${at}/url`, { url });
-    const stop = Date.now() + 90000;
-    let title = "";
-    while (Date.now() < stop && !title.startsWith("DONE:")) {
-      await new Promise((done) => setTimeout(done, 500));
-      title = await call("GET", `${at}/title`);
-    }
+    const checks = await answer;
     const version = await call("POST", `${at}/execute/sync`, { script: "return /Version\\/([\\d.]+)/.exec(navigator.userAgent)[1];", args: [] });
     await call("DELETE", at);
-    return { name: `Safari ${version}`, ...answer(title) };
+    return { name: `Safari ${version}`, ...checks };
   } finally {
     driver.kill();
   }
@@ -213,16 +341,34 @@ mkdirSync(path.join(scratch, "docs/plans"), { recursive: true });
 await git("init", "-q", "-b", "main");
 await git("config", "user.email", "probe@example.com");
 await git("config", "user.name", "Probe");
-writeFileSync(path.join(scratch, "orders.ts"), "export function exportOrder() {}\nexport function loadOrder() {}\n");
+writeFileSync(path.join(scratch, "orders.ts"), "export function exportOrder() {}\nexport function loadOrder() {}\nexport function lastAnswer() {}\n");
 await git("add", "orders.ts");
 await git("commit", "-q", "-m", "orders");
 const file = path.join(scratch, "docs/plans/closed-row.json");
 writeFileSync(file, JSON.stringify(plan));
 const page = path.join(scratch, "page.html");
 await run(process.execPath, [path.join(here, "../../page/page.mjs"), "plan", file, "--whole", "--out", page]);
-const html = readFileSync(page, "utf8").replace("</body>", () => `<script>${checks}</script>\n</body>`);
+// A hidden page runs no smooth scroll, so it is asked for none, and the answer says it was hidden.
+const still = `
+if (document.hidden) {
+  const real = window.matchMedia.bind(window);
+  window.matchMedia = (query) => (query.includes("reduced-motion") ? { matches: true } : real(query));
+}
+`;
+const html = readFileSync(page, "utf8")
+  .replace("<script>", () => `<script>${still}</script>\n<script>`)
+  .replace("</body>", () => `<script>${checks}</script>\n</body>`);
 
-const server = createServer((_, response) => {
+const server = createServer((request, response) => {
+  if (request.method === "POST") {
+    let body = "";
+    request.on("data", (part) => { body += part; });
+    request.on("end", () => {
+      response.end();
+      report(JSON.parse(body));
+    });
+    return;
+  }
   response.setHeader("Content-Type", "text/html; charset=utf-8");
   response.end(html);
 });
@@ -234,5 +380,6 @@ for (const browser of [chrome, webkit, safari]) {
   if (result.skipped) console.error(`${browser.name} skipped: ${result.skipped}`);
   else seen.push(result);
 }
+server.closeAllConnections();
 server.close();
 console.log(JSON.stringify(seen, null, 2));
