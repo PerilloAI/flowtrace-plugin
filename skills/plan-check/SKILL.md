@@ -69,7 +69,8 @@ paths filled in: the plan's, and premises.md's, blocks.md's and plan-format.md's
 > - a line `Changes: <the plan's flows, steps, screens or traces this answer changes>`;
 > - the finding as one `choice`, in a `json` block, written as `<blocks.md>` and the choice section of
 >   `<plan-format.md>` give it, with no `number`. Its `question` is complete on its own and carries one concrete case
->   with real values: who does what, in which state. Its 2 to 4 options are behaviours the code could have, each
+>   with real values: who does what, in which state. Its `today` charts that case as the code runs it now, traced
+>   yourself, each step of code carrying its `file:line`. Its 2 to 4 options are behaviours the code could have, each
 >   charting the case to what the person gets, a step of code carrying its `where` (`file:line`, or "new code").
 >   Recommend first the one that the code, a test, a doc or the plan's own reason supports, and say which in `why` (a
 >   test by name, `file:line`, a doc, a decision). When nothing supports any of them, recommend the safest one for the
@@ -90,7 +91,8 @@ When the subagent returns:
 ## 3. Put the findings on the page
 
 1. Check each finding against the code yourself before it goes on the page, by reading the places its `why` and
-   its steps' `where` cite. Correct a case or an option the code contradicts, and drop a finding the plan already
+   its steps' `where` cite. Correct a case, a `today` chart or an option the code contradicts, and drop a finding the
+   plan already
    answers. A false premise is settled by the code, never by what the plan says, which is the claim in question.
 2. Put each finding's `choice` under Questions from plan-check, in the subagent's order, numbered on from the highest
    question still open. Open the section with a paragraph saying how many findings there are and how to answer. Add

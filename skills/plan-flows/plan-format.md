@@ -112,14 +112,20 @@ and whose mark is `+`, `~` or `-` (its own `mark`, or its flow's).
 A `choice` is one question for the author: a decision still open, a behaviour the plan leaves open whose answer
 changes what someone gets (a response, a page, an exit status, an error, a write), or a better way than the one the
 author asked for, which the research found. A better way's options include the author's request, and its `why` links
-the sources. Its form is blocks.md's choice: the
-recommendation first, each option charted on one real case, then the reason.
+the sources. Its form is blocks.md's choice: one real
+case charted as it runs today, then under each option with the recommendation first, then the reason.
 
 - `question` carries its case: who does what, with which values, in which state.
 - **Checked**: each has a `number`, and no two share one. The numbers run down the page across both Questions
   sections, so a number names one question. A question keeps its number until it is answered, and new questions
   number on from the highest one still open, or from 1.
 - The case uses real values, from the code or the plan's example.
+- `today`, a list of steps after `question`, charts that case as the code runs it now, a step of code carrying its
+  `where`. The page draws it right under the question as How it works today, so the author knows what each option
+  would change. When the thing asked about doesn't exist yet, it shows what happens in its place, such as the error a
+  person gets or the step that runs without it. Each question has its own, even when a screen's Today column shows the
+  same case, because the author answers from the question alone. **Checked**: every question has one with at least one
+  step, and none of its steps names a `change`.
 - Write it in plain English, as the flows are: a reader who has never seen the code can answer it from the question
   and its charts alone.
 

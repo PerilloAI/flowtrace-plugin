@@ -104,6 +104,11 @@ export function check(doc, { plan, nameFound }) {
     const cols = c.chart.columns ?? [];
     if (cols.length < 2 || cols.length > 4) at(c.line, `a choice charts 2 to 4 options, the recommended one first; this one has ${cols.length}`);
     if (c.alternatives.length !== cols.length - 1) at(c.line, `a choice with ${cols.length} options has ${cols.length - 1} "alternatives", one per option after the first`);
+    if (plan && !c.today) at(c.line, 'a plan\'s question for the author needs "today": its case as the code runs it now');
+    if (!plan && c.today) at(c.line, 'only a plan\'s question for the author takes "today"');
+    for (const box of boxes(c.today ?? [])) {
+      if (box.change) at(box.line, `"change": "${box.change}" is on a step of "today", which shows what happens now, before any change`);
+    }
     if (plan) {
       if (c.number === null) at(c.line, 'a plan\'s choice has a "number"');
       else if (numbers.has(c.number)) at(c.line, `two questions are numbered ${c.number}`);

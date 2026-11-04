@@ -107,7 +107,7 @@ test("each option of a plan's question for the author is a button giving its num
   data.sections.splice(4, 0, { heading: "Questions from plan-flows", content: [
     { p: "1 question. Pick an option to answer it." },
     { choice: {
-      number: 1, question: "Ana's export times out twice. Is it retried again?", recommended: "No: one retry, then \"Export failed\"", alternatives: ["Yes: retry until it answers"],
+      number: 1, question: "Ana's export times out twice. Is it retried again?", today: [{ text: "Ana sees \"Export failed\" at the first timeout", kind: "start", result: "bad" }], recommended: "No: one retry, then \"Export failed\"", alternatives: ["Yes: retry until it answers"],
       options: [
         { name: "Retry once", steps: [{ text: "Ana sees \"Export failed\" after one retry", kind: "start" }] },
         { name: "Retry until it answers", steps: [{ text: "Ana waits until the warehouse answers", kind: "start" }] },
@@ -123,6 +123,56 @@ test("each option of a plan's question for the author is a button giving its num
   assert.match(html, /<button type="button" class="pick" aria-pressed="false" data-line="1 A"><span class="letter">A<\/span><span><span class="tag rec">recommended<\/span> <strong>No: one retry/);
   assert.match(html, /data-line="1 B"><span class="letter">B<\/span><span>Yes: retry until it answers<\/span>/);
   assert.match(html, /<p class="ask">Pick an option on each question to copy your answers/);
+});
+
+test("a question for the author shows how its case runs today right under the question, before its options", () => {
+  const dir = repo();
+  const data = plan();
+  data.sections[0].content[0].p = "Approve the retry. 1 question is open.";
+  const choice = {
+    number: 1, question: "Ana's export times out twice. Is it retried again?", today: [{ text: "Ana sees \"Export failed\" at the first timeout", kind: "start", result: "bad" }], recommended: "No", alternatives: ["Yes"],
+    options: [{ name: "Retry once", steps: [{ text: "One retry", kind: "start" }] }, { name: "Keep retrying", steps: [{ text: "Many retries", kind: "start" }] }],
+    why: "A warehouse that is down would hold her export forever.",
+  };
+  data.sections.splice(4, 0, { heading: "Questions from plan-flows", content: [{ p: "1 question." }, { choice }] });
+
+  write(dir, data);
+  const out = path.join(dir, "page.html");
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
+  assert.equal(run.status, 0, run.stderr);
+  const html = readFileSync(out, "utf8");
+  const order = ["Is it retried again?</h3>", "How it works today", "at the first timeout", 'class="picks"', "One retry"].map((words) => html.indexOf(words));
+  assert.ok(order.every((at) => at >= 0), `each part is drawn: ${order}`);
+  assert.deepEqual(order, [...order].sort((a, b) => a - b));
+
+  const refused = (change, message) => {
+    const broken = structuredClone(data);
+    change(broken.sections[4].content[1].choice);
+    write(dir, broken);
+    const again = draw(dir, "plan", "docs/plans/retry.json", "--out", path.join(dir, "refused.html"));
+    assert.equal(again.status, 1);
+    assert.match(again.stderr, message);
+  };
+  refused((c) => { delete c.today; }, /a plan's question for the author needs "today"/);
+  refused((c) => { c.today = []; }, /today needs at least one step/);
+  refused((c) => { c.today[0].change = "Retry once"; }, /on a step of "today"/);
+});
+
+test("an explanation's choice takes no today", () => {
+  const dir = repo();
+  const data = JSON.parse(readFileSync(path.join(here, "fixtures/explain.json"), "utf8"));
+  const choice = data.sections.flatMap((s) => s.content).find((n) => n.choice).choice;
+  writeFileSync(path.join(dir, "explain.json"), `${formatJson(data)}\n`);
+  const out = path.join(dir, "page.html");
+  const run = draw(dir, "explain", "explain.json", "--out", out);
+  assert.equal(run.status, 0, run.stderr);
+  assert.ok(!readFileSync(out, "utf8").includes("How it works today"));
+
+  choice.today = [{ text: "Ana sees \"Export failed\"", kind: "start" }];
+  writeFileSync(path.join(dir, "explain.json"), `${formatJson(data)}\n`);
+  const refused = draw(dir, "explain", "explain.json", "--out", out);
+  assert.equal(refused.status, 1);
+  assert.match(refused.stderr, /only a plan's question for the author takes "today"/);
 });
 
 test("a step marked as existing whose name the code doesn't have stops the drawing, naming its line", () => {
