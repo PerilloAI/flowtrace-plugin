@@ -22,7 +22,7 @@ const git = (...args) => run("git", ["-C", scratch, ...args]);
 const plan = {
   title: "Export an order",
   sections: [
-    { heading: "What I'm asking", content: [{ p: "Approve it, and see [the last answer](#w-lastanswer)." }] },
+    { heading: "What I'm asking", content: [{ p: "Approve each step, and see [the last answer](#w-lastanswer)." }] },
     { heading: "What you'd see", content: [{ screens: { title: "Exporting an order", columns: [{ title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } }] },
     { heading: "Check your reading", content: [
       { question: { question: "Where does it start?", options: ["At Export", "At Import", "At Print"], answer: "A", read: "Export an order", why: "It starts there." } },
@@ -42,7 +42,7 @@ const plan = {
       { flow: { name: "Load an order", steps: [{ keyword: "Starts", text: "Ana opens an order" }, { keyword: "Step", text: "Load the order", where: "loadOrder" }] } },
       { flow: { name: "Answer an order", steps: [{ keyword: "Starts", text: "Ana asks" }, { keyword: "Check", text: "Which answer?", answers: Array.from({ length: 8 }, (_, k) => ({ label: `answer ${k + 1}`, steps: [{ keyword: "Step", text: `Give answer ${k + 1}`, ...(k === 7 ? { where: "lastAnswer" } : {}) }] })) }] } },
     ] },
-    { heading: "Names", content: [{ names: [{ name: "step", text: "one thing a flow does" }] }] },
+    { heading: "Names", content: [{ names: [{ name: "step", text: "one thing a flow does, as [the docs](https://example.com/docs) say" }, { name: "flow", text: "the steps of a behaviour" }] }] },
   ],
 };
 
@@ -128,6 +128,10 @@ const checks = `
   const tipAt = tip.getBoundingClientRect();
   const termAt = term.getBoundingClientRect();
   out.tipInModal = { shown: !tip.hidden, inModal: modal.contains(tip), besideName: Math.min(Math.abs(tipAt.top - termAt.bottom), Math.abs(termAt.top - tipAt.bottom)) <= 8 };
+  const flowAt = body.scrollTop;
+  term.click();
+  await wait(100);
+  out.nameClickInModal = { modalStays: modal.open, flowStays: body.scrollTop === flowAt, tipShown: !tip.hidden };
   body.click();
 
   const comment = body.querySelector("button.cmt");
@@ -138,17 +142,17 @@ const checks = `
   stayed = await follow(toFlow);
   out.commentInCopy = { shown: commentShown, keptOnReopening: Boolean(body.querySelector(".cmt-box")), notOnPage: !row.querySelector(".cmt-box") };
 
-  const name = document.getElementById(body.querySelector("a.term").getAttribute("href").slice(1));
-  body.querySelector("a.term").click();
+  const change = document.getElementById(body.querySelector("a.to-change").getAttribute("href").slice(1));
+  body.querySelector("a.to-change").click();
   await settled();
-  out.linkOutOfModal = { closed: !modal.open, targetInView: inView(name), backShown: !back.hidden };
+  out.linkOutOfModal = { closed: !modal.open, targetInView: inView(change), backShown: !back.hidden };
   back.click();
   await settled();
   out.backToOpener = { linkInView: inView(toFlow), focused: document.activeElement === toFlow };
 
   closeAll();
   row.open = true;
-  const inRow = row.querySelector(".chart a.term");
+  const inRow = row.querySelector(".chart a.to-change");
   inRow.scrollIntoView({ block: "center", behavior: "instant" });
   await wait(100);
   inRow.click();
@@ -176,6 +180,17 @@ const checks = `
   back.click();
   await settled();
   out.seenInLink = { rowStaysClosed, screenInView, backLeavesRowClosed: !row.open };
+
+  const mention = document.querySelector("p a.term");
+  mention.scrollIntoView({ block: "center", behavior: "instant" });
+  await wait(100);
+  const pageAt = scrollY;
+  mention.click();
+  await settled();
+  out.nameClick = { pageStays: scrollY === pageAt, tipShown: !tip.hidden, lineInTip: tip.textContent.includes("one thing a flow does"), backStaysHidden: back.hidden, keysMoveIntoTip: tip.contains(document.activeElement) };
+  document.body.click();
+  out.nameClick.focusBackOnName = document.activeElement === mention;
+  out.nameClick.clickElsewhereCloses = tip.hidden;
 
   out.namesOnLine = document.querySelectorAll("summary a.term").length;
   out.namesInChart = document.querySelectorAll("details.flowbox .chart a.term").length > 0;
@@ -216,10 +231,17 @@ async function realInput(port, url) {
     for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, x, y, button: "left", clickCount: 1 });
     await wait(400);
   };
-  const press = async (key, windowsVirtualKeyCode) => {
-    for (const type of ["keyDown", "keyUp"]) await send("Input.dispatchKeyEvent", { type, key, code: key, windowsVirtualKeyCode });
+  const press = async (key, windowsVirtualKeyCode, text) => {
+    await send("Input.dispatchKeyEvent", { type: "keyDown", key, code: key, windowsVirtualKeyCode, ...(text ? { text } : {}) });
+    await send("Input.dispatchKeyEvent", { type: "keyUp", key, code: key, windowsVirtualKeyCode });
     await wait(600);
   };
+  const move = async (x, y) => {
+    await send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+    await wait(50);
+  };
+  const middle = (selector) => read(`(() => { const at = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect(); return { x: at.left + at.width / 2, y: at.top + at.height / 2, top: at.top }; })()`);
+  const tip = () => read(`(() => { const t = document.querySelector(".tip"); return { hidden: t.hidden, words: t.textContent, inTip: t.contains(document.activeElement), onName: document.activeElement === document.querySelector("p a.term") }; })()`);
   const esc = () => press("Escape", 27);
   const drag = async (x, y, x2, y2) => {
     await send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
@@ -227,6 +249,85 @@ async function realInput(port, url) {
     await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x2, y: y2, button: "left", clickCount: 1 });
     await wait(400);
   };
+  const nameState = () => read(`({ tip: !document.querySelector(".tip").hidden, y: scrollY, backHidden: document.querySelector("button.back").hidden })`);
+  const name = await read(`(async () => {
+    const a = document.querySelector("p a.term");
+    a.scrollIntoView({ block: "center", behavior: "instant" });
+    await new Promise((done) => setTimeout(done, 150));
+    const at = a.getBoundingClientRect();
+    return { x: at.left + at.width / 2, y: at.top + at.height / 2, pageAt: scrollY };
+  })()`);
+  const out = {};
+  await click(name.x, name.y);
+  await wait(1500);
+  const clicked = await nameState();
+  out.nameClick = { pageStays: clicked.y === name.pageAt, tipShown: clicked.tip, backStaysHidden: clicked.backHidden };
+  await click(1270, name.y);
+  out.clickElsewhere = { tipHidden: !(await nameState()).tip };
+  await send("Emulation.setTouchEmulationEnabled", { enabled: true });
+  await send("Input.synthesizeTapGesture", { x: name.x, y: name.y });
+  await wait(1500);
+  const tapped = await nameState();
+  out.nameTap = { pageStays: tapped.y === name.pageAt, tipShown: tapped.tip };
+  await send("Input.synthesizeTapGesture", { x: 1270, y: name.y });
+  await wait(400);
+  out.tapElsewhere = { tipHidden: !(await nameState()).tip };
+  await send("Emulation.setTouchEmulationEnabled", { enabled: false });
+  // After a click, the line stays as the pointer moves away.
+  await move(1270, name.y);
+  await click(name.x, name.y);
+  await move(1270, name.y);
+  await wait(200);
+  out.tip = { clickKeepsItAsPointerLeaves: !(await tip()).hidden };
+  await click(1270, name.y);
+  out.tip.clickElsewhereClosesIt = (await tip()).hidden;
+  // Pointing shows it, and the pointer can cross the gap to it, small moves at a time.
+  await move(name.x, name.y);
+  const crossing = await middle(".tip");
+  const pointed = await tip();
+  for (let y = name.y; y < crossing.top + 4; y += 2) await move(name.x, y);
+  out.tip.pointerCrossesToIt = !pointed.hidden && !(await tip()).hidden;
+  // A name in the line leaves it as it is when pointed at, and shows its own line when clicked.
+  const nested = await middle(".tip a.term");
+  await move(nested.x, nested.y);
+  await wait(200);
+  const pointedInIt = await tip();
+  out.tip.pointingAtNameInItKeepsIt = !pointedInIt.hidden && pointedInIt.words.includes("one thing a flow does");
+  await click(nested.x, nested.y);
+  const clickedInIt = await tip();
+  out.tip.clickingNameInItShowsThatLine = !clickedInIt.hidden && clickedInIt.words.includes("the steps of a behaviour");
+  await click(1270, name.y);
+  // A link in the line can be followed, by mouse and by keys, without leaving this page.
+  await read(`(() => {
+    window.followed = 0;
+    document.addEventListener("click", (event) => {
+      if (event.target.closest('.tip a[href^="https"]')) {
+        event.preventDefault();
+        window.followed += 1;
+      }
+    }, true);
+  })()`);
+  await move(1270, name.y);
+  await click(name.x, name.y);
+  const docs = await middle('.tip a[href^="https"]');
+  await move(docs.x, docs.y);
+  await click(docs.x, docs.y);
+  out.tip.linkInItFollowedByMouse = (await read("window.followed")) === 1;
+  out.tip.followingItClosesIt = (await tip()).hidden;
+  await move(1270, name.y);
+  await read(`document.querySelector("p a.term").focus()`);
+  await press("Enter", 13, "\r");
+  out.tip.enterMovesIntoIt = (await tip()).inTip;
+  await press("Tab", 9);
+  const tabbed = await read(`document.activeElement.matches('.tip a[href^="https"]')`);
+  await press("Enter", 13, "\r");
+  out.tip.linkInItFollowedByKeys = tabbed && (await read("window.followed")) === 2;
+  await read(`document.querySelector("p a.term").focus()`);
+  await press("Enter", 13, "\r");
+  await esc();
+  const closedByEsc = await tip();
+  out.tip.escClosesItAndFocusReturns = closedByEsc.hidden && closedByEsc.onName;
+  await read(`document.activeElement.blur()`);
   const state = () => read(`({ open: document.querySelector("dialog.flow-modal").open, y: scrollY, flow: document.querySelector(".modal-body").scrollTop, focusBack: document.activeElement === document.querySelector("a.to-flow") })`);
   const link = await read(`(async () => {
     const a = document.querySelector("a.to-flow");
@@ -235,9 +336,17 @@ async function realInput(port, url) {
     const at = a.getBoundingClientRect();
     return { x: at.left + at.width / 2, y: at.top + at.height / 2 };
   })()`);
-  const out = {};
   await click(link.x, link.y);
   const opened = await state();
+  // Esc closes a line shown in the modal first, and the modal after it.
+  const word = await middle(".modal-body .hit a.term");
+  await move(word.x, word.y);
+  await wait(200);
+  const inModal = await tip();
+  await esc();
+  const once = await state();
+  out.tip.escInModalClosesItFirst = !inModal.hidden && (await tip()).hidden && once.open;
+  await move(1270, 40);
   await wheel(20, 400);
   out.wheelOnDimmedPage = { pageStays: (await state()).y === opened.y };
   await wheel(640, 400);
