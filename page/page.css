@@ -70,7 +70,7 @@ figure { margin: 14px 0 22px; }
 .n.removed { text-decoration: line-through; opacity: .75; }
 .n .where { display: block; font: 400 11px/1.4 var(--mono); color: var(--muted); margin-top: 3px; }
 .n .to-change { display: block; font-size: 12px; margin-top: 3px; }
-.n .mk { display: inline-block; font: 600 10.5px/1.5 var(--body); letter-spacing: .04em; text-transform: uppercase; padding: 0 6px; border-radius: 999px; margin-right: 6px; vertical-align: 1px; text-decoration: none; }
+.mk { display: inline-block; font: 600 10.5px/1.5 var(--body); letter-spacing: .04em; text-transform: uppercase; padding: 0 6px; border-radius: 999px; margin-right: 6px; vertical-align: 1px; text-decoration: none; }
 .mk.new { color: var(--ok); border: 1px solid var(--ok); } .mk.chg { color: var(--chg); border: 1px solid var(--chg); } .mk.gone { color: var(--bad); border: 1px solid var(--bad); }
 .warn { font-size: 12.5px; line-height: 1.4; background: var(--note-soft); border: 1px solid var(--note); color: var(--fg); border-radius: 6px; padding: 5px 9px; text-align: left; }
 .warn b { color: var(--note); }
@@ -94,6 +94,18 @@ figure { margin: 14px 0 22px; }
 figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; max-width: 72ch; }
 .flowbox { margin: 18px 0; }
 .flowbox h3 { margin: 0 0 8px; }
+/* On a plan, a flow is a closed row: one line that opens in place. */
+details.flowbox { margin: 6px 0; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+details.flowbox > summary { position: relative; padding: 10px 14px 10px 34px; cursor: pointer; list-style: none; border-radius: 8px; }
+details.flowbox > summary::-webkit-details-marker { display: none; }
+details.flowbox > summary::before { content: ""; position: absolute; left: 15px; top: 17px; border-left: 7px solid var(--muted); border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+details.flowbox[open] > summary::before { transform: rotate(90deg); }
+details.flowbox > summary:hover { background: var(--accent-soft); }
+details.flowbox > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details.flowbox > summary h3 { display: inline; margin: 0; font-size: 1.1rem; }
+.row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 4px; font-size: 13px; color: var(--muted); }
+.row-meta .mk { margin-right: 0; }
+details.flowbox > figure { margin: 4px 14px 14px; }
 
 /* Comment, on every box: a small tag at its top right corner, shown on hover or focus, always on touch screens. */
 .row > .cell { position: relative; }

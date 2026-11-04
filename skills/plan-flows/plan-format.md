@@ -161,6 +161,10 @@ traces come in this order:
 
 The flows are the contract the code is written to. Write one for each way in that the change adds or touches.
 
+On the page each flow is a closed row that opens in place. Its line shows the flow's name, its new or removed tag or its
+counts of marked steps, and its number of steps. A question's `read`, or any other link, that names a flow or a step's
+`where` opens the row.
+
 ```json
 { "flow": { "name": "The way in, in plain words", "steps": [
   { "keyword": "Starts", "text": "who or what starts it: a request and who sends it, a person's action, a command, a schedule, a call into a library", "where": "file or function" },
