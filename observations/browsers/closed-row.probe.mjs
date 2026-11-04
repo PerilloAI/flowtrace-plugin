@@ -22,7 +22,7 @@ const git = (...args) => run("git", ["-C", scratch, ...args]);
 const plan = {
   title: "Export an order",
   sections: [
-    { heading: "What I'm asking", content: [{ p: "Approve it." }] },
+    { heading: "What I'm asking", content: [{ p: "Approve each step." }] },
     { heading: "What you'd see", content: [{ screens: { title: "Exporting an order", columns: [{ title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } }] },
     { heading: "Check your reading", content: [
       { question: { question: "Where does it start?", options: ["At Export", "At Import", "At Print"], answer: "A", read: "Export an order", why: "It starts there." } },
@@ -118,6 +118,10 @@ const checks = `
   const tipAt = tip.getBoundingClientRect();
   const termAt = term.getBoundingClientRect();
   out.tipInModal = { shown: !tip.hidden, inModal: modal.contains(tip), besideName: Math.min(Math.abs(tipAt.top - termAt.bottom), Math.abs(termAt.top - tipAt.bottom)) <= 8 };
+  const flowAt = body.scrollTop;
+  term.click();
+  await wait(100);
+  out.nameClickInModal = { modalStays: modal.open, flowStays: body.scrollTop === flowAt, tipShown: !tip.hidden };
   body.click();
 
   const comment = body.querySelector("button.cmt");
@@ -128,17 +132,17 @@ const checks = `
   stayed = await follow(toFlow);
   out.commentInCopy = { shown: commentShown, keptOnReopening: Boolean(body.querySelector(".cmt-box")), notOnPage: !row.querySelector(".cmt-box") };
 
-  const name = document.getElementById(body.querySelector("a.term").getAttribute("href").slice(1));
-  body.querySelector("a.term").click();
+  const change = document.getElementById(body.querySelector("a.to-change").getAttribute("href").slice(1));
+  body.querySelector("a.to-change").click();
   await settled();
-  out.linkOutOfModal = { closed: !modal.open, targetInView: inView(name), backShown: !back.hidden };
+  out.linkOutOfModal = { closed: !modal.open, targetInView: inView(change), backShown: !back.hidden };
   back.click();
   await settled();
   out.backToOpener = { linkInView: inView(toFlow), focused: document.activeElement === toFlow };
 
   closeAll();
   row.open = true;
-  const inRow = row.querySelector(".chart a.term");
+  const inRow = row.querySelector(".chart a.to-change");
   inRow.scrollIntoView({ block: "center", behavior: "instant" });
   await wait(100);
   inRow.click();
@@ -166,6 +170,16 @@ const checks = `
   back.click();
   await settled();
   out.seenInLink = { rowStaysClosed, screenInView, backLeavesRowClosed: !row.open };
+
+  const mention = document.querySelector("p a.term");
+  mention.scrollIntoView({ block: "center", behavior: "instant" });
+  await wait(100);
+  const pageAt = scrollY;
+  mention.click();
+  await settled();
+  out.nameClick = { pageStays: scrollY === pageAt, tipShown: !tip.hidden, lineInTip: tip.textContent.includes("one thing a flow does"), backStaysHidden: back.hidden };
+  document.body.click();
+  out.nameClick.clickElsewhereCloses = tip.hidden;
 
   out.namesOnLine = document.querySelectorAll("summary a.term").length;
   out.namesInChart = document.querySelectorAll("details.flowbox .chart a.term").length > 0;
@@ -210,6 +224,30 @@ async function realInput(port, url) {
     for (const type of ["keyDown", "keyUp"]) await send("Input.dispatchKeyEvent", { type, key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
     await wait(400);
   };
+  const nameState = () => read(`({ tip: !document.querySelector(".tip").hidden, y: scrollY, backHidden: document.querySelector("button.back").hidden })`);
+  const name = await read(`(async () => {
+    const a = document.querySelector("p a.term");
+    a.scrollIntoView({ block: "center", behavior: "instant" });
+    await new Promise((done) => setTimeout(done, 150));
+    const at = a.getBoundingClientRect();
+    return { x: at.left + at.width / 2, y: at.top + at.height / 2, pageAt: scrollY };
+  })()`);
+  const out = {};
+  await click(name.x, name.y);
+  await wait(1500);
+  const clicked = await nameState();
+  out.nameClick = { pageStays: clicked.y === name.pageAt, tipShown: clicked.tip, backStaysHidden: clicked.backHidden };
+  await click(1270, name.y);
+  out.clickElsewhere = { tipHidden: !(await nameState()).tip };
+  await send("Emulation.setTouchEmulationEnabled", { enabled: true });
+  await send("Input.synthesizeTapGesture", { x: name.x, y: name.y });
+  await wait(1500);
+  const tapped = await nameState();
+  out.nameTap = { pageStays: tapped.y === name.pageAt, tipShown: tapped.tip };
+  await send("Input.synthesizeTapGesture", { x: 1270, y: name.y });
+  await wait(400);
+  out.tapElsewhere = { tipHidden: !(await nameState()).tip };
+  await send("Emulation.setTouchEmulationEnabled", { enabled: false });
   const state = () => read(`({ open: document.querySelector("dialog.flow-modal").open, y: scrollY, flow: document.querySelector(".modal-body").scrollTop, focusBack: document.activeElement === document.querySelector("a.to-flow") })`);
   const link = await read(`(async () => {
     const a = document.querySelector("a.to-flow");
@@ -218,7 +256,6 @@ async function realInput(port, url) {
     const at = a.getBoundingClientRect();
     return { x: at.left + at.width / 2, y: at.top + at.height / 2 };
   })()`);
-  const out = {};
   await click(link.x, link.y);
   const opened = await state();
   await wheel(20, 400);

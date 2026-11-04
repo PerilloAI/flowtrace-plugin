@@ -70,8 +70,8 @@
   });
 })();
 
-// Pointing at a name, or moving to it with the keyboard, shows its line beside the mention and lights the mention, so
-// the reader keeps their place; clicking still goes to the line under Names.
+// Pointing at a name, moving to it with the keyboard, or clicking or tapping it shows its line beside the mention and
+// lights the mention, so the reader keeps their place. A click anywhere else, or Esc, closes it.
 (() => {
   const tip = document.createElement("div");
   tip.className = "tip";
@@ -90,6 +90,8 @@
   const show = (term) => {
     const dt = document.getElementById(decodeURIComponent(term.getAttribute("href").slice(1)));
     if (!dt || shown === term) return;
+    // Measured first: a name in the tip itself goes as the tip fills.
+    const at = term.getBoundingClientRect();
     hide();
     // In the modal, which sits above everything else on the page, the tip goes with it and stays put as it does.
     const host = term.closest("dialog") || document.body;
@@ -103,7 +105,6 @@
     shown = term;
     term.classList.add("lit");
     term.setAttribute("aria-describedby", tip.id);
-    const at = term.getBoundingClientRect();
     const width = tip.offsetWidth;
     const left = Math.min(Math.max(8, at.left), document.documentElement.clientWidth - width - 8);
     const below = at.bottom + 6 + tip.offsetHeight < innerHeight;
@@ -120,13 +121,18 @@
     if (term) show(term);
     else hide();
   });
-  document.addEventListener("click", hide);
+  document.addEventListener("click", (event) => {
+    const term = event.target.closest("a.term");
+    if (!term) return hide();
+    event.preventDefault();
+    show(term);
+  });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") hide();
   });
 })();
 
-// A link within the page (a name, a change, Seen in) scrolls to what it names and lights it; Back returns to the link
+// A link within the page (a change, Seen in) scrolls to what it names and lights it; Back returns to the link
 // clicked. Links followed from inside Names on this page add to the way back, so Back retraces them in turn.
 // A link to a flow or a flow's step (How it's built, Where to look, See it) opens a copy of the flow in a modal over the
 // page instead, whole, with the step lit. Esc, the close button or a click outside closes it, and the page is where it
@@ -193,7 +199,7 @@
     body.scrollTop = step ? body.scrollTop + step.getBoundingClientRect().top - body.getBoundingClientRect().top - body.clientHeight / 3 : 0;
   };
   document.addEventListener("click", (event) => {
-    const link = event.target.closest('a[href^="#"]');
+    const link = event.target.closest('a[href^="#"]:not(.term)');
     const target = link && document.getElementById(decodeURIComponent(link.getAttribute("href").slice(1)));
     if (!target) return;
     event.preventDefault();

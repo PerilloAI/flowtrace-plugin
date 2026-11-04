@@ -151,5 +151,5 @@ One item per name a newcomer wouldn't know, in alphabetical order, `also` holdin
 ] }
 ```
 
-The page links every mention of a name to its line, so each name means one thing: where the same word means something
-else, reword the sentence.
+Pointing at, clicking or tapping any mention of a name shows its line beside it, so each name means one thing: where
+the same word means something else, reword the sentence.

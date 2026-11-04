@@ -1,5 +1,5 @@
 {
-  "claim": "On a plan's page, a link to a flow or a flow's step opens a copy of the flow in a modal, whole, with the step lit and in view, its row left closed and the page where it was. The close button, a click outside and, with real input in Chrome, Esc close it and give the focus back to the link. Only the flow scrolls while it is open. A tip and Comment work in the copy, and a link out of the modal leaves it, with Back returning to the link that opened it. A row's line still opens and closes it in place, and links no name. Seen in Chrome and in the Mac's WebKit. Safari itself has not run it: its remote automation is off. WebKit's page was hidden at this capture (the screen was off), so its scrolls were not smooth, and it has not had a real Esc, wheel or click.",
+  "claim": "On a plan's page, a click on a name shows its line beside it and moves nothing, on the page or in the modal, and a click anywhere else closes it. With real input in Chrome, a click and a tap do this. A link to a flow or a flow's step opens a copy of the flow in a modal, whole, with the step lit and in view, its row left closed and the page where it was. The close button, a click outside and, with real input in Chrome, Esc close it and give the focus back to the link. Only the flow scrolls while it is open. Comment works in the copy, and a link out of the modal leaves it, with Back returning to the link that opened it. A row's line still opens and closes it in place, and links no name. Seen in Chrome and in the Mac's WebKit, which has had no real input. Safari itself has not run it: its remote automation is off.",
   "source": "Google Chrome 156 headless, and WebKit 21624 in a WKWebView on macOS 26.5, where Safari 26.5.2 is installed",
   "observed": "2026-11-03",
   "how": "node observations/browsers/closed-row.probe.mjs on a Mac. It also runs Safari once Safari's Settings allow remote automation (Developer section), and says on stderr when they don't.",
@@ -50,6 +50,11 @@
         "inModal": true,
         "besideName": true
       },
+      "nameClickInModal": {
+        "modalStays": true,
+        "flowStays": true,
+        "tipShown": true
+      },
       "commentInCopy": {
         "shown": true,
         "keptOnReopening": true,
@@ -77,9 +82,31 @@
         "screenInView": true,
         "backLeavesRowClosed": true
       },
+      "nameClick": {
+        "pageStays": true,
+        "tipShown": true,
+        "lineInTip": true,
+        "backStaysHidden": true,
+        "clickElsewhereCloses": true
+      },
       "namesOnLine": 0,
       "namesInChart": true,
       "realInput": {
+        "nameClick": {
+          "pageStays": true,
+          "tipShown": true,
+          "backStaysHidden": true
+        },
+        "clickElsewhere": {
+          "tipHidden": true
+        },
+        "nameTap": {
+          "pageStays": true,
+          "tipShown": true
+        },
+        "tapElsewhere": {
+          "tipHidden": true
+        },
         "wheelOnDimmedPage": {
           "pageStays": true
         },
@@ -104,7 +131,7 @@
     },
     {
       "name": "WebKit 21624.2.5.11.8 in a WKWebView",
-      "pageHidden": true,
+      "pageHidden": false,
       "closedAtLoad": true,
       "linkToRow": {
         "modalOpen": true,
@@ -147,6 +174,11 @@
         "inModal": true,
         "besideName": true
       },
+      "nameClickInModal": {
+        "modalStays": true,
+        "flowStays": true,
+        "tipShown": true
+      },
       "commentInCopy": {
         "shown": true,
         "keptOnReopening": true,
@@ -173,6 +205,13 @@
         "rowStaysClosed": true,
         "screenInView": true,
         "backLeavesRowClosed": true
+      },
+      "nameClick": {
+        "pageStays": true,
+        "tipShown": true,
+        "lineInTip": true,
+        "backStaysHidden": true,
+        "clickElsewhereCloses": true
       },
       "namesOnLine": 0,
       "namesInChart": true
