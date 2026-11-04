@@ -305,6 +305,17 @@ test("a flow's row lists each screen that links to it, once", () => {
   assert.ok(html.includes('<span>Seen in: <a href="#v-exporting-order-1042">Exporting order 1042</a>, <a href="#v-retrying-an-export">Retrying an export</a></span>'));
 });
 
+test("a link in a flow's name or a screen's title shows as its words inside the links to them, which can't hold another", () => {
+  const html = drawnPlan((content, data) => {
+    content.push({ flow: { name: "Retry, see [the docs](https://example.com/docs)", mark: "+", steps: [{ keyword: "Starts", text: "The retry timer fires", change: "Retry once" }] } });
+    data.sections[2].content.push({ screens: { title: "Retrying, see [the docs](https://example.com/docs)", columns: [{ title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } });
+  });
+  assert.ok(html.includes("How it's built: Retry, see the docs</a>"));
+  assert.ok(html.includes(">Retrying, see the docs</a>"));
+  assert.ok(html.includes('Retry, see <a href="https://example.com/docs">the docs</a></h3>'));
+  assert.doesNotMatch(html, /<a [^>]*>[^<]*<a /);
+});
+
 test("a screen's step naming a change no flow's step names stops the drawing, naming its line", () => {
   const dir = repo();
   const data = plan();
