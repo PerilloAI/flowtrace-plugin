@@ -36,7 +36,7 @@ const plan = {
     { heading: "How it's built", content: [
       { flow: { name: "Export an order", steps: [
         { keyword: "Starts", text: "Ana presses Export", where: "exportOrder" },
-        ...Array.from({ length: 40 }, (_, k) => ({ keyword: "Step", text: `Do part ${k + 1}`, ...(k === 30 ? { change: "Retry once" } : {}) })),
+        ...Array.from({ length: 40 }, (_, k) => ({ keyword: "Step", text: k === 30 ? "Do part 31, as [the changes say](#s-the-changes-and-why)" : `Do part ${k + 1}`, ...(k === 30 ? { change: "Retry once" } : {}) })),
         { keyword: "Returns", text: "the file" },
       ] } },
       { flow: { name: "Load an order", steps: [{ keyword: "Starts", text: "Ana opens an order" }, { keyword: "Step", text: "Load the order", where: "loadOrder" }] } },
@@ -123,6 +123,11 @@ const checks = `
   await wait(100);
   out.nameClickInModal = { modalStays: modal.open, flowStays: body.scrollTop === flowAt, tipShown: !tip.hidden };
   body.click();
+  const inCopy = body.querySelector("a.to-change");
+  inCopy.click();
+  await wait(100);
+  out.changeClickInModal = { modalStays: modal.open, flowStays: body.scrollTop === flowAt, tipShown: !tip.hidden, rowInTip: tip.textContent.includes("It is slow") };
+  body.click();
 
   const comment = body.querySelector("button.cmt");
   comment.click();
@@ -132,17 +137,17 @@ const checks = `
   stayed = await follow(toFlow);
   out.commentInCopy = { shown: commentShown, keptOnReopening: Boolean(body.querySelector(".cmt-box")), notOnPage: !row.querySelector(".cmt-box") };
 
-  const change = document.getElementById(body.querySelector("a.to-change").getAttribute("href").slice(1));
-  body.querySelector("a.to-change").click();
+  const seenOnScreen = document.getElementById(body.querySelector(".row-meta a").getAttribute("href").slice(1));
+  body.querySelector(".row-meta a").click();
   await settled();
-  out.linkOutOfModal = { closed: !modal.open, targetInView: inView(change), backShown: !back.hidden };
+  out.linkOutOfModal = { closed: !modal.open, targetInView: inView(seenOnScreen), backShown: !back.hidden };
   back.click();
   await settled();
   out.backToOpener = { linkInView: inView(toFlow), focused: document.activeElement === toFlow };
 
   closeAll();
   row.open = true;
-  const inRow = row.querySelector(".chart a.to-change");
+  const inRow = row.querySelector('.chart a[href="#s-the-changes-and-why"]');
   inRow.scrollIntoView({ block: "center", behavior: "instant" });
   await wait(100);
   inRow.click();
@@ -180,6 +185,16 @@ const checks = `
   out.nameClick = { pageStays: scrollY === pageAt, tipShown: !tip.hidden, lineInTip: tip.textContent.includes("one thing a flow does"), backStaysHidden: back.hidden };
   document.body.click();
   out.nameClick.clickElsewhereCloses = tip.hidden;
+
+  const onScreen = document.querySelector("a.to-change");
+  onScreen.scrollIntoView({ block: "center", behavior: "instant" });
+  await wait(100);
+  const screenAt = scrollY;
+  onScreen.click();
+  await settled();
+  out.changeClick = { pageStays: scrollY === screenAt, tipShown: !tip.hidden, titleInTip: tip.textContent.includes("Retry once"), getsInTip: tip.textContent.includes("A file"), whyInTip: tip.textContent.includes("It is slow"), backStaysHidden: back.hidden };
+  document.body.click();
+  out.changeClick.clickElsewhereCloses = tip.hidden;
 
   out.namesOnLine = document.querySelectorAll("summary a.term").length;
   out.namesInChart = document.querySelectorAll("details.flowbox .chart a.term").length > 0;
@@ -248,6 +263,19 @@ async function realInput(port, url) {
   await wait(400);
   out.tapElsewhere = { tipHidden: !(await nameState()).tip };
   await send("Emulation.setTouchEmulationEnabled", { enabled: false });
+  const change = await read(`(async () => {
+    const a = document.querySelector("a.to-change");
+    a.scrollIntoView({ block: "center", behavior: "instant" });
+    await new Promise((done) => setTimeout(done, 150));
+    const at = a.getBoundingClientRect();
+    return { x: at.left + at.width / 2, y: at.top + at.height / 2, pageAt: scrollY };
+  })()`);
+  await click(change.x, change.y);
+  await wait(1500);
+  const changed = await nameState();
+  out.changeClick = { pageStays: changed.y === change.pageAt, tipShown: changed.tip, backStaysHidden: changed.backHidden };
+  await click(1270, change.y);
+  out.changeClickElsewhere = { tipHidden: !(await nameState()).tip };
   const state = () => read(`({ open: document.querySelector("dialog.flow-modal").open, y: scrollY, flow: document.querySelector(".modal-body").scrollTop, focusBack: document.activeElement === document.querySelector("a.to-flow") })`);
   const link = await read(`(async () => {
     const a = document.querySelector("a.to-flow");

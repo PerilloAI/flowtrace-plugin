@@ -70,8 +70,8 @@
   });
 })();
 
-// Pointing at a name, moving to it with the keyboard, or clicking or tapping it shows its line beside the mention and
-// lights the mention, so the reader keeps their place. A click anywhere else, or Esc, closes it.
+// Pointing at a name or a step's change, moving to it with the keyboard, or clicking or tapping it shows its line or row
+// beside the mention and lights the mention, so the reader keeps their place. A click anywhere else, or Esc, closes it.
 (() => {
   const tip = document.createElement("div");
   tip.className = "tip";
@@ -80,6 +80,19 @@
   tip.hidden = true;
   document.body.append(tip);
   let shown = null;
+  const mentions = "a.term, a.to-change";
+  // A name's line under Names, or a change's row of The changes and why, each cell under its heading.
+  const words = (target) => {
+    const strong = (text) => Object.assign(document.createElement("strong"), { textContent: text });
+    const copy = (el) => [...el.childNodes].map((n) => n.cloneNode(true));
+    if (target.matches("dt")) return [strong(target.textContent), " ", ...copy(target.nextElementSibling)];
+    const heads = target.closest("table").querySelectorAll("th");
+    return [strong(target.cells[0].textContent), ...[...target.cells].slice(1).map((cell, k) => {
+      const part = document.createElement("div");
+      part.append(Object.assign(document.createElement("span"), { className: "tag alt", textContent: heads[k + 1].textContent }), " ", ...copy(cell));
+      return part;
+    })];
+  };
   const hide = () => {
     if (!shown) return;
     shown.classList.remove("lit");
@@ -88,8 +101,8 @@
     tip.hidden = true;
   };
   const show = (term) => {
-    const dt = document.getElementById(decodeURIComponent(term.getAttribute("href").slice(1)));
-    if (!dt || shown === term) return;
+    const target = document.getElementById(decodeURIComponent(term.getAttribute("href").slice(1)));
+    if (!target || shown === term) return;
     // Measured first: a name in the tip itself goes as the tip fills.
     const at = term.getBoundingClientRect();
     hide();
@@ -98,9 +111,7 @@
     if (tip.parentElement !== host) host.append(tip);
     const [dx, dy] = host === document.body ? [scrollX, scrollY] : [0, 0];
     tip.style.position = host === document.body ? "" : "fixed";
-    const name = document.createElement("strong");
-    name.textContent = dt.textContent;
-    tip.replaceChildren(name, " ", ...[...dt.nextElementSibling.childNodes].map((n) => n.cloneNode(true)));
+    tip.replaceChildren(...words(target));
     tip.hidden = false;
     shown = term;
     term.classList.add("lit");
@@ -112,17 +123,17 @@
     tip.style.top = `${(below ? at.bottom + 6 : at.top - 6 - tip.offsetHeight) + dy}px`;
   };
   document.addEventListener("pointerover", (event) => {
-    const term = event.pointerType === "mouse" && event.target.closest("a.term");
+    const term = event.pointerType === "mouse" && event.target.closest(mentions);
     if (term) show(term);
     else if (shown && !event.target.closest(".tip")) hide();
   });
   document.addEventListener("focusin", (event) => {
-    const term = event.target.closest("a.term");
+    const term = event.target.closest(mentions);
     if (term) show(term);
     else hide();
   });
   document.addEventListener("click", (event) => {
-    const term = event.target.closest("a.term");
+    const term = event.target.closest(mentions);
     if (!term) return hide();
     event.preventDefault();
     show(term);
@@ -132,8 +143,8 @@
   });
 })();
 
-// A link within the page (a change, Seen in) scrolls to what it names and lights it; Back returns to the link
-// clicked. Links followed from inside Names on this page add to the way back, so Back retraces them in turn.
+// A link within the page (Seen in, or Where to look to a chart or section) scrolls to what it names and lights it; Back
+// returns to the link clicked. Links followed from inside Names on this page add to the way back, so Back retraces them in turn.
 // A link to a flow or a flow's step (How it's built, Where to look, See it) opens a copy of the flow in a modal over the
 // page instead, whole, with the step lit. Esc, the close button or a click outside closes it, and the page is where it
 // was. A link inside the modal to anywhere else leaves it, and Back returns to the link that opened it.
@@ -199,7 +210,7 @@
     body.scrollTop = step ? body.scrollTop + step.getBoundingClientRect().top - body.getBoundingClientRect().top - body.clientHeight / 3 : 0;
   };
   document.addEventListener("click", (event) => {
-    const link = event.target.closest('a[href^="#"]:not(.term)');
+    const link = event.target.closest('a[href^="#"]:not(.term, .to-change)');
     const target = link && document.getElementById(decodeURIComponent(link.getAttribute("href").slice(1)));
     if (!target) return;
     event.preventDefault();
