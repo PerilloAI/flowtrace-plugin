@@ -69,8 +69,8 @@ A plan is **approved at its current fingerprint** when the fingerprint in its `a
 
 `screens`, `trace` and `choice` draw charts, their steps as blocks.md's chart gives them.
 
-A step that a change makes names it in `change`, the change's title. On the page it is a link to that row of The
-changes and why. **Checked**: each `change` names a title in `changes`, word for word.
+A step that a change makes names it in `change`, the change's title. On the page it is a link that shows that row of
+The changes and why beside it. **Checked**: each `change` names a title in `changes`, word for word.
 
 ## case
 

@@ -23,7 +23,7 @@ const plan = {
   title: "Export an order",
   sections: [
     { heading: "What I'm asking", content: [{ p: "Approve each step, and see [the last answer](#w-lastanswer)." }] },
-    { heading: "What you'd see", content: [{ screens: { title: "Exporting an order", columns: [{ title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } }] },
+    { heading: "What you'd see", content: [{ screens: { title: "Exporting an order", columns: [{ title: "Today", steps: [{ text: "It gives up" }] }, { title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } }] },
     { heading: "Check your reading", content: [
       { question: { question: "Where does it start?", options: ["At Export", "At Import", "At Print"], answer: "A", read: "Export an order", why: "It starts there." } },
       { question: { question: "What loads the order?", options: ["exportOrder", "loadOrder", "Nothing"], answer: "B", read: "loadOrder", why: "That step does." } },
@@ -32,11 +32,11 @@ const plan = {
       { table: { head: ["The plan rests on", "How it was proved", "Where"], rows: [["An order loads", "Read it", "loadOrder"]] } },
       ...Array.from({ length: 80 }, (_, k) => ({ p: `Line ${k + 1} between the links and the rows.` })),
     ] },
-    { heading: "The changes and why", content: [{ changes: [{ title: "Retry once", gets: "A file", why: "It is slow" }] }] },
+    { heading: "The changes and why", content: [{ changes: [{ title: "Retry once", gets: "A file", why: "It is slow, as [the report](https://example.com/report) says, and one more try gets most exports through" }] }] },
     { heading: "How it's built", content: [
       { flow: { name: "Export an order", steps: [
         { keyword: "Starts", text: "Ana presses Export", where: "exportOrder" },
-        ...Array.from({ length: 40 }, (_, k) => ({ keyword: "Step", text: `Do part ${k + 1}`, ...(k === 30 ? { change: "Retry once" } : {}) })),
+        ...Array.from({ length: 40 }, (_, k) => ({ keyword: "Step", text: k === 30 ? "Do part 31, as [the changes say](#s-the-changes-and-why)" : `Do part ${k + 1}`, ...(k === 30 ? { change: "Retry once" } : {}) })),
         { keyword: "Returns", text: "the file" },
       ] } },
       { flow: { name: "Load an order", steps: [{ keyword: "Starts", text: "Ana opens an order" }, { keyword: "Step", text: "Load the order", where: "loadOrder" }] } },
@@ -133,6 +133,11 @@ const checks = `
   await wait(100);
   out.nameClickInModal = { modalStays: modal.open, flowStays: body.scrollTop === flowAt, tipShown: !tip.hidden };
   body.click();
+  const inCopy = body.querySelector("a.to-change");
+  inCopy.click();
+  await wait(100);
+  out.changeClickInModal = { modalStays: modal.open, flowStays: body.scrollTop === flowAt, tipShown: !tip.hidden, rowInTip: tip.textContent.includes("It is slow") };
+  body.click();
 
   const comment = body.querySelector("button.cmt");
   comment.click();
@@ -142,17 +147,17 @@ const checks = `
   stayed = await follow(toFlow);
   out.commentInCopy = { shown: commentShown, keptOnReopening: Boolean(body.querySelector(".cmt-box")), notOnPage: !row.querySelector(".cmt-box") };
 
-  const change = document.getElementById(body.querySelector("a.to-change").getAttribute("href").slice(1));
-  body.querySelector("a.to-change").click();
+  const seenOnScreen = document.getElementById(body.querySelector(".row-meta a").getAttribute("href").slice(1));
+  body.querySelector(".row-meta a").click();
   await settled();
-  out.linkOutOfModal = { closed: !modal.open, targetInView: inView(change), backShown: !back.hidden };
+  out.linkOutOfModal = { closed: !modal.open, targetInView: inView(seenOnScreen), backShown: !back.hidden };
   back.click();
   await settled();
   out.backToOpener = { linkInView: inView(toFlow), focused: document.activeElement === toFlow };
 
   closeAll();
   row.open = true;
-  const inRow = row.querySelector(".chart a.to-change");
+  const inRow = row.querySelector('.chart a[href="#s-the-changes-and-why"]');
   inRow.scrollIntoView({ block: "center", behavior: "instant" });
   await wait(100);
   inRow.click();
@@ -191,6 +196,20 @@ const checks = `
   document.body.click();
   out.nameClick.focusBackOnName = document.activeElement === mention;
   out.nameClick.clickElsewhereCloses = tip.hidden;
+
+  const onScreen = document.querySelector("a.to-change");
+  onScreen.scrollIntoView({ block: "center", behavior: "instant" });
+  await wait(100);
+  const screenAt = scrollY;
+  onScreen.click();
+  await settled();
+  const boxAt = tip.getBoundingClientRect();
+  const builtWords = document.createRange();
+  builtWords.selectNodeContents(document.querySelector("a.to-flow"));
+  const builtAt = builtWords.getBoundingClientRect();
+  out.changeClick = { pageStays: scrollY === screenAt, tipShown: !tip.hidden, titleInTip: tip.textContent.includes("Retry once"), getsInTip: tip.textContent.includes("A file"), whyInTip: tip.textContent.includes("It is slow"), backStaysHidden: back.hidden, howItsBuiltUncovered: boxAt.bottom <= builtAt.top || boxAt.top >= builtAt.bottom || boxAt.right <= builtAt.left || boxAt.left >= builtAt.right };
+  document.body.click();
+  out.changeClick.clickElsewhereCloses = tip.hidden;
 
   out.namesOnLine = document.querySelectorAll("summary a.term").length;
   out.namesInChart = document.querySelectorAll("details.flowbox .chart a.term").length > 0;
@@ -328,6 +347,41 @@ async function realInput(port, url) {
   const closedByEsc = await tip();
   out.tip.escClosesItAndFocusReturns = closedByEsc.hidden && closedByEsc.onName;
   await read(`document.activeElement.blur()`);
+  const change = await read(`(async () => {
+    const a = document.querySelector("a.to-change");
+    a.scrollIntoView({ block: "center", behavior: "instant" });
+    await new Promise((done) => setTimeout(done, 150));
+    const at = a.getBoundingClientRect();
+    return { x: at.left + at.width / 2, y: at.top + at.height / 2, pageAt: scrollY };
+  })()`);
+  await click(change.x, change.y);
+  await wait(1500);
+  const changed = await nameState();
+  out.changeClick = { pageStays: changed.y === change.pageAt, tipShown: changed.tip, backStaysHidden: changed.backHidden };
+  await click(1270, change.y);
+  out.changeClickElsewhere = { tipHidden: !(await nameState()).tip };
+  // A link in the row can be followed, and the row leaves How it's built to be clicked first time.
+  await move(1270, change.y);
+  await click(change.x, change.y);
+  const followedBefore = await read("window.followed");
+  const report = await middle('.tip a[href^="https"]');
+  await move(report.x, report.y);
+  await click(report.x, report.y);
+  out.changeTip = { linkInItFollowed: (await read("window.followed")) === followedBefore + 1, followingItClosesIt: (await tip()).hidden };
+  await move(1270, change.y);
+  await click(change.x, change.y);
+  // The start of the link's words, which the row reaches first.
+  const built = await read(`(() => {
+    const words = document.createRange();
+    words.selectNodeContents(document.querySelector("a.to-flow"));
+    const at = words.getBoundingClientRect();
+    return { x: at.left + 6, y: at.top + at.height / 2 };
+  })()`);
+  await move(built.x, built.y);
+  await click(built.x, built.y);
+  out.changeTip.howItsBuiltOpensOnFirstClick = await read(`document.querySelector("dialog").open`);
+  await esc();
+  await move(1270, change.y);
   const state = () => read(`({ open: document.querySelector("dialog.flow-modal").open, y: scrollY, flow: document.querySelector(".modal-body").scrollTop, focusBack: document.activeElement === document.querySelector("a.to-flow") })`);
   const link = await read(`(async () => {
     const a = document.querySelector("a.to-flow");

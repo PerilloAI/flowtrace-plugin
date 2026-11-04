@@ -262,7 +262,7 @@ test("in each browser tried, a link to a flow opens it in a modal over the page,
   const seen = observation("browsers/closed-row").evidence;
   assert.ok(seen.length >= 2);
   for (const browser of seen) {
-    const { name, pageHidden: _, realInput: __, nameClick: ___, nameClickInModal: ____, ...checks } = browser;
+    const { name, pageHidden: _, realInput: __, nameClick: ___, nameClickInModal: ____, changeClick: _____, changeClickInModal: ______, ...checks } = browser;
     assert.deepEqual(checks, {
       closedAtLoad: true,
       linkToRow: { modalOpen: true, rowStaysClosed: true, pageStays: true, nameInBar: true, wholeFlow: true, atTop: true, stepLit: false, idsUnique: true, focusInModal: true, focusOnFlow: true },
@@ -286,7 +286,7 @@ test("in each browser tried, a link to a flow opens it in a modal over the page,
 
 test("with real input in Chrome, Esc and a click outside close the modal, a drag let go outside doesn't, the keys scroll from the lit step, and only the flow scrolls while it is open", () => {
   const chrome = observation("browsers/closed-row").evidence.find((browser) => browser.realInput);
-  const { nameClick: _, clickElsewhere: __, nameTap: ___, tapElsewhere: ____, tip: _____, ...modal } = chrome.realInput;
+  const { nameClick: _, clickElsewhere: __, nameTap: ___, tapElsewhere: ____, tip: _____, changeClick: ______, changeClickElsewhere: _______, changeTip: ________, ...modal } = chrome.realInput;
   assert.deepEqual(modal, {
     wheelOnDimmedPage: { pageStays: true },
     wheelOnFlow: { flowMoves: true, pageStays: true },
@@ -332,6 +332,30 @@ test("with real input in Chrome, a name's line stays for the pointer to reach, a
     escClosesItAndFocusReturns: true,
     escInModalClosesItFirst: true,
   });
+});
+
+test("in each browser tried, a click on a step's change shows its row beside it, and neither the page nor the modal moves", () => {
+  const seen = observation("browsers/closed-row").evidence;
+  assert.ok(seen.length >= 2);
+  for (const browser of seen) {
+    assert.deepEqual(browser.changeClick, { pageStays: true, tipShown: true, titleInTip: true, getsInTip: true, whyInTip: true, backStaysHidden: true, howItsBuiltUncovered: true, clickElsewhereCloses: true }, browser.name);
+    assert.deepEqual(browser.changeClickInModal, { modalStays: true, flowStays: true, tipShown: true, rowInTip: true }, browser.name);
+  }
+});
+
+test("with a real click in Chrome, a step's change shows its row, the page stays, and a click elsewhere closes it", () => {
+  const { changeClick, changeClickElsewhere, changeTip } = observation("browsers/closed-row").evidence.find((browser) => browser.realInput).realInput;
+  assert.deepEqual({ changeClick, changeClickElsewhere, changeTip }, {
+    changeClick: { pageStays: true, tipShown: true, backStaysHidden: true },
+    changeClickElsewhere: { tipHidden: true },
+    changeTip: { linkInItFollowed: true, followingItClosesIt: true, howItsBuiltOpensOnFirstClick: true },
+  });
+});
+
+test("a step's change names its row by id, for the page to show beside it", () => {
+  const html = drawnPlan(() => {});
+  assert.ok(html.includes('<a class="to-change" href="#c-retry-once">change: Retry once</a>'));
+  assert.ok(html.includes('<tr id="c-retry-once">'));
 });
 
 test("a flow's modal is the script's, so a page where the script doesn't run has none", () => {

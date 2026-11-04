@@ -1,5 +1,5 @@
 {
-  "claim": "On a plan's page, a click on a name shows its line beside it and moves nothing, on the page or in the modal, and a click anywhere else closes it. With real input in Chrome, a click and a tap do this, the line stays as the pointer leaves after a click, the pointer can cross to a line it points at, a name or a link in a line works by mouse and keys, and Esc closes a line before the modal under it. A link to a flow or a flow's step opens a copy of the flow in a modal, whole, with the step lit, in view both ways and holding the focus, so the keys scroll from it, its row left closed and the page where it was. The close button, a click outside and, with real input in Chrome, Esc close it and give the focus back to the link, while a drag let go outside leaves it open. Only the flow scrolls while it is open. Comment works in the copy, and a link out of the modal leaves it, with Back returning to the link that opened it. A row's line still opens and closes it in place, and links no name. Seen in Chrome and in the Mac's WebKit, which has had no real input. Safari itself has not run it: its remote automation is off.",
+  "claim": "On a plan's page, a click on a name or a step's change shows its line or row beside it and moves nothing, on the page or in the modal, and a click anywhere else closes it. With real input in Chrome, a click does this for both and a tap for a name, the line stays as the pointer leaves after a click, the pointer can cross to a line it points at, a name or a link in a line works by mouse and keys, a change's row leaves How it's built to be clicked, and Esc closes a line before the modal under it. A link to a flow or a flow's step opens a copy of the flow in a modal, whole, with the step lit, in view both ways and holding the focus, so the keys scroll from it, its row left closed and the page where it was. The close button, a click outside and, with real input in Chrome, Esc close it and give the focus back to the link, while a drag let go outside leaves it open. Only the flow scrolls while it is open. Comment works in the copy, and a link out of the modal leaves it, with Back returning to the link that opened it. A row's line still opens and closes it in place, and links no name. Seen in Chrome and in the Mac's WebKit, which has had no real input. Safari itself has not run it: its remote automation is off.",
   "source": "Google Chrome 156 headless, and WebKit 21624 in a WKWebView on macOS 26.5, where Safari 26.5.2 is installed",
   "observed": "2026-11-03",
   "how": "node observations/browsers/closed-row.probe.mjs on a Mac. It also runs Safari once Safari's Settings allow remote automation (Developer section), and says on stderr when they don't.",
@@ -63,6 +63,12 @@
         "flowStays": true,
         "tipShown": true
       },
+      "changeClickInModal": {
+        "modalStays": true,
+        "flowStays": true,
+        "tipShown": true,
+        "rowInTip": true
+      },
       "commentInCopy": {
         "shown": true,
         "keptOnReopening": true,
@@ -99,6 +105,16 @@
         "focusBackOnName": true,
         "clickElsewhereCloses": true
       },
+      "changeClick": {
+        "pageStays": true,
+        "tipShown": true,
+        "titleInTip": true,
+        "getsInTip": true,
+        "whyInTip": true,
+        "backStaysHidden": true,
+        "howItsBuiltUncovered": true,
+        "clickElsewhereCloses": true
+      },
       "namesOnLine": 0,
       "namesInChart": true,
       "realInput": {
@@ -129,6 +145,19 @@
           "linkInItFollowedByKeys": true,
           "escClosesItAndFocusReturns": true,
           "escInModalClosesItFirst": true
+        },
+        "changeClick": {
+          "pageStays": true,
+          "tipShown": true,
+          "backStaysHidden": true
+        },
+        "changeClickElsewhere": {
+          "tipHidden": true
+        },
+        "changeTip": {
+          "linkInItFollowed": true,
+          "followingItClosesIt": true,
+          "howItsBuiltOpensOnFirstClick": true
         },
         "wheelOnDimmedPage": {
           "pageStays": true
@@ -219,6 +248,12 @@
         "flowStays": true,
         "tipShown": true
       },
+      "changeClickInModal": {
+        "modalStays": true,
+        "flowStays": true,
+        "tipShown": true,
+        "rowInTip": true
+      },
       "commentInCopy": {
         "shown": true,
         "keptOnReopening": true,
@@ -253,6 +288,16 @@
         "backStaysHidden": true,
         "keysMoveIntoTip": true,
         "focusBackOnName": true,
+        "clickElsewhereCloses": true
+      },
+      "changeClick": {
+        "pageStays": true,
+        "tipShown": true,
+        "titleInTip": true,
+        "getsInTip": true,
+        "whyInTip": true,
+        "backStaysHidden": true,
+        "howItsBuiltUncovered": true,
         "clickElsewhereCloses": true
       },
       "namesOnLine": 0,
