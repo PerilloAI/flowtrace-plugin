@@ -286,7 +286,7 @@ test("in each browser tried, a link to a flow opens it in a modal over the page,
 
 test("with real input in Chrome, Esc and a click outside close the modal, a drag let go outside doesn't, the keys scroll from the lit step, and only the flow scrolls while it is open", () => {
   const chrome = observation("browsers/closed-row").evidence.find((browser) => browser.realInput);
-  const { nameClick: _, clickElsewhere: __, nameTap: ___, tapElsewhere: ____, ...modal } = chrome.realInput;
+  const { nameClick: _, clickElsewhere: __, nameTap: ___, tapElsewhere: ____, tip: _____, ...modal } = chrome.realInput;
   assert.deepEqual(modal, {
     wheelOnDimmedPage: { pageStays: true },
     wheelOnFlow: { flowMoves: true, pageStays: true },
@@ -302,7 +302,7 @@ test("in each browser tried, a click on a name shows its line beside it, and nei
   const seen = observation("browsers/closed-row").evidence;
   assert.ok(seen.length >= 2);
   for (const browser of seen) {
-    assert.deepEqual(browser.nameClick, { pageStays: true, tipShown: true, lineInTip: true, backStaysHidden: true, clickElsewhereCloses: true }, browser.name);
+    assert.deepEqual(browser.nameClick, { pageStays: true, tipShown: true, lineInTip: true, backStaysHidden: true, keysMoveIntoTip: true, focusBackOnName: true, clickElsewhereCloses: true }, browser.name);
     assert.deepEqual(browser.nameClickInModal, { modalStays: true, flowStays: true, tipShown: true }, browser.name);
   }
 });
@@ -314,6 +314,23 @@ test("with a real click and a real tap in Chrome, a name shows its line, the pag
     clickElsewhere: { tipHidden: true },
     nameTap: { pageStays: true, tipShown: true },
     tapElsewhere: { tipHidden: true },
+  });
+});
+
+test("with real input in Chrome, a name's line stays for the pointer to reach, and a link in it can be followed by mouse and keys", () => {
+  const { tip } = observation("browsers/closed-row").evidence.find((browser) => browser.realInput).realInput;
+  assert.deepEqual(tip, {
+    clickKeepsItAsPointerLeaves: true,
+    clickElsewhereClosesIt: true,
+    pointerCrossesToIt: true,
+    pointingAtNameInItKeepsIt: true,
+    clickingNameInItShowsThatLine: true,
+    linkInItFollowedByMouse: true,
+    followingItClosesIt: true,
+    enterMovesIntoIt: true,
+    linkInItFollowedByKeys: true,
+    escClosesItAndFocusReturns: true,
+    escInModalClosesItFirst: true,
   });
 });
 

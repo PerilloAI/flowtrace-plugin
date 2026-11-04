@@ -28,8 +28,8 @@
   });
 })();
 
-// Every mention of a name links to its line under Names on this page, outside headings, buttons, links and a row's
-// line, where a click opens the row.
+// Every mention of a name becomes a link naming its line under Names on this page, which the tip below shows beside it,
+// outside headings, buttons, links and a row's line, where a click opens the row.
 (() => {
   const spellings = [];
   document.querySelectorAll(".names dt[id]").forEach((dt) => {
@@ -71,7 +71,8 @@
 })();
 
 // Pointing at a name, moving to it with the keyboard, or clicking or tapping it shows its line beside the mention and
-// lights the mention, so the reader keeps their place. A click anywhere else, or Esc, closes it.
+// lights the mention, so the reader keeps their place. Pointing shows it while the pointer is on the name or the line. A
+// click or tap keeps it, so a link in the line can be followed, until a click anywhere else or Esc.
 (() => {
   const tip = document.createElement("div");
   tip.className = "tip";
@@ -79,13 +80,21 @@
   tip.setAttribute("role", "tooltip");
   tip.hidden = true;
   document.body.append(tip);
-  let shown = null;
+  let shown = null, pinned = false, returning = false;
   const hide = () => {
     if (!shown) return;
+    const within = tip.contains(document.activeElement);
     shown.classList.remove("lit");
     shown.removeAttribute("aria-describedby");
     shown = null;
+    pinned = false;
     tip.hidden = true;
+    // Focus in the tip goes back to the mention it opened from, without opening it again.
+    if (within) {
+      returning = true;
+      tip.from.focus({ preventScroll: true });
+      returning = false;
+    }
   };
   const show = (term) => {
     const dt = document.getElementById(decodeURIComponent(term.getAttribute("href").slice(1)));
@@ -93,6 +102,8 @@
     // Measured first: a name in the tip itself goes as the tip fills.
     const at = term.getBoundingClientRect();
     hide();
+    // The mention on the page this tip opened from, which a name in the tip itself doesn't replace.
+    if (!term.closest(".tip")) tip.from = term;
     // In the modal, which sits above everything else on the page, the tip goes with it and stays put as it does.
     const host = term.closest("dialog") || document.body;
     if (tip.parentElement !== host) host.append(tip);
@@ -110,26 +121,44 @@
     const below = at.bottom + 6 + tip.offsetHeight < innerHeight;
     tip.style.left = `${left + dx}px`;
     tip.style.top = `${(below ? at.bottom + 6 : at.top - 6 - tip.offsetHeight) + dy}px`;
+    tip.classList.toggle("above", !below);
   };
   document.addEventListener("pointerover", (event) => {
-    const term = event.pointerType === "mouse" && event.target.closest("a.term");
+    const mouse = event.pointerType === "mouse";
+    if (event.target.closest(".tip") || (mouse && pinned)) return;
+    const term = mouse && event.target.closest("a.term");
     if (term) show(term);
-    else if (shown && !event.target.closest(".tip")) hide();
+    else hide();
   });
   document.addEventListener("focusin", (event) => {
+    if (returning || event.target.closest(".tip")) return;
     const term = event.target.closest("a.term");
     if (term) show(term);
     else hide();
   });
   document.addEventListener("click", (event) => {
     const term = event.target.closest("a.term");
-    if (!term) return hide();
+    if (!term) {
+      // A click on the tip's words leaves it, so they can be selected. A link in it is followed.
+      if (!event.target.closest(".tip") || event.target.closest("a")) hide();
+      return;
+    }
     event.preventDefault();
     show(term);
+    pinned = Boolean(shown);
+    // From the keyboard, on to the first link in the tip, as Tab couldn't reach it from the mention. Esc comes back.
+    if (!event.detail) tip.querySelector("a")?.focus({ preventScroll: true });
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") hide();
+    if (event.key !== "Escape" || !shown) return;
+    // Esc closes the tip alone, and leaves a modal under it for the next.
+    event.preventDefault();
+    hide();
   });
+  // A scroller inside the page moves the mention from under its tip. The page itself carries the tip along.
+  document.addEventListener("scroll", (event) => {
+    if (event.target !== document) hide();
+  }, true);
 })();
 
 // A link within the page (a change, Seen in) scrolls to what it names and lights it; Back returns to the link
@@ -210,9 +239,11 @@
     const target = link && document.getElementById(decodeURIComponent(link.getAttribute("href").slice(1)));
     if (!target) return;
     event.preventDefault();
+    // A link in a tip is gone once the tip closes, so the way back is to the mention the tip opened from.
+    const clicked = link.closest(".tip")?.from ?? link;
     const row = target.closest("details.flowbox");
-    if (row) return openFlow(row, target, link);
-    const from = modal.contains(link) ? opener : link;
+    if (row) return openFlow(row, target, clicked);
+    const from = modal.contains(link) ? opener : clicked;
     opener = null;
     modal.close();
     if (!from.closest(".names")) trail.length = 0;
