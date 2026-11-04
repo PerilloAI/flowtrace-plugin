@@ -152,10 +152,10 @@ export function readDocument(text) {
       return { question: v.question, options: v.options.map((text, k) => ({ text, right: k === right })), read: v.read, why: v.why, source: v.source ?? null };
     },
     choice: (v, path) => {
-      shape(v, path, { number: "number?", question: "string", recommended: "string", alternatives: "strings", options: "array", why: "string" });
+      shape(v, path, { number: "number?", question: "string", today: "array?", recommended: "string", alternatives: "strings", options: "array", why: "string" });
       const columns = list(v.options, [...path, "options"], (o) => o);
       return {
-        number: v.number ?? null, question: v.question, recommended: v.recommended, alternatives: v.alternatives, why: v.why,
+        number: v.number ?? null, question: v.question, today: v.today ? steps(v.today, [...path, "today"]) : null, recommended: v.recommended, alternatives: v.alternatives, why: v.why,
         names: columns.map((o) => (typeof o?.name === "string" ? o.name : "")),
         chart: {
           columns: columns.map((o, k) => {

@@ -80,8 +80,9 @@ ways:
   the change's `why` in The changes and why links its source.
 - **It differs from the request in what someone gets, or costs something the author would weigh** (a dependency, a
   migration, more work): a question under Questions from plan-flows. The established way comes first unless the code
-  or a recorded decision speaks against it, the author's request is one of the options, each is charted on the plan's
-  case, and `why` links the sources. Never swap the request for it silently: the author decides, and the page shows
+  or a recorded decision speaks against it, the author's request is one of the options, the plan's case is charted as
+  it runs today and under each option, and `why` links the sources. Never swap the request for it silently: the
+  author decides, and the page shows
   them there was a better way. The way that would change most what people get is question 1, and What I'm asking says
   so. Keep the page short: another way gets an option only when it gives people something clearly different.
 - **It doesn't fit this code**: leave it out. The code or a recorded decision has to rule it out. Its cost doesn't,
@@ -114,8 +115,9 @@ Done when all of these hold:
 - Every question can be answered from the plan alone.
 - What this rests on names every premise, so an author who knows better can see it at a glance.
 - Every open decision, every open behaviour you noted that the code doesn't settle, and every better way the research
-  found than the one asked for, is a question under Questions from plan-flows: one real case, the recommendation
-  first, a chart of the case under each option, and why. No other section asks the author to decide.
+  found than the one asked for, is a question under Questions from plan-flows: one real case, a chart of how it
+  runs today, the recommendation first, a chart of the case under each option, and why. No other section asks the
+  author to decide.
 - Every design choice the research covered is built the established way with its source linked, asked as a question,
   or left out because the code or a recorded decision rules it out.
 - A reader of What I'm asking alone learns of the best way the research found to solve their problem, when it isn't

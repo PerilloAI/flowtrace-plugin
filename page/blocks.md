@@ -128,8 +128,9 @@ send to the chat, otherwise copied, with a line saying so. A plan's answer is it
 picks of every question so far are copied together (`1 A, 3 B`), so one paste answers them all; an explanation's is
 the letter and the option's name (`A · Retry once`).
 
-The first of `options` is the recommended one; they are lettered A, B, C, D in order. A plan numbers each choice; an
-explanation leaves `number` out. **Checked**: 2 to 4 options, and one `alternatives` text per option after the first.
+The first of `options` is the recommended one; they are lettered A, B, C, D in order. A plan numbers each choice and
+adds `today` (plan-format.md); an explanation leaves both out. **Checked**: 2 to 4 options, and one `alternatives` text per
+option after the first.
 
 ## settled
 

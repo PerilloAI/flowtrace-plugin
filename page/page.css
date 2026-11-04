@@ -41,6 +41,8 @@ ul.prose li + li, ol.prose li + li { margin-top: 6px; }
 .ask { font-weight: 600; color: var(--accent); }
 .decision { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 4px 18px 14px; margin: 18px 0; }
 .decision h3 { margin-top: 16px; }
+.decision h4.today { margin: 12px 0 6px; font-family: var(--body); font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.decision h4.today + figure { margin: 0 0 14px; }
 .decision .picks { display: grid; gap: 6px; margin: 10px 0; max-width: 74ch; }
 .decision button.pick { display: flex; gap: 10px; align-items: baseline; text-align: left; font: inherit; font-size: 14px; padding: 8px 12px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
 .decision button.pick .letter { font-weight: 700; color: var(--muted); }

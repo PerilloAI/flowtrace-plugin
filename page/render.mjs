@@ -162,7 +162,9 @@ export function render(doc, o) {
           const tag = k === 0 ? '<span class="tag rec">recommended</span> ' : "";
           return `<button type="button" class="pick" aria-pressed="false" data-line="${esc(line)}"><span class="letter">${letter}</span><span>${tag}${k === 0 ? `<strong>${inline(text ?? "")}</strong>` : inline(text)}</span></button>`;
         }).join("");
-        return `<div class="decision${since(key)}" id="${b.id}"><h3>${inline(title)}</h3><div class="picks">${picks}</div><div class="picked"><code hidden></code><p class="desc" hidden></p></div><figure>${chartHtml(b.chart, title)}${b.why ? `<figcaption>${inline(b.why)}</figcaption>` : ""}</figure></div>${ask}`;
+        // How the case goes today comes right under the question, before the options that would change it.
+        const today = b.today ? `<h4 class="today">How it works today</h4><figure>${chartHtml({ items: b.today }, `${title} › Today`)}</figure>` : "";
+        return `<div class="decision${since(key)}" id="${b.id}"><h3>${inline(title)}</h3>${today}<div class="picks">${picks}</div><div class="picked"><code hidden></code><p class="desc" hidden></p></div><figure>${chartHtml(b.chart, title)}${b.why ? `<figcaption>${inline(b.why)}</figcaption>` : ""}</figure></div>${ask}`;
       }
       case "changes":
         return `<div class="tablewrap"><table><thead><tr><th>Change</th><th>What users get</th><th>Why</th></tr></thead><tbody>${b.rows
