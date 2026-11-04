@@ -22,7 +22,7 @@ const git = (...args) => run("git", ["-C", scratch, ...args]);
 const plan = {
   title: "Export an order",
   sections: [
-    { heading: "What I'm asking", content: [{ p: "Approve each step." }] },
+    { heading: "What I'm asking", content: [{ p: "Approve each step, and see [the last answer](#w-lastanswer)." }] },
     { heading: "What you'd see", content: [{ screens: { title: "Exporting an order", columns: [{ title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } }] },
     { heading: "Check your reading", content: [
       { question: { question: "Where does it start?", options: ["At Export", "At Import", "At Print"], answer: "A", read: "Export an order", why: "It starts there." } },
@@ -40,6 +40,7 @@ const plan = {
         { keyword: "Returns", text: "the file" },
       ] } },
       { flow: { name: "Load an order", steps: [{ keyword: "Starts", text: "Ana opens an order" }, { keyword: "Step", text: "Load the order", where: "loadOrder" }] } },
+      { flow: { name: "Answer an order", steps: [{ keyword: "Starts", text: "Ana asks" }, { keyword: "Check", text: "Which answer?", answers: Array.from({ length: 8 }, (_, k) => ({ label: `answer ${k + 1}`, steps: [{ keyword: "Step", text: `Give answer ${k + 1}`, ...(k === 7 ? { where: "lastAnswer" } : {}) }] })) }] } },
     ] },
     { heading: "Names", content: [{ names: [{ name: "step", text: "one thing a flow does" }] }] },
   ],
@@ -97,16 +98,25 @@ const checks = `
     stepLit: Boolean(body.querySelector(".hit")),
     idsUnique: new Set(ids).size === ids.length,
     focusInModal: modal.contains(document.activeElement),
+    focusOnFlow: document.activeElement === body,
   };
   modal.querySelector(".modal-close").click();
   await wait(100);
   out.closeButton = { closed: !modal.open, pageStays: stayed(), focusBack: document.activeElement === toRow };
 
   stayed = await follow(toStep);
-  out.linkToStep = { modalOpen: modal.open, stepLit: Boolean(body.querySelector(".hit")), stepInView: inModal(body.querySelector(".hit")), rowStaysClosed: !step.closest("details").open, pageStays: stayed() };
+  out.linkToStep = { modalOpen: modal.open, stepLit: Boolean(body.querySelector(".hit")), stepInView: inModal(body.querySelector(".hit")), rowStaysClosed: !step.closest("details").open, pageStays: stayed(), focusOnStep: document.activeElement === body.querySelector(".hit") };
   modal.click();
   await wait(100);
   out.clickOutside = { closed: !modal.open, pageStays: stayed(), focusBack: document.activeElement === toStep };
+
+  stayed = await follow(document.querySelector('a[href="#w-lastanswer"]'));
+  const wide = body.querySelector(".hit");
+  const wideChart = wide.closest(".chart").getBoundingClientRect();
+  const wideAt = wide.getBoundingClientRect();
+  out.stepInWideChart = { scrolledSideways: wide.closest(".chart").scrollLeft > 0, inViewSideways: wideAt.left >= wideChart.left && wideAt.right <= wideChart.right, focusOnStep: document.activeElement === wide, pageStays: stayed() };
+  modal.querySelector(".modal-close").click();
+  await wait(100);
 
   stayed = await follow(toFlow);
   const lit = body.querySelector(".hit");
@@ -220,8 +230,15 @@ async function realInput(port, url) {
     for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, x, y, button: "left", clickCount: 1 });
     await wait(400);
   };
-  const esc = async () => {
-    for (const type of ["keyDown", "keyUp"]) await send("Input.dispatchKeyEvent", { type, key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+  const press = async (key, windowsVirtualKeyCode) => {
+    for (const type of ["keyDown", "keyUp"]) await send("Input.dispatchKeyEvent", { type, key, code: key, windowsVirtualKeyCode });
+    await wait(600);
+  };
+  const esc = () => press("Escape", 27);
+  const drag = async (x, y, x2, y2) => {
+    await send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+    await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: x2, y: y2, button: "left", buttons: 1 });
+    await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x2, y: y2, button: "left", clickCount: 1 });
     await wait(400);
   };
   const nameState = () => read(`({ tip: !document.querySelector(".tip").hidden, y: scrollY, backHidden: document.querySelector("button.back").hidden })`);
@@ -270,6 +287,16 @@ async function realInput(port, url) {
   await click(20, 400);
   const outside = await state();
   out.clickOutside = { closed: !outside.open, pageStays: outside.y === opened.y, focusBack: outside.focusBack };
+  await click(link.x, link.y);
+  const lit = await state();
+  const focusOnStep = await read(`document.activeElement === document.querySelector(".modal-body .hit")`);
+  await press("PageDown", 34);
+  const paged = await state();
+  out.keysOnLitStep = { focusOnStep, pageDownMovesFlow: paged.flow > lit.flow, pageStays: paged.y === opened.y };
+  await drag(640, 400, 20, 400);
+  out.dragOutOfModal = { staysOpen: (await state()).open };
+  await click(20, 400);
+  out.dragOutOfModal.clickOutsideStillCloses = !(await state()).open;
   await wheel(640, 400);
   out.wheelAfterClosing = { pageMoves: (await state()).y !== opened.y };
   socket.close();
@@ -351,7 +378,7 @@ mkdirSync(path.join(scratch, "docs/plans"), { recursive: true });
 await git("init", "-q", "-b", "main");
 await git("config", "user.email", "probe@example.com");
 await git("config", "user.name", "Probe");
-writeFileSync(path.join(scratch, "orders.ts"), "export function exportOrder() {}\nexport function loadOrder() {}\n");
+writeFileSync(path.join(scratch, "orders.ts"), "export function exportOrder() {}\nexport function loadOrder() {}\nexport function lastAnswer() {}\n");
 await git("add", "orders.ts");
 await git("commit", "-q", "-m", "orders");
 const file = path.join(scratch, "docs/plans/closed-row.json");

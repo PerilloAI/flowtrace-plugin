@@ -194,8 +194,8 @@ and writes `approved` itself, with no need to come back here.
 
 ## 6. When an approved plan changes
 
-A comment on an approved plan, or code that departs from it, changes the plan with no new approval and no new
-plan-check.
+A comment on an approved plan, code that departs from it, or a drawing's refusal that makes you edit it, changes the plan
+with no new approval and no new plan-check.
 
 1. Edit the flow and each part of the plan the change touches, and append a numbered entry to Plan changes, as
    plan-format.md shows it: what changed, why, and who.

@@ -197,6 +197,13 @@
     const step = target === row ? null : copy.querySelector(`[data-from="${CSS.escape(target.id)}"]`);
     if (step) step.classList.add("hit");
     body.scrollTop = step ? body.scrollTop + step.getBoundingClientRect().top - body.getBoundingClientRect().top - body.clientHeight / 3 : 0;
+    // A wide chart scrolls sideways on its own, so the step may need bringing in that way too.
+    const chart = step && step.closest(".chart");
+    if (chart) chart.scrollLeft += step.getBoundingClientRect().left - chart.getBoundingClientRect().left - (chart.clientWidth - step.offsetWidth) / 2;
+    // The keys scroll what holds the focus, and Tab carries on from it.
+    const focused = step || body;
+    focused.setAttribute("tabindex", "-1");
+    focused.focus({ preventScroll: true });
   };
   document.addEventListener("click", (event) => {
     const link = event.target.closest('a[href^="#"]:not(.term)');
@@ -218,8 +225,13 @@
     opener = null;
   });
   modal.querySelector(".modal-close").addEventListener("click", () => modal.close());
+  // A press that began inside isn't a click outside, wherever it's let go: a drag, or a comment box being resized.
+  let pressedInside = false;
+  modal.addEventListener("pointerdown", (event) => {
+    pressedInside = event.target !== modal;
+  });
   modal.addEventListener("click", (event) => {
-    if (event.target === modal) modal.close();
+    if (event.target === modal && !pressedInside) modal.close();
   });
   back.addEventListener("click", () => {
     const link = trail.pop();
