@@ -265,10 +265,11 @@ test("in each browser tried, a link to a flow opens it in a modal over the page,
     const { closedAtLoad, linkToRow, closeButton, linkToStep, clickOutside, screenLink, tipInModal, commentInCopy, backIntoClosedRow, clickOnLine, namesOnLine, namesInChart } = browser;
     assert.deepEqual({ closedAtLoad, linkToRow, closeButton, linkToStep, clickOutside, screenLink, tipInModal, commentInCopy, backIntoClosedRow, clickOnLine, namesOnLine, namesInChart }, {
       closedAtLoad: true,
-      linkToRow: { modalOpen: true, rowStaysClosed: true, pageStays: true, nameInBar: true, wholeFlow: true, atTop: true, stepLit: false, idsUnique: true, focusInModal: true },
+      linkToRow: { modalOpen: true, rowStaysClosed: true, pageStays: true, nameInBar: true, wholeFlow: true, atTop: true, stepLit: false, idsUnique: true, focusInModal: true, focusOnFlow: true },
       closeButton: { closed: true, pageStays: true, focusBack: true },
-      linkToStep: { modalOpen: true, stepLit: true, stepInView: true, rowStaysClosed: true, pageStays: true },
+      linkToStep: { modalOpen: true, stepLit: true, stepInView: true, rowStaysClosed: true, pageStays: true, focusOnStep: true },
       clickOutside: { closed: true, pageStays: true, focusBack: true },
+      stepInWideChart: { scrolledSideways: true, inViewSideways: true, focusOnStep: true, pageStays: true },
       screenLink: { modalOpen: true, stepLit: true, stepInView: true, scrolledToStep: true, rowStaysClosed: true, pageStays: true },
       tipInModal: { shown: true, inModal: true, besideName: true },
       commentInCopy: { shown: true, keptOnReopening: true, notOnPage: true },
@@ -304,14 +305,16 @@ test("in each browser tried, Seen in and a link to a section open in the modal, 
   }
 });
 
-test("with real input in Chrome, Esc and a click outside close the modal, and only the flow scrolls while it is open", () => {
+test("with real input in Chrome, Esc and a click outside close the modal, a drag let go outside doesn't, the keys scroll from the lit step, and only the flow scrolls while it is open", () => {
   const chrome = observation("browsers/closed-row").evidence.find((browser) => browser.realInput);
-  const { wheelOnDimmedPage, wheelOnFlow, esc, clickOutside, seenInClosesTheCircle, wheelAfterClosing } = chrome.realInput;
-  assert.deepEqual({ wheelOnDimmedPage, wheelOnFlow, esc, clickOutside, seenInClosesTheCircle, wheelAfterClosing }, {
+  const { wheelOnDimmedPage, wheelOnFlow, esc, clickOutside, keysOnLitStep, dragOutOfModal, seenInClosesTheCircle, wheelAfterClosing } = chrome.realInput;
+  assert.deepEqual({ wheelOnDimmedPage, wheelOnFlow, esc, clickOutside, keysOnLitStep, dragOutOfModal, seenInClosesTheCircle, wheelAfterClosing }, {
     wheelOnDimmedPage: { pageStays: true },
     wheelOnFlow: { flowMoves: true, pageStays: true },
     esc: { closed: true, pageStays: true, focusBack: true },
     clickOutside: { closed: true, pageStays: true, focusBack: true },
+    keysOnLitStep: { focusOnStep: true, pageDownMovesFlow: true, pageStays: true },
+    dragOutOfModal: { staysOpen: true, clickOutsideStillCloses: true },
     seenInClosesTheCircle: { closed: true, pageStays: true, focusBack: true },
     wheelAfterClosing: { pageMoves: true },
   });
@@ -321,7 +324,7 @@ test("in each browser tried, a click on a name shows its line beside it, and nei
   const seen = observation("browsers/closed-row").evidence;
   assert.ok(seen.length >= 2);
   for (const browser of seen) {
-    assert.deepEqual(browser.nameClick, { pageStays: true, tipShown: true, lineInTip: true, backStaysHidden: true, clickElsewhereCloses: true }, browser.name);
+    assert.deepEqual(browser.nameClick, { pageStays: true, tipShown: true, lineInTip: true, backStaysHidden: true, keysMoveIntoTip: true, focusBackOnName: true, clickElsewhereCloses: true }, browser.name);
     assert.deepEqual(browser.nameClickInModal, { modalStays: true, flowStays: true, tipShown: true }, browser.name);
   }
 });
@@ -336,20 +339,38 @@ test("with a real click and a real tap in Chrome, a name shows its line, the pag
   });
 });
 
+test("with real input in Chrome, a name's line stays for the pointer to reach, and a link in it can be followed by mouse and keys", () => {
+  const { tip } = observation("browsers/closed-row").evidence.find((browser) => browser.realInput).realInput;
+  assert.deepEqual(tip, {
+    clickKeepsItAsPointerLeaves: true,
+    clickElsewhereClosesIt: true,
+    pointerCrossesToIt: true,
+    pointingAtNameInItKeepsIt: true,
+    clickingNameInItShowsThatLine: true,
+    linkInItFollowedByMouse: true,
+    followingItClosesIt: true,
+    enterMovesIntoIt: true,
+    linkInItFollowedByKeys: true,
+    escClosesItAndFocusReturns: true,
+    escInModalClosesItFirst: true,
+  });
+});
+
 test("in each browser tried, a click on a step's change shows its row beside it, and neither the page nor the modal moves", () => {
   const seen = observation("browsers/closed-row").evidence;
   assert.ok(seen.length >= 2);
   for (const browser of seen) {
-    assert.deepEqual(browser.changeClick, { pageStays: true, tipShown: true, titleInTip: true, getsInTip: true, whyInTip: true, backStaysHidden: true, clickElsewhereCloses: true }, browser.name);
+    assert.deepEqual(browser.changeClick, { pageStays: true, tipShown: true, titleInTip: true, getsInTip: true, whyInTip: true, backStaysHidden: true, howItsBuiltUncovered: true, clickElsewhereCloses: true }, browser.name);
     assert.deepEqual(browser.changeClickInModal, { modalStays: true, flowStays: true, tipShown: true, rowInTip: true }, browser.name);
   }
 });
 
 test("with a real click in Chrome, a step's change shows its row, the page stays, and a click elsewhere closes it", () => {
-  const { changeClick, changeClickElsewhere } = observation("browsers/closed-row").evidence.find((browser) => browser.realInput).realInput;
-  assert.deepEqual({ changeClick, changeClickElsewhere }, {
+  const { changeClick, changeClickElsewhere, changeTip } = observation("browsers/closed-row").evidence.find((browser) => browser.realInput).realInput;
+  assert.deepEqual({ changeClick, changeClickElsewhere, changeTip }, {
     changeClick: { pageStays: true, tipShown: true, backStaysHidden: true },
     changeClickElsewhere: { tipHidden: true },
+    changeTip: { linkInItFollowed: true, followingItClosesIt: true, howItsBuiltOpensOnFirstClick: true },
   });
 });
 
@@ -389,6 +410,17 @@ test("a flow's row lists each screen that links to it, once", () => {
     data.sections[2].content.push({ screens: { title: "Retrying an export", columns: [{ title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } });
   });
   assert.ok(html.includes('<span>Seen in: <a href="#v-exporting-order-1042">Exporting order 1042</a>, <a href="#v-retrying-an-export">Retrying an export</a></span>'));
+});
+
+test("a link in a flow's name or a screen's title shows as its words inside the links to them, which can't hold another", () => {
+  const html = drawnPlan((content, data) => {
+    content.push({ flow: { name: "Retry, see [the docs](https://example.com/docs)", mark: "+", steps: [{ keyword: "Starts", text: "The retry timer fires", change: "Retry once" }] } });
+    data.sections[2].content.push({ screens: { title: "Retrying, see [the docs](https://example.com/docs)", columns: [{ title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } });
+  });
+  assert.ok(html.includes("How it's built: Retry, see the docs</a>"));
+  assert.ok(html.includes(">Retrying, see the docs</a>"));
+  assert.ok(html.includes('Retry, see <a href="https://example.com/docs">the docs</a></h3>'));
+  assert.doesNotMatch(html, /<a [^>]*>[^<]*<a /);
 });
 
 test("a screen's step naming a change no flow's step names stops the drawing, naming its line", () => {

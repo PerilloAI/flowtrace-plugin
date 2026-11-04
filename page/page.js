@@ -28,8 +28,8 @@
   });
 })();
 
-// Every mention of a name links to its line under Names on this page, outside headings, buttons, links and a row's
-// line, where a click opens the row.
+// Every mention of a name becomes a link naming its line under Names on this page, which the tip below shows beside it,
+// outside headings, buttons, links and a row's line, where a click opens the row.
 (() => {
   const spellings = [];
   document.querySelectorAll(".names dt[id]").forEach((dt) => {
@@ -71,7 +71,8 @@
 })();
 
 // Pointing at a name or a step's change, moving to it with the keyboard, or clicking or tapping it shows its line or row
-// beside the mention and lights the mention, so the reader keeps their place. A click anywhere else, or Esc, closes it.
+// beside the mention and lights the mention, so the reader keeps their place. Pointing shows it while the pointer is on the
+// mention or the tip. A click or tap keeps it, so a link in it can be followed, until a click anywhere else or Esc.
 (() => {
   const tip = document.createElement("div");
   tip.className = "tip";
@@ -79,7 +80,7 @@
   tip.setAttribute("role", "tooltip");
   tip.hidden = true;
   document.body.append(tip);
-  let shown = null;
+  let shown = null, pinned = false, returning = false;
   const mentions = "a.term, a.to-change";
   // A name's line under Names, or a change's row of The changes and why, each cell under its heading.
   const words = (target) => {
@@ -95,10 +96,18 @@
   };
   const hide = () => {
     if (!shown) return;
+    const within = tip.contains(document.activeElement);
     shown.classList.remove("lit");
     shown.removeAttribute("aria-describedby");
     shown = null;
+    pinned = false;
     tip.hidden = true;
+    // Focus in the tip goes back to the mention it opened from, without opening it again.
+    if (within) {
+      returning = true;
+      tip.from.focus({ preventScroll: true });
+      returning = false;
+    }
   };
   const show = (term) => {
     const target = document.getElementById(decodeURIComponent(term.getAttribute("href").slice(1)));
@@ -106,6 +115,8 @@
     // Measured first: a name in the tip itself goes as the tip fills.
     const at = term.getBoundingClientRect();
     hide();
+    // The mention on the page this tip opened from, which a name in the tip itself doesn't replace.
+    if (!term.closest(".tip")) tip.from = term;
     // In the modal, which sits above everything else on the page, the tip goes with it and stays put as it does.
     const host = term.closest("dialog") || document.body;
     if (tip.parentElement !== host) host.append(tip);
@@ -118,29 +129,50 @@
     term.setAttribute("aria-describedby", tip.id);
     const width = tip.offsetWidth;
     const left = Math.min(Math.max(8, at.left), document.documentElement.clientWidth - width - 8);
-    const below = at.bottom + 6 + tip.offsetHeight < innerHeight;
+    // Below it where there's room, except over a step's How it's built, which the reader may want next.
+    const roomBelow = at.bottom + 6 + tip.offsetHeight < innerHeight;
+    const roomAbove = at.top - 6 - tip.offsetHeight >= 0;
+    const below = roomBelow && !(roomAbove && term.closest(".n")?.querySelector(".to-flow"));
     tip.style.left = `${left + dx}px`;
     tip.style.top = `${(below ? at.bottom + 6 : at.top - 6 - tip.offsetHeight) + dy}px`;
+    tip.classList.toggle("above", !below);
   };
   document.addEventListener("pointerover", (event) => {
-    const term = event.pointerType === "mouse" && event.target.closest(mentions);
+    const mouse = event.pointerType === "mouse";
+    if (event.target.closest(".tip") || (mouse && pinned)) return;
+    const term = mouse && event.target.closest(mentions);
     if (term) show(term);
-    else if (shown && !event.target.closest(".tip")) hide();
+    else hide();
   });
   document.addEventListener("focusin", (event) => {
+    if (returning || event.target.closest(".tip")) return;
     const term = event.target.closest(mentions);
     if (term) show(term);
     else hide();
   });
   document.addEventListener("click", (event) => {
     const term = event.target.closest(mentions);
-    if (!term) return hide();
+    if (!term) {
+      // A click on the tip's words leaves it, so they can be selected. A link in it is followed.
+      if (!event.target.closest(".tip") || event.target.closest("a")) hide();
+      return;
+    }
     event.preventDefault();
     show(term);
+    pinned = Boolean(shown);
+    // From the keyboard, on to the first link in the tip, as Tab couldn't reach it from the mention. Esc comes back.
+    if (!event.detail) tip.querySelector("a")?.focus({ preventScroll: true });
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") hide();
+    if (event.key !== "Escape" || !shown) return;
+    // Esc closes the tip alone, and leaves a modal under it for the next.
+    event.preventDefault();
+    hide();
   });
+  // A scroller inside the page moves the mention from under its tip. The page itself carries the tip along.
+  document.addEventListener("scroll", (event) => {
+    if (event.target !== document) hide();
+  }, true);
 })();
 
 // A link to a part of the page (How it's built, Where to look, See it, Seen in) opens a copy of it in a modal over the
@@ -230,20 +262,28 @@
     modal.setAttribute("aria-label", heading.textContent);
     modalBack.hidden = way.length < 2;
     if (!modal.open) modal.showModal();
-    (way.length < 2 ? close : modalBack).focus({ preventScroll: true });
     const step = target === part ? null : copy.querySelector(`[data-from="${CSS.escape(target.id)}"]`);
     if (step) step.classList.add("hit");
     body.scrollTop = y ?? (step ? body.scrollTop + step.getBoundingClientRect().top - body.getBoundingClientRect().top - body.clientHeight / 3 : 0);
+    // A wide chart scrolls sideways on its own, so the step may need bringing in that way too.
+    const chart = step && step.closest(".chart");
+    if (chart) chart.scrollLeft += step.getBoundingClientRect().left - chart.getBoundingClientRect().left - (chart.clientWidth - step.offsetWidth) / 2;
+    // The keys scroll what holds the focus, and Tab carries on from it.
+    const focused = step || body;
+    focused.setAttribute("tabindex", "-1");
+    focused.focus({ preventScroll: true });
   };
   document.addEventListener("click", (event) => {
     const link = event.target.closest('a[href^="#"]:not(.term, .to-change)');
     const target = link && document.getElementById(decodeURIComponent(link.getAttribute("href").slice(1)));
     if (!target) return;
     event.preventDefault();
+    // A link in a tip is gone once the tip closes, so the way back is to the mention the tip opened from.
+    const clicked = link.closest(".tip")?.from ?? link;
     const part = partOf(target);
     if (part) {
       if (!modal.open) {
-        opener = link;
+        opener = clicked;
         way.length = 0;
       } else if (around(part)) {
         return modal.close();
@@ -258,7 +298,7 @@
       }
       return showPlace();
     }
-    const from = modal.contains(link) ? opener : link;
+    const from = modal.contains(link) ? opener : clicked;
     opener = null;
     modal.close();
     if (!from.closest(".names")) trail.length = 0;
@@ -273,10 +313,16 @@
   modalBack.addEventListener("click", () => {
     way.pop();
     showPlace();
+    if (!modalBack.hidden) modalBack.focus({ preventScroll: true });
   });
   close.addEventListener("click", () => modal.close());
+  // A press that began inside isn't a click outside, wherever it's let go: a drag, or a comment box being resized.
+  let pressedInside = false;
+  modal.addEventListener("pointerdown", (event) => {
+    pressedInside = event.target !== modal;
+  });
   modal.addEventListener("click", (event) => {
-    if (event.target === modal) modal.close();
+    if (event.target === modal && !pressedInside) modal.close();
   });
   back.addEventListener("click", () => {
     const link = trail.pop();

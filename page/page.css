@@ -119,6 +119,7 @@ details.flowbox > figure { margin: 4px 14px 14px; }
 .modal-bar button:hover { border-color: var(--line); }
 .modal-bar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .modal-body { overflow: auto; overscroll-behavior: contain; padding: 14px 18px 18px; }
+.modal-body:focus { outline: none; }
 .modal-body > div > :first-child { margin-top: 0; }
 .modal-body .row-meta { margin-bottom: 4px; }
 @media (max-width: 640px) {
@@ -214,8 +215,8 @@ tr.since td { background: var(--note-soft); }
   .settled li { grid-template-columns: 1fr; gap: 2px; }
 }
 
-/* The piece a page is about, on the big picture; the names on the page, every mention of one linked to its line and
-   shown in a tip when pointed at, and the button back to the mention the reader clicked. */
+/* The piece a page is about, on the big picture; the names on the page, every mention of one shown in a tip when pointed
+   at or clicked, and the button back to the link the reader clicked. */
 .n.here { border: 2.5px solid var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); font-weight: 600; }
 .names { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; max-width: 84ch; margin: 10px 0; }
 .names dt { font-weight: 600; }
@@ -224,6 +225,9 @@ a.term { color: inherit; text-decoration: underline dotted var(--accent); text-u
 a.term:hover { color: var(--accent); }
 a.term.lit { color: var(--fg); background: var(--accent-soft); border-radius: 3px; text-decoration-style: solid; }
 a.to-change.lit { color: var(--fg); background: var(--accent-soft); border-radius: 3px; }
+/* The tip's ::before bridges the gap to its mention, so the pointer can cross it. */
+.tip::before { content: ""; position: absolute; left: -1px; right: -1px; bottom: 100%; height: 8px; }
+.tip.above::before { top: 100%; bottom: auto; }
 .tip { position: absolute; z-index: 6; max-width: min(42ch, calc(100vw - 16px)); font-size: 13.5px; line-height: 1.45; background: var(--card); color: var(--fg); border: 1px solid var(--accent); border-radius: 8px; padding: 7px 11px; box-shadow: 0 4px 14px rgb(0 0 0 / .18); }
 .tip div { margin-top: 5px; }
 .hit { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }

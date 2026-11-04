@@ -22,8 +22,8 @@ const git = (...args) => run("git", ["-C", scratch, ...args]);
 const plan = {
   title: "Export an order",
   sections: [
-    { heading: "What I'm asking", content: [{ p: "Approve each step." }] },
-    { heading: "What you'd see", content: [{ screens: { title: "Exporting an order", columns: [{ title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } }] },
+    { heading: "What I'm asking", content: [{ p: "Approve each step, and see [the last answer](#w-lastanswer)." }] },
+    { heading: "What you'd see", content: [{ screens: { title: "Exporting an order", columns: [{ title: "Today", steps: [{ text: "It gives up" }] }, { title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } }] },
     { heading: "Check your reading", content: [
       { question: { question: "Where does it start?", options: ["At Export", "At Import", "At Print"], answer: "A", read: "Export an order", why: "It starts there." } },
       { question: { question: "What loads the order?", options: ["exportOrder", "loadOrder", "Nothing"], answer: "B", read: "loadOrder", why: "That step does." } },
@@ -32,7 +32,7 @@ const plan = {
       { table: { head: ["The plan rests on", "How it was proved", "Where"], rows: [["An order loads", "Read it", "loadOrder"]] } },
       ...Array.from({ length: 80 }, (_, k) => ({ p: `Line ${k + 1} between the links and the rows.` })),
     ] },
-    { heading: "The changes and why", content: [{ changes: [{ title: "Retry once", gets: "A file", why: "It is slow" }] }] },
+    { heading: "The changes and why", content: [{ changes: [{ title: "Retry once", gets: "A file", why: "It is slow, as [the report](https://example.com/report) says, and one more try gets most exports through" }] }] },
     { heading: "How it's built", content: [
       { flow: { name: "Export an order", steps: [
         { keyword: "Starts", text: "Ana presses Export", where: "exportOrder" },
@@ -40,8 +40,9 @@ const plan = {
         { keyword: "Returns", text: "the file" },
       ] } },
       { flow: { name: "Load an order", steps: [{ keyword: "Starts", text: "Ana opens an order" }, { keyword: "Step", text: "Load the order", where: "loadOrder" }] } },
+      { flow: { name: "Answer an order", steps: [{ keyword: "Starts", text: "Ana asks" }, { keyword: "Check", text: "Which answer?", answers: Array.from({ length: 8 }, (_, k) => ({ label: `answer ${k + 1}`, steps: [{ keyword: "Step", text: `Give answer ${k + 1}`, ...(k === 7 ? { where: "lastAnswer" } : {}) }] })) }] } },
     ] },
-    { heading: "Names", content: [{ names: [{ name: "step", text: "one thing a flow does" }] }] },
+    { heading: "Names", content: [{ names: [{ name: "step", text: "one thing a flow does, as [the docs](https://example.com/docs) say" }, { name: "flow", text: "the steps of a behaviour" }] }] },
   ],
 };
 
@@ -99,16 +100,25 @@ const checks = `
     stepLit: Boolean(body.querySelector(".hit")),
     idsUnique: new Set(ids).size === ids.length,
     focusInModal: modal.contains(document.activeElement),
+    focusOnFlow: document.activeElement === body,
   };
   modal.querySelector(".modal-close").click();
   await wait(100);
   out.closeButton = { closed: !modal.open, pageStays: stayed(), focusBack: document.activeElement === toRow };
 
   stayed = await follow(toStep);
-  out.linkToStep = { modalOpen: modal.open, stepLit: Boolean(body.querySelector(".hit")), stepInView: inModal(body.querySelector(".hit")), rowStaysClosed: !step.closest("details").open, pageStays: stayed() };
+  out.linkToStep = { modalOpen: modal.open, stepLit: Boolean(body.querySelector(".hit")), stepInView: inModal(body.querySelector(".hit")), rowStaysClosed: !step.closest("details").open, pageStays: stayed(), focusOnStep: document.activeElement === body.querySelector(".hit") };
   modal.click();
   await wait(100);
   out.clickOutside = { closed: !modal.open, pageStays: stayed(), focusBack: document.activeElement === toStep };
+
+  stayed = await follow(document.querySelector('a[href="#w-lastanswer"]'));
+  const wide = body.querySelector(".hit");
+  const wideChart = wide.closest(".chart").getBoundingClientRect();
+  const wideAt = wide.getBoundingClientRect();
+  out.stepInWideChart = { scrolledSideways: wide.closest(".chart").scrollLeft > 0, inViewSideways: wideAt.left >= wideChart.left && wideAt.right <= wideChart.right, focusOnStep: document.activeElement === wide, pageStays: stayed() };
+  modal.querySelector(".modal-close").click();
+  await wait(100);
 
   stayed = await follow(toFlow);
   const lit = body.querySelector(".hit");
@@ -218,8 +228,9 @@ const checks = `
   const pageAt = scrollY;
   mention.click();
   await settled();
-  out.nameClick = { pageStays: scrollY === pageAt, tipShown: !tip.hidden, lineInTip: tip.textContent.includes("one thing a flow does"), backStaysHidden: back.hidden };
+  out.nameClick = { pageStays: scrollY === pageAt, tipShown: !tip.hidden, lineInTip: tip.textContent.includes("one thing a flow does"), backStaysHidden: back.hidden, keysMoveIntoTip: tip.contains(document.activeElement) };
   document.body.click();
+  out.nameClick.focusBackOnName = document.activeElement === mention;
   out.nameClick.clickElsewhereCloses = tip.hidden;
 
   const onScreen = document.querySelector("a.to-change");
@@ -228,7 +239,11 @@ const checks = `
   const screenAt = scrollY;
   onScreen.click();
   await settled();
-  out.changeClick = { pageStays: scrollY === screenAt, tipShown: !tip.hidden, titleInTip: tip.textContent.includes("Retry once"), getsInTip: tip.textContent.includes("A file"), whyInTip: tip.textContent.includes("It is slow"), backStaysHidden: back.hidden };
+  const boxAt = tip.getBoundingClientRect();
+  const builtWords = document.createRange();
+  builtWords.selectNodeContents(document.querySelector("a.to-flow"));
+  const builtAt = builtWords.getBoundingClientRect();
+  out.changeClick = { pageStays: scrollY === screenAt, tipShown: !tip.hidden, titleInTip: tip.textContent.includes("Retry once"), getsInTip: tip.textContent.includes("A file"), whyInTip: tip.textContent.includes("It is slow"), backStaysHidden: back.hidden, howItsBuiltUncovered: boxAt.bottom <= builtAt.top || boxAt.top >= builtAt.bottom || boxAt.right <= builtAt.left || boxAt.left >= builtAt.right };
   document.body.click();
   out.changeClick.clickElsewhereCloses = tip.hidden;
 
@@ -271,8 +286,22 @@ async function realInput(port, url) {
     for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, x, y, button: "left", clickCount: 1 });
     await wait(400);
   };
-  const esc = async () => {
-    for (const type of ["keyDown", "keyUp"]) await send("Input.dispatchKeyEvent", { type, key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+  const press = async (key, windowsVirtualKeyCode, text) => {
+    await send("Input.dispatchKeyEvent", { type: "keyDown", key, code: key, windowsVirtualKeyCode, ...(text ? { text } : {}) });
+    await send("Input.dispatchKeyEvent", { type: "keyUp", key, code: key, windowsVirtualKeyCode });
+    await wait(600);
+  };
+  const move = async (x, y) => {
+    await send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+    await wait(50);
+  };
+  const middle = (selector) => read(`(() => { const at = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect(); return { x: at.left + at.width / 2, y: at.top + at.height / 2, top: at.top }; })()`);
+  const tip = () => read(`(() => { const t = document.querySelector(".tip"); return { hidden: t.hidden, words: t.textContent, inTip: t.contains(document.activeElement), onName: document.activeElement === document.querySelector("p a.term") }; })()`);
+  const esc = () => press("Escape", 27);
+  const drag = async (x, y, x2, y2) => {
+    await send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+    await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: x2, y: y2, button: "left", buttons: 1 });
+    await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x2, y: y2, button: "left", clickCount: 1 });
     await wait(400);
   };
   const nameState = () => read(`({ tip: !document.querySelector(".tip").hidden, y: scrollY, backHidden: document.querySelector("button.back").hidden })`);
@@ -299,6 +328,61 @@ async function realInput(port, url) {
   await wait(400);
   out.tapElsewhere = { tipHidden: !(await nameState()).tip };
   await send("Emulation.setTouchEmulationEnabled", { enabled: false });
+  // After a click, the line stays as the pointer moves away.
+  await move(1270, name.y);
+  await click(name.x, name.y);
+  await move(1270, name.y);
+  await wait(200);
+  out.tip = { clickKeepsItAsPointerLeaves: !(await tip()).hidden };
+  await click(1270, name.y);
+  out.tip.clickElsewhereClosesIt = (await tip()).hidden;
+  // Pointing shows it, and the pointer can cross the gap to it, small moves at a time.
+  await move(name.x, name.y);
+  const crossing = await middle(".tip");
+  const pointed = await tip();
+  for (let y = name.y; y < crossing.top + 4; y += 2) await move(name.x, y);
+  out.tip.pointerCrossesToIt = !pointed.hidden && !(await tip()).hidden;
+  // A name in the line leaves it as it is when pointed at, and shows its own line when clicked.
+  const nested = await middle(".tip a.term");
+  await move(nested.x, nested.y);
+  await wait(200);
+  const pointedInIt = await tip();
+  out.tip.pointingAtNameInItKeepsIt = !pointedInIt.hidden && pointedInIt.words.includes("one thing a flow does");
+  await click(nested.x, nested.y);
+  const clickedInIt = await tip();
+  out.tip.clickingNameInItShowsThatLine = !clickedInIt.hidden && clickedInIt.words.includes("the steps of a behaviour");
+  await click(1270, name.y);
+  // A link in the line can be followed, by mouse and by keys, without leaving this page.
+  await read(`(() => {
+    window.followed = 0;
+    document.addEventListener("click", (event) => {
+      if (event.target.closest('.tip a[href^="https"]')) {
+        event.preventDefault();
+        window.followed += 1;
+      }
+    }, true);
+  })()`);
+  await move(1270, name.y);
+  await click(name.x, name.y);
+  const docs = await middle('.tip a[href^="https"]');
+  await move(docs.x, docs.y);
+  await click(docs.x, docs.y);
+  out.tip.linkInItFollowedByMouse = (await read("window.followed")) === 1;
+  out.tip.followingItClosesIt = (await tip()).hidden;
+  await move(1270, name.y);
+  await read(`document.querySelector("p a.term").focus()`);
+  await press("Enter", 13, "\r");
+  out.tip.enterMovesIntoIt = (await tip()).inTip;
+  await press("Tab", 9);
+  const tabbed = await read(`document.activeElement.matches('.tip a[href^="https"]')`);
+  await press("Enter", 13, "\r");
+  out.tip.linkInItFollowedByKeys = tabbed && (await read("window.followed")) === 2;
+  await read(`document.querySelector("p a.term").focus()`);
+  await press("Enter", 13, "\r");
+  await esc();
+  const closedByEsc = await tip();
+  out.tip.escClosesItAndFocusReturns = closedByEsc.hidden && closedByEsc.onName;
+  await read(`document.activeElement.blur()`);
   const change = await read(`(async () => {
     const a = document.querySelector("a.to-change");
     a.scrollIntoView({ block: "center", behavior: "instant" });
@@ -312,6 +396,28 @@ async function realInput(port, url) {
   out.changeClick = { pageStays: changed.y === change.pageAt, tipShown: changed.tip, backStaysHidden: changed.backHidden };
   await click(1270, change.y);
   out.changeClickElsewhere = { tipHidden: !(await nameState()).tip };
+  // A link in the row can be followed, and the row leaves How it's built to be clicked first time.
+  await move(1270, change.y);
+  await click(change.x, change.y);
+  const followedBefore = await read("window.followed");
+  const report = await middle('.tip a[href^="https"]');
+  await move(report.x, report.y);
+  await click(report.x, report.y);
+  out.changeTip = { linkInItFollowed: (await read("window.followed")) === followedBefore + 1, followingItClosesIt: (await tip()).hidden };
+  await move(1270, change.y);
+  await click(change.x, change.y);
+  // The start of the link's words, which the row reaches first.
+  const built = await read(`(() => {
+    const words = document.createRange();
+    words.selectNodeContents(document.querySelector("a.to-flow"));
+    const at = words.getBoundingClientRect();
+    return { x: at.left + 6, y: at.top + at.height / 2 };
+  })()`);
+  await move(built.x, built.y);
+  await click(built.x, built.y);
+  out.changeTip.howItsBuiltOpensOnFirstClick = await read(`document.querySelector("dialog").open`);
+  await esc();
+  await move(1270, change.y);
   const state = () => read(`({ open: document.querySelector("dialog.modal").open, y: scrollY, flow: document.querySelector(".modal-body").scrollTop, focusBack: document.activeElement === document.querySelector("a.to-flow") })`);
   const link = await read(`(async () => {
     const a = document.querySelector("a.to-flow");
@@ -322,6 +428,15 @@ async function realInput(port, url) {
   })()`);
   await click(link.x, link.y);
   const opened = await state();
+  // Esc closes a line shown in the modal first, and the modal after it.
+  const word = await middle(".modal-body .hit a.term");
+  await move(word.x, word.y);
+  await wait(200);
+  const inModal = await tip();
+  await esc();
+  const once = await state();
+  out.tip.escInModalClosesItFirst = !inModal.hidden && (await tip()).hidden && once.open;
+  await move(1270, 40);
   await wheel(20, 400);
   out.wheelOnDimmedPage = { pageStays: (await state()).y === opened.y };
   await wheel(640, 400);
@@ -334,6 +449,16 @@ async function realInput(port, url) {
   await click(20, 400);
   const outside = await state();
   out.clickOutside = { closed: !outside.open, pageStays: outside.y === opened.y, focusBack: outside.focusBack };
+  await click(link.x, link.y);
+  const lit = await state();
+  const focusOnStep = await read(`document.activeElement === document.querySelector(".modal-body .hit")`);
+  await press("PageDown", 34);
+  const paged = await state();
+  out.keysOnLitStep = { focusOnStep, pageDownMovesFlow: paged.flow > lit.flow, pageStays: paged.y === opened.y };
+  await drag(640, 400, 20, 400);
+  out.dragOutOfModal = { staysOpen: (await state()).open };
+  await click(20, 400);
+  out.dragOutOfModal.clickOutsideStillCloses = !(await state()).open;
   await click(link.x, link.y);
   // Seen in sits above the lit step, so it takes scrolling up to reach.
   const seenIn = await read(`(() => {
@@ -425,7 +550,7 @@ mkdirSync(path.join(scratch, "docs/plans"), { recursive: true });
 await git("init", "-q", "-b", "main");
 await git("config", "user.email", "probe@example.com");
 await git("config", "user.name", "Probe");
-writeFileSync(path.join(scratch, "orders.ts"), "export function exportOrder() {}\nexport function loadOrder() {}\n");
+writeFileSync(path.join(scratch, "orders.ts"), "export function exportOrder() {}\nexport function loadOrder() {}\nexport function lastAnswer() {}\n");
 await git("add", "orders.ts");
 await git("commit", "-q", "-m", "orders");
 const file = path.join(scratch, "docs/plans/closed-row.json");

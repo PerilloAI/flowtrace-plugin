@@ -27,6 +27,8 @@ export function inline(text) {
     }).join("");
   }).join("");
 }
+// The same words for inside a link, which can't hold another: a link in them is shown as its words.
+const inlineInLink = (text) => inline(String(text).replace(/\[([^\]]+)\]\([^)\s]+\)/g, "$1"));
 
 /**
  * @param {object} doc parsed by read.mjs
@@ -99,7 +101,7 @@ export function render(doc, o) {
     const mark = b.mark ? ` <span class="mark ${b.mark}">${b.mark === "ok" ? "✓" : "✗"}</span>` : "";
     const whereSpan = b.where ? `<span class="where">${esc(b.where)}</span>` : "";
     const change = b.change ? `<a class="to-change" href="#${changeIds.get(b.change) ?? ""}">change: ${esc(b.change)}</a>` : "";
-    const toFlow = inScreen ? (flowsOf.get(b.change) ?? []).map((f) => `<a class="to-flow" href="#${f.step}">How it's built: ${inline(f.name)}</a>`).join("") : "";
+    const toFlow = inScreen ? (flowsOf.get(b.change) ?? []).map((f) => `<a class="to-flow" href="#${f.step}">How it's built: ${inlineInLink(f.name)}</a>`).join("") : "";
     const warns = (b.flags ?? []).map((f) => `<div class="warn${since(`${f.kind}: ${f.text}`)}"><b>Look closely · ${esc(f.kind)}</b>: ${inline(f.text)}</div>`).join("");
     const id = b.whereId ? ` id="${b.whereId}"` : "";
     const onlyLane = b.lanes?.length === 1 ? b.lanes[0] : null;
@@ -186,7 +188,7 @@ export function render(doc, o) {
           return n ? `<span class="mk ${c}">${sign}${n} ${word}</span>` : "";
         }).join("");
         const screens = seenIn.get(b.id) ?? [];
-        const seen = screens.length ? `Seen in: ${screens.map((s) => `<a href="#${s.id}">${inline(s.title)}</a>`).join(", ")}` : "No screen links here";
+        const seen = screens.length ? `Seen in: ${screens.map((s) => `<a href="#${s.id}">${inlineInLink(s.title)}</a>`).join(", ")}` : "No screen links here";
         return `<details class="flowbox" id="${b.id}"><summary>${heading}<span class="row-meta">${counts}<span>${all.length} step${all.length === 1 ? "" : "s"}</span><span>${seen}</span></span></summary>${chart}</details>`;
       }
     }
