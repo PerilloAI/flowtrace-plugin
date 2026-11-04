@@ -120,6 +120,10 @@ details.flowbox > figure { margin: 4px 14px 14px; }
 .modal-bar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .modal-body { overflow: auto; overscroll-behavior: contain; padding: 14px 18px 18px; }
 .modal-body:focus { outline: none; }
+/* What only works on the page looks it in a copy, which says where to go instead. */
+.modal-body button:disabled, .modal-body .qz button.opt:disabled { opacity: .55; cursor: not-allowed; }
+.modal-body button.pick:disabled:hover { border-color: var(--line); }
+.modal-note { margin: 0 0 10px; font-size: 13px; }
 .modal-body > div > :first-child { margin-top: 0; }
 .modal-body .row-meta { margin-bottom: 4px; }
 @media (max-width: 640px) {

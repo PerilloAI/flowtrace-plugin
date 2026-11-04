@@ -269,7 +269,6 @@ test("in each browser tried, a link to a flow opens it in a modal over the page,
       closeButton: { closed: true, pageStays: true, focusBack: true },
       linkToStep: { modalOpen: true, stepLit: true, stepInView: true, rowStaysClosed: true, pageStays: true, focusOnStep: true },
       clickOutside: { closed: true, pageStays: true, focusBack: true },
-      stepInWideChart: { scrolledSideways: true, inViewSideways: true, focusOnStep: true, pageStays: true },
       screenLink: { modalOpen: true, stepLit: true, stepInView: true, scrolledToStep: true, rowStaysClosed: true, pageStays: true },
       tipInModal: { shown: true, inModal: true, besideName: true },
       commentInCopy: { shown: true, keptOnReopening: true, notOnPage: true },
@@ -337,6 +336,16 @@ test("with a real click and a real tap in Chrome, a name shows its line, the pag
     nameTap: { pageStays: true, tipShown: true },
     tapElsewhere: { tipHidden: true },
   });
+});
+
+test("in each browser tried, How it's built on an open row shows its step, and a copy keeps up with the page and says where to answer", () => {
+  const seen = observation("browsers/closed-row").evidence;
+  assert.ok(seen.length >= 2);
+  for (const browser of seen) {
+    assert.deepEqual(browser.seenInOnOpenRow, { modalOpen: true, onFlow: true, stepLit: true, stepInView: true, pageStays: true, closes: true }, browser.name);
+    assert.deepEqual(browser.questionInCopy, { disabled: true, looksDisabled: true, saysWhere: true, answerShowsNext: true }, browser.name);
+    assert.deepEqual(browser.stepInWideChart, { scrolledSideways: true, inViewSideways: true, focusOnStep: true, pageStays: true }, browser.name);
+  }
 });
 
 test("with real input in Chrome, a name's line stays for the pointer to reach, and a link in it can be followed by mouse and keys", () => {

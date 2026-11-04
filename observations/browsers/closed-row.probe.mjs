@@ -22,7 +22,7 @@ const git = (...args) => run("git", ["-C", scratch, ...args]);
 const plan = {
   title: "Export an order",
   sections: [
-    { heading: "What I'm asking", content: [{ p: "Approve each step, and see [the last answer](#w-lastanswer)." }] },
+    { heading: "What I'm asking", content: [{ p: "Approve each step, and see [the last answer](#w-lastanswer) and [the questions](#s-check-your-reading)." }] },
     { heading: "What you'd see", content: [{ screens: { title: "Exporting an order", columns: [{ title: "Today", steps: [{ text: "It gives up" }] }, { title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } }] },
     { heading: "Check your reading", content: [
       { question: { question: "Where does it start?", options: ["At Export", "At Import", "At Print"], answer: "A", read: "Export an order", why: "It starts there." } },
@@ -221,6 +221,33 @@ const checks = `
   modal.querySelector(".modal-close").click();
   await wait(100);
   out.seenInLink.closes = !modal.open && document.activeElement === seenIn && !row.open && stayed();
+
+  // With the row open, How it's built names a step the reader may not be looking at, so it shows that step.
+  row.open = true;
+  stayed = await follow(seenIn);
+  body.querySelector("figure a.to-flow").click();
+  await wait(100);
+  const openLit = body.querySelector(".hit");
+  out.seenInOnOpenRow = { modalOpen: modal.open, onFlow: titled() === row.querySelector("h3").textContent, stepLit: Boolean(openLit), stepInView: Boolean(openLit) && inModal(openLit), pageStays: stayed() };
+  modal.querySelector(".modal-close").click();
+  await wait(100);
+  out.seenInOnOpenRow.closes = !modal.open && document.activeElement === seenIn;
+  closeAll();
+
+  // A question in a copy looks disabled and says where to answer it, and a later copy holds an answer given on the page.
+  const toQuestions = document.querySelector('a[href="#s-check-your-reading"]');
+  const onPage = document.querySelector(".qz button.opt");
+  await follow(toQuestions);
+  const inCopyOpt = body.querySelector("button.opt");
+  const copyLook = getComputedStyle(inCopyOpt);
+  out.questionInCopy = { disabled: inCopyOpt.disabled, looksDisabled: copyLook.cursor === "not-allowed" && copyLook.opacity !== getComputedStyle(onPage).opacity, saysWhere: Boolean(body.querySelector(".modal-note")) };
+  modal.querySelector(".modal-close").click();
+  await wait(100);
+  onPage.click();
+  await follow(toQuestions);
+  out.questionInCopy.answerShowsNext = !body.querySelector(".qz .fb").hidden && Boolean(body.querySelector("button.opt.right"));
+  modal.querySelector(".modal-close").click();
+  await wait(100);
 
   const mention = document.querySelector("p a.term");
   mention.scrollIntoView({ block: "center", behavior: "instant" });

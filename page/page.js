@@ -178,8 +178,8 @@
 // A link to a part of the page (How it's built, Where to look, See it, Seen in) opens a copy of it in a modal over the
 // page, which stays where it is: a flow whole with the step lit, a chart, or a section. Esc, the close button or a click
 // outside closes the modal. Inside it, a link to somewhere the reader has been goes back there, so going round in a circle
-// never builds up, and a link to the part holding the link that opened the modal just closes it. The modal's own Back
-// retraces the rest. A link to anything else (a table's row, say) closes the modal and scrolls to what it names, lit, and
+// never builds up, and a link naming the part that holds the link that opened the modal just closes it, while one naming
+// a step in that part shows the step. The modal's own Back retraces the rest. A link to anything else (a table's row, say) closes the modal and scrolls to what it names, lit, and
 // the page's Back returns to the link clicked. Links followed from inside Names on this page add to that way back.
 (() => {
   const back = document.createElement("button");
@@ -227,28 +227,34 @@
     }
     return { heading: part, held };
   };
-  // Whether closing the modal leaves the reader at this part: it holds the link that opened the modal, and isn't a closed row.
+  // Whether closing the modal leaves the reader at this part, which holds the link that opened the modal and isn't a closed row.
   const around = (part) => {
     const { heading, held } = contents(part);
     return part.open !== false && [heading, ...held].some((el) => el.contains(opener));
   };
-  // What a part holds, each id kept as data-from so the page's links still reach the page's own parts. One copy for each
-  // part, kept while the page is open, so a comment begun in it stays. A question in a copy is answered on the page.
+  // What a part holds, each id kept as data-from so the page's links still reach the page's own parts. Copied afresh each
+  // time it's shown, so what has been answered on the page since is there, and a comment begun in the last copy moves over.
+  // A question in a copy is answered on the page, and a copy holding an open one says so.
   const copyOf = (part) => {
-    if (!copies.has(part)) {
-      const copy = document.createElement("div");
-      copy.append(...contents(part).held.map((el) => el.cloneNode(true)));
-      copy.querySelectorAll("[id]").forEach((el) => {
-        el.dataset.from = el.id;
-        el.removeAttribute("id");
-      });
-      copy.querySelectorAll(".cmt-box").forEach((el) => el.remove());
-      copy.querySelectorAll("button.opt, button.pick, .approve-btn, .send button").forEach((button) => {
-        button.disabled = true;
-      });
-      copies.set(part, copy);
-    }
-    return copies.get(part);
+    const copy = document.createElement("div");
+    copy.append(...contents(part).held.map((el) => el.cloneNode(true)));
+    copy.querySelectorAll("[id]").forEach((el) => {
+      el.dataset.from = el.id;
+      el.removeAttribute("id");
+    });
+    copy.querySelectorAll(".cmt-box").forEach((el) => el.remove());
+    const asks = [...copy.querySelectorAll("button.opt, button.pick, .approve-btn, .send button")];
+    if (asks.some((button) => !button.disabled)) copy.prepend(Object.assign(document.createElement("p"), { className: "desc modal-note", textContent: "To answer, close this and use the page." }));
+    asks.forEach((button) => {
+      button.disabled = true;
+    });
+    const cells = copy.querySelectorAll(".cell");
+    copies.get(part)?.querySelectorAll(".cell").forEach((cell, k) => {
+      const box = cell.querySelector(":scope > .cmt-box");
+      if (box) cells[k].append(box);
+    });
+    copies.set(part, copy);
+    return copy;
   };
   // Shows the last place on the way, where the reader left it, or else at its step.
   const showPlace = () => {
@@ -285,7 +291,7 @@
       if (!modal.open) {
         opener = clicked;
         way.length = 0;
-      } else if (around(part)) {
+      } else if (target === part && around(part)) {
         return modal.close();
       } else {
         way[way.length - 1].y = body.scrollTop;
