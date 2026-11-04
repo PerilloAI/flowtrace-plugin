@@ -1,9 +1,9 @@
 {
-  "claim": "On a plan's page, a click on a name or a step's change shows its line or row beside it and moves nothing, on the page or in the modal, and a click anywhere else closes it. With real input in Chrome, a click does this for both and a tap for a name. A link to a flow or a flow's step opens a copy of the flow in a modal, whole, with the step lit and in view, its row left closed and the page where it was. The close button, a click outside and, with real input in Chrome, Esc close it and give the focus back to the link. Only the flow scrolls while it is open. Comment works in the copy, and a link out of the modal leaves it, with Back returning to the link that opened it. A row's line still opens and closes it in place, and links no name. Seen in Chrome and in the Mac's WebKit, which has had no real input. Safari itself has not run it: its remote automation is off.",
+  "claim": "On a plan's page, a click on a name or a step's change shows its line or row beside it and moves nothing, on the page or in the modal, and a click anywhere else closes it. With real input in Chrome, a click does this for both and a tap for a name, the line stays as the pointer leaves after a click, the pointer can cross to a line it points at, a name or a link in a line works by mouse and keys, a change's row leaves How it's built to be clicked, and Esc closes a line before the modal under it. A link to a flow or a flow's step opens a copy of the flow in a modal, whole, with the step lit, in view both ways and holding the focus, so the keys scroll from it, its row left closed and the page where it was. The close button, a click outside and, with real input in Chrome, Esc close it and give the focus back to the link, while a drag let go outside leaves it open. Only the flow scrolls while it is open. Comment works in the copy, and a link out of the modal leaves it, with Back returning to the link that opened it. A row's line still opens and closes it in place, and links no name. Seen in Chrome and in the Mac's WebKit, which has had no real input. Safari itself has not run it: its remote automation is off.",
   "source": "Google Chrome 156 headless, and WebKit 21624 in a WKWebView on macOS 26.5, where Safari 26.5.2 is installed",
   "observed": "2026-11-03",
   "how": "node observations/browsers/closed-row.probe.mjs on a Mac. It also runs Safari once Safari's Settings allow remote automation (Developer section), and says on stderr when they don't.",
-  "recheckWhen": "page/page.js's links or Names walker change, or how page/render.mjs draws a flow's row changes.",
+  "recheckWhen": "page/page.js's links or Names walker change, page/page.css's rules for rows, the modal or the tip change, or how page/render.mjs draws a flow's row changes.",
   "evidence": [
     {
       "name": "Google Chrome 156.0.8078.80",
@@ -18,7 +18,8 @@
         "atTop": true,
         "stepLit": false,
         "idsUnique": true,
-        "focusInModal": true
+        "focusInModal": true,
+        "focusOnFlow": true
       },
       "closeButton": {
         "closed": true,
@@ -30,12 +31,19 @@
         "stepLit": true,
         "stepInView": true,
         "rowStaysClosed": true,
-        "pageStays": true
+        "pageStays": true,
+        "focusOnStep": true
       },
       "clickOutside": {
         "closed": true,
         "pageStays": true,
         "focusBack": true
+      },
+      "stepInWideChart": {
+        "scrolledSideways": true,
+        "inViewSideways": true,
+        "focusOnStep": true,
+        "pageStays": true
       },
       "screenLink": {
         "modalOpen": true,
@@ -93,6 +101,8 @@
         "tipShown": true,
         "lineInTip": true,
         "backStaysHidden": true,
+        "keysMoveIntoTip": true,
+        "focusBackOnName": true,
         "clickElsewhereCloses": true
       },
       "changeClick": {
@@ -102,6 +112,7 @@
         "getsInTip": true,
         "whyInTip": true,
         "backStaysHidden": true,
+        "howItsBuiltUncovered": true,
         "clickElsewhereCloses": true
       },
       "namesOnLine": 0,
@@ -122,6 +133,19 @@
         "tapElsewhere": {
           "tipHidden": true
         },
+        "tip": {
+          "clickKeepsItAsPointerLeaves": true,
+          "clickElsewhereClosesIt": true,
+          "pointerCrossesToIt": true,
+          "pointingAtNameInItKeepsIt": true,
+          "clickingNameInItShowsThatLine": true,
+          "linkInItFollowedByMouse": true,
+          "followingItClosesIt": true,
+          "enterMovesIntoIt": true,
+          "linkInItFollowedByKeys": true,
+          "escClosesItAndFocusReturns": true,
+          "escInModalClosesItFirst": true
+        },
         "changeClick": {
           "pageStays": true,
           "tipShown": true,
@@ -129,6 +153,11 @@
         },
         "changeClickElsewhere": {
           "tipHidden": true
+        },
+        "changeTip": {
+          "linkInItFollowed": true,
+          "followingItClosesIt": true,
+          "howItsBuiltOpensOnFirstClick": true
         },
         "wheelOnDimmedPage": {
           "pageStays": true
@@ -146,6 +175,15 @@
           "closed": true,
           "pageStays": true,
           "focusBack": true
+        },
+        "keysOnLitStep": {
+          "focusOnStep": true,
+          "pageDownMovesFlow": true,
+          "pageStays": true
+        },
+        "dragOutOfModal": {
+          "staysOpen": true,
+          "clickOutsideStillCloses": true
         },
         "wheelAfterClosing": {
           "pageMoves": true
@@ -165,7 +203,8 @@
         "atTop": true,
         "stepLit": false,
         "idsUnique": true,
-        "focusInModal": true
+        "focusInModal": true,
+        "focusOnFlow": true
       },
       "closeButton": {
         "closed": true,
@@ -177,12 +216,19 @@
         "stepLit": true,
         "stepInView": true,
         "rowStaysClosed": true,
-        "pageStays": true
+        "pageStays": true,
+        "focusOnStep": true
       },
       "clickOutside": {
         "closed": true,
         "pageStays": true,
         "focusBack": true
+      },
+      "stepInWideChart": {
+        "scrolledSideways": true,
+        "inViewSideways": true,
+        "focusOnStep": true,
+        "pageStays": true
       },
       "screenLink": {
         "modalOpen": true,
@@ -240,6 +286,8 @@
         "tipShown": true,
         "lineInTip": true,
         "backStaysHidden": true,
+        "keysMoveIntoTip": true,
+        "focusBackOnName": true,
         "clickElsewhereCloses": true
       },
       "changeClick": {
@@ -249,6 +297,7 @@
         "getsInTip": true,
         "whyInTip": true,
         "backStaysHidden": true,
+        "howItsBuiltUncovered": true,
         "clickElsewhereCloses": true
       },
       "namesOnLine": 0,

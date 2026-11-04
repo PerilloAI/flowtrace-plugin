@@ -129,7 +129,10 @@
     term.setAttribute("aria-describedby", tip.id);
     const width = tip.offsetWidth;
     const left = Math.min(Math.max(8, at.left), document.documentElement.clientWidth - width - 8);
-    const below = at.bottom + 6 + tip.offsetHeight < innerHeight;
+    // Below it where there's room, except over a step's How it's built, which the reader may want next.
+    const roomBelow = at.bottom + 6 + tip.offsetHeight < innerHeight;
+    const roomAbove = at.top - 6 - tip.offsetHeight >= 0;
+    const below = roomBelow && !(roomAbove && term.closest(".n")?.querySelector(".to-flow"));
     tip.style.left = `${left + dx}px`;
     tip.style.top = `${(below ? at.bottom + 6 : at.top - 6 - tip.offsetHeight) + dy}px`;
     tip.classList.toggle("above", !below);

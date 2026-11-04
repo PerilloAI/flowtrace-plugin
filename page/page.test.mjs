@@ -338,16 +338,17 @@ test("in each browser tried, a click on a step's change shows its row beside it,
   const seen = observation("browsers/closed-row").evidence;
   assert.ok(seen.length >= 2);
   for (const browser of seen) {
-    assert.deepEqual(browser.changeClick, { pageStays: true, tipShown: true, titleInTip: true, getsInTip: true, whyInTip: true, backStaysHidden: true, clickElsewhereCloses: true }, browser.name);
+    assert.deepEqual(browser.changeClick, { pageStays: true, tipShown: true, titleInTip: true, getsInTip: true, whyInTip: true, backStaysHidden: true, howItsBuiltUncovered: true, clickElsewhereCloses: true }, browser.name);
     assert.deepEqual(browser.changeClickInModal, { modalStays: true, flowStays: true, tipShown: true, rowInTip: true }, browser.name);
   }
 });
 
 test("with a real click in Chrome, a step's change shows its row, the page stays, and a click elsewhere closes it", () => {
-  const { changeClick, changeClickElsewhere } = observation("browsers/closed-row").evidence.find((browser) => browser.realInput).realInput;
-  assert.deepEqual({ changeClick, changeClickElsewhere }, {
+  const { changeClick, changeClickElsewhere, changeTip } = observation("browsers/closed-row").evidence.find((browser) => browser.realInput).realInput;
+  assert.deepEqual({ changeClick, changeClickElsewhere, changeTip }, {
     changeClick: { pageStays: true, tipShown: true, backStaysHidden: true },
     changeClickElsewhere: { tipHidden: true },
+    changeTip: { linkInItFollowed: true, followingItClosesIt: true, howItsBuiltOpensOnFirstClick: true },
   });
 });
 

@@ -23,7 +23,7 @@ const plan = {
   title: "Export an order",
   sections: [
     { heading: "What I'm asking", content: [{ p: "Approve each step, and see [the last answer](#w-lastanswer)." }] },
-    { heading: "What you'd see", content: [{ screens: { title: "Exporting an order", columns: [{ title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } }] },
+    { heading: "What you'd see", content: [{ screens: { title: "Exporting an order", columns: [{ title: "Today", steps: [{ text: "It gives up" }] }, { title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } }] },
     { heading: "Check your reading", content: [
       { question: { question: "Where does it start?", options: ["At Export", "At Import", "At Print"], answer: "A", read: "Export an order", why: "It starts there." } },
       { question: { question: "What loads the order?", options: ["exportOrder", "loadOrder", "Nothing"], answer: "B", read: "loadOrder", why: "That step does." } },
@@ -32,7 +32,7 @@ const plan = {
       { table: { head: ["The plan rests on", "How it was proved", "Where"], rows: [["An order loads", "Read it", "loadOrder"]] } },
       ...Array.from({ length: 80 }, (_, k) => ({ p: `Line ${k + 1} between the links and the rows.` })),
     ] },
-    { heading: "The changes and why", content: [{ changes: [{ title: "Retry once", gets: "A file", why: "It is slow" }] }] },
+    { heading: "The changes and why", content: [{ changes: [{ title: "Retry once", gets: "A file", why: "It is slow, as [the report](https://example.com/report) says, and one more try gets most exports through" }] }] },
     { heading: "How it's built", content: [
       { flow: { name: "Export an order", steps: [
         { keyword: "Starts", text: "Ana presses Export", where: "exportOrder" },
@@ -203,7 +203,11 @@ const checks = `
   const screenAt = scrollY;
   onScreen.click();
   await settled();
-  out.changeClick = { pageStays: scrollY === screenAt, tipShown: !tip.hidden, titleInTip: tip.textContent.includes("Retry once"), getsInTip: tip.textContent.includes("A file"), whyInTip: tip.textContent.includes("It is slow"), backStaysHidden: back.hidden };
+  const boxAt = tip.getBoundingClientRect();
+  const builtWords = document.createRange();
+  builtWords.selectNodeContents(document.querySelector("a.to-flow"));
+  const builtAt = builtWords.getBoundingClientRect();
+  out.changeClick = { pageStays: scrollY === screenAt, tipShown: !tip.hidden, titleInTip: tip.textContent.includes("Retry once"), getsInTip: tip.textContent.includes("A file"), whyInTip: tip.textContent.includes("It is slow"), backStaysHidden: back.hidden, howItsBuiltUncovered: boxAt.bottom <= builtAt.top || boxAt.top >= builtAt.bottom || boxAt.right <= builtAt.left || boxAt.left >= builtAt.right };
   document.body.click();
   out.changeClick.clickElsewhereCloses = tip.hidden;
 
@@ -356,6 +360,28 @@ async function realInput(port, url) {
   out.changeClick = { pageStays: changed.y === change.pageAt, tipShown: changed.tip, backStaysHidden: changed.backHidden };
   await click(1270, change.y);
   out.changeClickElsewhere = { tipHidden: !(await nameState()).tip };
+  // A link in the row can be followed, and the row leaves How it's built to be clicked first time.
+  await move(1270, change.y);
+  await click(change.x, change.y);
+  const followedBefore = await read("window.followed");
+  const report = await middle('.tip a[href^="https"]');
+  await move(report.x, report.y);
+  await click(report.x, report.y);
+  out.changeTip = { linkInItFollowed: (await read("window.followed")) === followedBefore + 1, followingItClosesIt: (await tip()).hidden };
+  await move(1270, change.y);
+  await click(change.x, change.y);
+  // The start of the link's words, which the row reaches first.
+  const built = await read(`(() => {
+    const words = document.createRange();
+    words.selectNodeContents(document.querySelector("a.to-flow"));
+    const at = words.getBoundingClientRect();
+    return { x: at.left + 6, y: at.top + at.height / 2 };
+  })()`);
+  await move(built.x, built.y);
+  await click(built.x, built.y);
+  out.changeTip.howItsBuiltOpensOnFirstClick = await read(`document.querySelector("dialog").open`);
+  await esc();
+  await move(1270, change.y);
   const state = () => read(`({ open: document.querySelector("dialog.flow-modal").open, y: scrollY, flow: document.querySelector(".modal-body").scrollTop, focusBack: document.activeElement === document.querySelector("a.to-flow") })`);
   const link = await read(`(async () => {
     const a = document.querySelector("a.to-flow");
