@@ -4,6 +4,9 @@
 // (Developer section). Chrome then takes real wheel, key and mouse input, which a page's own script can't send. macOS
 // only, on Node 22 or later; nothing is installed, and no setting or profile of the person's is touched.
 //   node observations/browsers/closed-row.probe.mjs
+// With --check it runs Chrome alone, and fails when any answer differs from the record's, leaving out the browser's name
+// and version. CI runs this.
+//   node observations/browsers/closed-row.probe.mjs --check
 import { execFile, spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
@@ -11,6 +14,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { observation } from "../observation.mjs";
 
 const run = promisify(execFile);
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -47,6 +51,7 @@ const plan = {
 };
 
 const checks = `
+const out = {};
 (async () => {
   const wait = (ms) => new Promise((done) => setTimeout(done, ms));
   const settled = async () => {
@@ -86,7 +91,8 @@ const checks = `
     await wait(200);
     return () => scrollY === y;
   };
-  const out = { pageHidden: document.hidden, closedAtLoad: rows.every((r) => !r.open) };
+  out.pageHidden = document.hidden;
+  out.closedAtLoad = rows.every((r) => !r.open);
 
   let stayed = await follow(toRow);
   const ids = [...document.querySelectorAll("[id]")].map((el) => el.id);
@@ -276,9 +282,13 @@ const checks = `
 
   out.namesOnLine = document.querySelectorAll("summary a.term").length;
   out.namesInChart = document.querySelectorAll("details.flowbox .chart a.term").length > 0;
+})().catch((error) => {
+  // Reported at once, with the answers up to it, which say how far the checks got.
+  out.threw = String(error);
+}).then(async () => {
   await fetch("/", { method: "POST", body: JSON.stringify(out) });
   document.title = "DONE";
-})();
+});
 `;
 
 // What the page next reports to this probe's server: the checks' answer.
@@ -290,6 +300,8 @@ const reported = () => new Promise((done, fail) => {
 
 // A real wheel, Esc and click outside on the modal, through Chrome's debugging port.
 async function realInput(port, url) {
+  // Blank page beside the words, clear of the scrollbar that a Mac with no trackpad draws at the far right.
+  const aside = 1250;
   const pages = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
   const socket = new WebSocket(pages.find((page) => page.url === url).webSocketDebuggerUrl);
   await new Promise((done) => { socket.onopen = done; });
@@ -344,24 +356,24 @@ async function realInput(port, url) {
   await wait(1500);
   const clicked = await nameState();
   out.nameClick = { pageStays: clicked.y === name.pageAt, tipShown: clicked.tip, backStaysHidden: clicked.backHidden };
-  await click(1270, name.y);
+  await click(aside, name.y);
   out.clickElsewhere = { tipHidden: !(await nameState()).tip };
   await send("Emulation.setTouchEmulationEnabled", { enabled: true });
   await send("Input.synthesizeTapGesture", { x: name.x, y: name.y });
   await wait(1500);
   const tapped = await nameState();
   out.nameTap = { pageStays: tapped.y === name.pageAt, tipShown: tapped.tip };
-  await send("Input.synthesizeTapGesture", { x: 1270, y: name.y });
+  await send("Input.synthesizeTapGesture", { x: aside, y: name.y });
   await wait(400);
   out.tapElsewhere = { tipHidden: !(await nameState()).tip };
   await send("Emulation.setTouchEmulationEnabled", { enabled: false });
   // After a click, the line stays as the pointer moves away.
-  await move(1270, name.y);
+  await move(aside, name.y);
   await click(name.x, name.y);
-  await move(1270, name.y);
+  await move(aside, name.y);
   await wait(200);
   out.tip = { clickKeepsItAsPointerLeaves: !(await tip()).hidden };
-  await click(1270, name.y);
+  await click(aside, name.y);
   out.tip.clickElsewhereClosesIt = (await tip()).hidden;
   // Pointing shows it, and the pointer can cross the gap to it, small moves at a time.
   await move(name.x, name.y);
@@ -378,7 +390,7 @@ async function realInput(port, url) {
   await click(nested.x, nested.y);
   const clickedInIt = await tip();
   out.tip.clickingNameInItShowsThatLine = !clickedInIt.hidden && clickedInIt.words.includes("the steps of a behaviour");
-  await click(1270, name.y);
+  await click(aside, name.y);
   // A link in the line can be followed, by mouse and by keys, without leaving this page.
   await read(`(() => {
     window.followed = 0;
@@ -389,14 +401,14 @@ async function realInput(port, url) {
       }
     }, true);
   })()`);
-  await move(1270, name.y);
+  await move(aside, name.y);
   await click(name.x, name.y);
   const docs = await middle('.tip a[href^="https"]');
   await move(docs.x, docs.y);
   await click(docs.x, docs.y);
   out.tip.linkInItFollowedByMouse = (await read("window.followed")) === 1;
   out.tip.followingItClosesIt = (await tip()).hidden;
-  await move(1270, name.y);
+  await move(aside, name.y);
   await read(`document.querySelector("p a.term").focus()`);
   await press("Enter", 13, "\r");
   out.tip.enterMovesIntoIt = (await tip()).inTip;
@@ -421,17 +433,17 @@ async function realInput(port, url) {
   await wait(1500);
   const changed = await nameState();
   out.changeClick = { pageStays: changed.y === change.pageAt, tipShown: changed.tip, backStaysHidden: changed.backHidden };
-  await click(1270, change.y);
+  await click(aside, change.y);
   out.changeClickElsewhere = { tipHidden: !(await nameState()).tip };
   // A link in the row can be followed, and the row leaves How it's built to be clicked first time.
-  await move(1270, change.y);
+  await move(aside, change.y);
   await click(change.x, change.y);
   const followedBefore = await read("window.followed");
   const report = await middle('.tip a[href^="https"]');
   await move(report.x, report.y);
   await click(report.x, report.y);
   out.changeTip = { linkInItFollowed: (await read("window.followed")) === followedBefore + 1, followingItClosesIt: (await tip()).hidden };
-  await move(1270, change.y);
+  await move(aside, change.y);
   await click(change.x, change.y);
   // The start of the link's words, which the row reaches first.
   const built = await read(`(() => {
@@ -444,7 +456,7 @@ async function realInput(port, url) {
   await click(built.x, built.y);
   out.changeTip.howItsBuiltOpensOnFirstClick = await read(`document.querySelector("dialog").open`);
   await esc();
-  await move(1270, change.y);
+  await move(aside, change.y);
   const state = () => read(`({ open: document.querySelector("dialog.modal").open, y: scrollY, flow: document.querySelector(".modal-body").scrollTop, focusBack: document.activeElement === document.querySelector("a.to-flow") })`);
   const link = await read(`(async () => {
     const a = document.querySelector("a.to-flow");
@@ -463,7 +475,7 @@ async function realInput(port, url) {
   await esc();
   const once = await state();
   out.tip.escInModalClosesItFirst = !inModal.hidden && (await tip()).hidden && once.open;
-  await move(1270, 40);
+  await move(aside, 40);
   await wheel(20, 400);
   out.wheelOnDimmedPage = { pageStays: (await state()).y === opened.y };
   await wheel(640, 400);
@@ -506,11 +518,14 @@ async function chrome(url) {
   const bin = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
   const { stdout: version } = await run(bin, ["--version"]);
   const answer = reported();
-  const port = 47614;
-  // Real time, not the virtual time of --dump-dom, which never finishes a smooth scroll.
-  const browser = spawn(bin, ["--headless=new", "--disable-gpu", "--no-first-run", `--user-data-dir=${path.join(scratch, "chrome")}`, `--remote-debugging-port=${port}`, "--window-size=1280,800", url], { stdio: "ignore" });
+  const profile = path.join(scratch, "chrome");
+  // Real time, not the virtual time of --dump-dom, which never finishes a smooth scroll. Port 0 has Chrome pick a free
+  // port and write it in the profile, so a run beside this one, or a Chrome still going down, can't answer in its place.
+  const browser = spawn(bin, ["--headless=new", "--disable-gpu", "--no-first-run", `--user-data-dir=${profile}`, "--remote-debugging-port=0", "--window-size=1280,800", url], { stdio: "ignore" });
   try {
     const checks = await answer;
+    if (checks.threw) return { name: version.trim(), ...checks };
+    const port = readFileSync(path.join(profile, "DevToolsActivePort"), "utf8").split("\n")[0];
     return { name: version.trim(), ...checks, realInput: await realInput(port, url) };
   } finally {
     browser.kill();
@@ -610,12 +625,32 @@ const server = createServer((request, response) => {
 });
 await new Promise((done) => server.listen(0, "127.0.0.1", done));
 const url = `http://127.0.0.1:${server.address().port}/`;
+const checking = process.argv.includes("--check");
 const seen = [];
-for (const browser of [chrome, webkit, safari]) {
+for (const browser of checking ? [chrome] : [chrome, webkit, safari]) {
   const result = await browser(url);
   if (result.skipped) console.error(`${browser.name} skipped: ${result.skipped}`);
   else seen.push(result);
 }
 server.closeAllConnections();
 server.close();
-console.log(JSON.stringify(seen, null, 2));
+if (checking) {
+  // Each answer under its path, so one that differs, has gone or is new gets a line of its own.
+  const flat = (value, at) => (value && typeof value === "object"
+    ? Object.entries(value).flatMap(([key, inner]) => flat(inner, at ? `${at}.${key}` : key))
+    : [[at, value]]);
+  const answers = ({ name, ...rest }) => new Map(flat(rest));
+  const recorded = observation("browsers/closed-row").evidence.find(({ name }) => name.startsWith("Google Chrome"));
+  const [got, want] = [answers(seen[0]), answers(recorded)];
+  const differing = [...new Set([...got.keys(), ...want.keys()])].filter((at) => got.get(at) !== want.get(at));
+  if (differing.length) {
+    console.error(`${seen[0].name} answered differently from ${recorded.name} in the record:`);
+    for (const at of differing) console.error(`  ${at}: ${got.get(at)}, where the record has ${want.get(at)}`);
+    process.exitCode = 1;
+  } else {
+    console.log(`${seen[0].name} gave the answers ${recorded.name} did in the record.`);
+  }
+} else {
+  console.log(JSON.stringify(seen, null, 2));
+  if (seen.some(({ threw }) => threw)) process.exitCode = 1;
+}

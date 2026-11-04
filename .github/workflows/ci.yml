@@ -31,6 +31,18 @@ jobs:
       - run: npm install --global @anthropic-ai/claude-code@2.1.316
       - run: claude plugin validate . --strict --profile directory
 
+  page:
+    # Runs page/page.js in the runner's Chrome. A Mac, as the record was captured on one: on Linux, a tap reaches the page
+    # as touch events with no click after them.
+    runs-on: macos-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: node observations/browsers/closed-row.probe.mjs --check
+
   version:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest

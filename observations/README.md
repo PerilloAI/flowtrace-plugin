@@ -43,3 +43,8 @@ const rows = observation("claude-code/transcript-rows");
 
 When the thing in `recheckWhen` changes, run `how` again. If the answer is the same, update `observed`. If it differs,
 replace `evidence`, then fix the code and the tests that read the record.
+
+CI does this for one record. On every pull request, `node observations/browsers/closed-row.probe.mjs --check` runs
+`page/page.js` in Chrome and fails when any answer differs from the record's, a missing or new one included, leaving out
+the browser's name and version and the record's date. A change that means to alter an answer captures the record again in
+the same pull request.
