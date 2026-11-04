@@ -16,11 +16,13 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const scratch = realpathSync(mkdtempSync(path.join(os.tmpdir(), "closed-row-")));
 const git = (...args) => run("git", ["-C", scratch, ...args]);
 
-// One row taller than the screen, one more below it, and enough between the links and the rows that each link scrolls.
+// A screen, one row taller than the screen, one more below it, and enough between the links and the rows that each link
+// scrolls.
 const plan = {
   title: "Export an order",
   sections: [
     { heading: "What I'm asking", content: [{ p: "Approve it." }] },
+    { heading: "What you'd see", content: [{ screens: { title: "Exporting an order", columns: [{ title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } }] },
     { heading: "Check your reading", content: [
       { question: { question: "Where does it start?", options: ["At Export", "At Import", "At Print"], answer: "A", read: "Export an order", why: "It starts there." } },
       { question: { question: "What loads the order?", options: ["exportOrder", "loadOrder", "Nothing"], answer: "B", read: "loadOrder", why: "That step does." } },
@@ -29,10 +31,11 @@ const plan = {
       { table: { head: ["The plan rests on", "How it was proved", "Where"], rows: [["An order loads", "Read it", "loadOrder"]] } },
       ...Array.from({ length: 80 }, (_, k) => ({ p: `Line ${k + 1} between the links and the rows.` })),
     ] },
+    { heading: "The changes and why", content: [{ changes: [{ title: "Retry once", gets: "A file", why: "It is slow" }] }] },
     { heading: "How it's built", content: [
       { flow: { name: "Export an order", steps: [
         { keyword: "Starts", text: "Ana presses Export", where: "exportOrder" },
-        ...Array.from({ length: 40 }, (_, k) => ({ keyword: "Step", text: `Do part ${k + 1}` })),
+        ...Array.from({ length: 40 }, (_, k) => ({ keyword: "Step", text: `Do part ${k + 1}`, ...(k === 30 ? { change: "Retry once" } : {}) })),
         { keyword: "Returns", text: "the file" },
       ] } },
       { flow: { name: "Load an order", steps: [{ keyword: "Starts", text: "Ana opens an order" }, { keyword: "Step", text: "Load the order", where: "loadOrder" }] } },
@@ -95,6 +98,29 @@ const checks = `
   const opens = row.open;
   row.querySelector("h3").click();
   out.clickOnLine = { opens, closes: !row.open };
+
+  closeAll();
+  const toFlow = document.querySelector("a.to-flow");
+  const built = document.getElementById(toFlow.getAttribute("href").slice(1));
+  toFlow.click();
+  await settled();
+  out.screenLink = { opened: row.open, stepInView: inView(built), lit: built.classList.contains("hit") };
+  back.click();
+  await settled();
+
+  closeAll();
+  const seenIn = row.querySelector("summary a");
+  const screen = document.getElementById(seenIn.getAttribute("href").slice(1));
+  seenIn.scrollIntoView({ block: "center", behavior: "instant" });
+  await wait(100);
+  seenIn.click();
+  await settled();
+  const rowStaysClosed = !row.open;
+  const screenInView = inView(screen);
+  back.click();
+  await settled();
+  out.seenInLink = { rowStaysClosed, screenInView, backLeavesRowClosed: !row.open };
+
   out.namesOnLine = document.querySelectorAll("summary a.term").length;
   out.namesInChart = document.querySelectorAll("details.flowbox .chart a.term").length > 0;
   document.title = "DONE:" + JSON.stringify(out);

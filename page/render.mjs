@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { blocks, boxes, readTarget } from "./check.mjs";
+import { blocks, boxes, chartBoxes, readTarget } from "./check.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CSS = readFileSync(path.join(here, "page.css"), "utf8");
@@ -27,6 +27,8 @@ export function inline(text) {
     }).join("");
   }).join("");
 }
+// The same words for inside a link, which can't hold another: a link in them is shown as its words.
+const inlineInLink = (text) => inline(String(text).replace(/\[([^\]]+)\]\([^)\s]+\)/g, "$1"));
 
 /**
  * @param {object} doc parsed by read.mjs
@@ -51,6 +53,22 @@ export function render(doc, o) {
   const comments = o.plan;
   const changeIds = new Map(blocks(doc, "changes").flatMap((b) => b.rows.map((r) => [r.title, r.id])));
   let where = [];
+  let inScreen = false;
+  // Each change's flows, with the first step naming it in each, and each flow's screens: the links between the two.
+  const flowsOf = new Map();
+  const seenIn = new Map();
+  for (const f of blocks(doc, "flow")) {
+    const named = new Set();
+    for (const b of boxes(f.items)) {
+      if (!b.change || named.has(b.change)) continue;
+      named.add(b.change);
+      flowsOf.set(b.change, [...(flowsOf.get(b.change) ?? []), { flow: f.id, name: f.name, step: b.whereId }]);
+    }
+  }
+  for (const s of blocks(doc, "screens")) {
+    const flows = new Set(chartBoxes(s.chart).flatMap((b) => flowsOf.get(b.change) ?? []).map((f) => f.flow));
+    for (const flow of flows) seenIn.set(flow, [...(seenIn.get(flow) ?? []), s]);
+  }
 
   // Paragraphs, lists, subheadings, tables and code, each as the data gives it.
   const prose = (n) => {
@@ -83,12 +101,13 @@ export function render(doc, o) {
     const mark = b.mark ? ` <span class="mark ${b.mark}">${b.mark === "ok" ? "✓" : "✗"}</span>` : "";
     const whereSpan = b.where ? `<span class="where">${esc(b.where)}</span>` : "";
     const change = b.change ? `<a class="to-change" href="#${changeIds.get(b.change) ?? ""}">change: ${esc(b.change)}</a>` : "";
+    const toFlow = inScreen ? (flowsOf.get(b.change) ?? []).map((f) => `<a class="to-flow" href="#${f.step}">How it's built: ${inlineInLink(f.name)}</a>`).join("") : "";
     const warns = (b.flags ?? []).map((f) => `<div class="warn${since(`${f.kind}: ${f.text}`)}"><b>Look closely · ${esc(f.kind)}</b>: ${inline(f.text)}</div>`).join("");
     const id = b.whereId ? ` id="${b.whereId}"` : "";
     const onlyLane = b.lanes?.length === 1 ? b.lanes[0] : null;
     const side = onlyLane ? `<div class="side"><div class="exit">${esc(onlyLane.label)}</div>${col(onlyLane.items, newFlow)}</div>` : "";
     const note = b.note ? (side ? `<div class="note">${inline(b.note)}</div>` : "") : "";
-    const row = `<div class="row"><div class="cell"${id}><div class="${cls}${since(b.source)}">${mk}${inline(b.text)}${mark}${whereSpan}${change}</div>${warns}${side ? note : ""}${cmt(b)}</div>${side || (b.note ? `<div class="note">${inline(b.note)}</div>` : "")}</div>`;
+    const row = `<div class="row"><div class="cell"${id}><div class="${cls}${since(b.source)}">${mk}${inline(b.text)}${mark}${whereSpan}${change}${toFlow}</div>${warns}${side ? note : ""}${cmt(b)}</div>${side || (b.note ? `<div class="note">${inline(b.note)}</div>` : "")}</div>`;
     const lanes = b.lanes && !onlyLane
       ? `${arrow}<div class="br">${b.lanes.map((l) => `<div class="lane"><div class="exit">${esc(l.label)}</div>${l.items.length ? arrow + col(l.items, newFlow) : ""}</div>`).join("")}</div>`
       : "";
@@ -116,7 +135,10 @@ export function render(doc, o) {
       case "chart": {
         const head = b.title ? `<h3 id="${b.id}"${cls(b.title)}>${inline(b.title)}</h3>` : "";
         const about = b.about ? `<p class="desc">${inline(b.about)}</p>` : "";
-        return `${head}${about}<figure>${chartHtml(b.chart, b.title)}</figure>`;
+        inScreen = b.kind === "screens";
+        const drawn = chartHtml(b.chart, b.title);
+        inScreen = false;
+        return `${head}${about}<figure>${drawn}</figure>`;
       }
       case "question": {
         quiz.push(b);
@@ -165,7 +187,9 @@ export function render(doc, o) {
           const n = all.filter((x) => x.flowMark === mark).length;
           return n ? `<span class="mk ${c}">${sign}${n} ${word}</span>` : "";
         }).join("");
-        return `<details class="flowbox" id="${b.id}"><summary>${heading}<span class="row-meta">${counts}<span>${all.length} step${all.length === 1 ? "" : "s"}</span></span></summary>${chart}</details>`;
+        const screens = seenIn.get(b.id) ?? [];
+        const seen = screens.length ? `Seen in: ${screens.map((s) => `<a href="#${s.id}">${inlineInLink(s.title)}</a>`).join(", ")}` : "No screen links here";
+        return `<details class="flowbox" id="${b.id}"><summary>${heading}<span class="row-meta">${counts}<span>${all.length} step${all.length === 1 ? "" : "s"}</span><span>${seen}</span></span></summary>${chart}</details>`;
       }
     }
     return "";

@@ -132,6 +132,13 @@ export function check(doc, { plan, nameFound }) {
     at(questions[0]?.line ?? doc.titleLine, `the plan asks ${questions.length} reading questions, and its ${steps} changed steps call for ${questionsFor(steps)}`);
   }
 
+  const built = new Set(blocks(doc, "flow").flatMap((f) => boxes(f.items)).map((box) => box.change));
+  for (const s of blocks(doc, "screens")) {
+    for (const box of chartBoxes(s.chart)) {
+      if (titles.has(box.change) && !built.has(box.change)) at(box.line, `"change": "${box.change}" is on a screen's step, and no flow's step names it`);
+    }
+  }
+
   for (const f of blocks(doc, "flow")) {
     for (const box of boxes(f.items)) {
       if (!box.where || "+".includes(box.flowMark)) continue;

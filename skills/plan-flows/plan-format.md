@@ -84,7 +84,8 @@ introduced where the screens begin.
 `{ "screens": { "title": "…", "columns": [ { "title": "Today", "steps": [ … ] }, { "title": "After", "steps": [ … ] } ] } }`.
 The title names the thing a person does, such as `Exporting a report, with the export command` or `Paying an invoice,
 on the checkout page`. Write one for each thing a person does that the plan changes. Each step a change makes names
-that change.
+that change, and the page links it to the first step naming that change in each flow. **Checked**: each change a
+screen's step names is on a flow's step.
 
 ## question
 
@@ -162,8 +163,8 @@ traces come in this order:
 The flows are the contract the code is written to. Write one for each way in that the change adds or touches.
 
 On the page each flow is a closed row that opens in place. Its line shows the flow's name, its new or removed tag or its
-counts of marked steps, and its number of steps. A question's `read`, or any other link, that names a flow or a step's
-`where` opens the row.
+counts of marked steps, its number of steps, and the screens that link to it (`Seen in`, or `No screen links here`). A
+question's `read`, or any other link, that names a flow or a step's `where` opens the row.
 
 ```json
 { "flow": { "name": "The way in, in plain words", "steps": [
@@ -174,7 +175,7 @@ counts of marked steps, and its number of steps. A question's `read`, or any oth
     ] }
   ] },
   { "keyword": "Step", "text": "a step the change removes", "where": "function", "mark": "-" },
-  { "keyword": "Step", "text": "a step the change adds", "where": "function", "mark": "+" },
+  { "keyword": "Step", "text": "a step the change adds", "where": "function", "mark": "+", "change": "The change's title" },
   { "keyword": "Returns", "text": "what the caller gets" }
 ] } }
 ```
@@ -185,6 +186,8 @@ counts of marked steps, and its number of steps. A question's `read`, or any oth
 - **Marks**: `"mark": "+"` new, `"~"` changed (its code changes), `"-"` removed, and no mark for what exists. Keep a step
   for each existing step the change sits among, so the reader sees where it lands. A flow the plan adds as a whole is
   `"mark": "+"` on the flow, and its steps carry none; a flow it removes is `"mark": "-"`.
+- **Change names.** A plan's step names in `change` the change whose row describes what the step does, by the writer's
+  judgement, and a review leaves `change` out.
 - **Lean.** List the flow's top-level steps, one per function the change adds, changes or removes on it, in the order
   they run. Under them (in `inner`, or an answer's `steps`), put every check whose branches end differently for whoever
   started the flow (another response or page, an error, an exit status, a write, an event) as `Check`, `Only if`,

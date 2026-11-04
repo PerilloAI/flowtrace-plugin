@@ -1,5 +1,5 @@
 {
-  "claim": "On a plan's page, a link opens the closed row around its target and the target ends in view, a link to a row itself keeps the row's line in view though the row is taller than the screen, Back returns to the link and reopens a row closed since, a click on a row's line opens and closes it, and a row's line holds no link to Names while its chart does. Seen in Chrome and in the Mac's WebKit. Safari itself has not run it: its remote automation is off.",
+  "claim": "On a plan's page, a link opens the closed row around its target and the target ends in view, a link to a row itself keeps the row's line in view though the row is taller than the screen, Back returns to the link and reopens a row closed since, a click on a row's line opens and closes it, a screen's link to a flow opens the row and lights the step, a row's Seen in link leaves the row closed both ways, and a row's line links no name while its chart does. Seen in Chrome and in the Mac's WebKit. Safari itself has not run it: its remote automation is off.",
   "source": "Google Chrome 156 headless, and WebKit 21624 in a WKWebView on macOS 26.5, where Safari 26.5.2 is installed",
   "observed": "2026-11-03",
   "how": "node observations/browsers/closed-row.probe.mjs on a Mac. It also runs Safari once Safari's Settings allow remote automation (Developer section), and says on stderr when they don't.",
@@ -31,6 +31,16 @@
         "opens": true,
         "closes": true
       },
+      "screenLink": {
+        "opened": true,
+        "stepInView": true,
+        "lit": true
+      },
+      "seenInLink": {
+        "rowStaysClosed": true,
+        "screenInView": true,
+        "backLeavesRowClosed": true
+      },
       "namesOnLine": 0,
       "namesInChart": true
     },
@@ -59,6 +69,16 @@
       "clickOnLine": {
         "opens": true,
         "closes": true
+      },
+      "screenLink": {
+        "opened": true,
+        "stepInView": true,
+        "lit": true
+      },
+      "seenInLink": {
+        "rowStaysClosed": true,
+        "screenInView": true,
+        "backLeavesRowClosed": true
       },
       "namesOnLine": 0,
       "namesInChart": true
