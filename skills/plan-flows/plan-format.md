@@ -93,19 +93,9 @@ Questions test the plan (what it changes, who does what, how it works), never fa
 is complete on its own: it names the people, values and request it asks about, and never refers to another question by
 number. Its form and its checked rules are blocks.md's question.
 
-**Checked**: the number of questions follows the change. One changed step calls for 2 questions, and each doubling of
-the changed steps adds one more, up to 8. A changed step is a flow step whose `keyword` is `Step`, `Check` or `Only if`
-and whose mark is `+`, `~` or `-` (its own `mark`, or its flow's).
-
-| Changed steps | Questions |
-|---|---|
-| 0 or 1 | 2 |
-| 2–3 | 3 |
-| 4–7 | 4 |
-| 8–15 | 5 |
-| 16–31 | 6 |
-| 32–63 | 7 |
-| 64 or more | 8 |
+**Checked**: the number of questions follows the change, as [teaching.md](../teaching.md)'s Questions that check the
+reading gives it. A changed step is a flow step whose `keyword` is `Step`, `Check` or `Only if` and whose mark is `+`,
+`~` or `-` (its own `mark`, or its flow's).
 
 ## choice
 

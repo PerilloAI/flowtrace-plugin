@@ -1,20 +1,31 @@
 /* global crypto, CSS, document, navigator, matchMedia, NodeFilter, sendPrompt, innerHeight, scrollX, scrollY */
+// An option's card picks it on a click on its words, or anywhere else on it but a link, a button or a comment box, which
+// do their own thing: a click meant to read a name never answers.
+const onCard = (card, pick) => {
+  card.querySelector(":scope > button").addEventListener("click", pick);
+  card.addEventListener("click", (event) => {
+    if (!event.target.closest("a, button, textarea, input, .cmt-box")) pick();
+  });
+};
+
 // Each question locks on its first pick; once all are answered, the score says how many were right first time.
 (() => {
   const cards = [...document.querySelectorAll(".qz")];
   const score = document.querySelector(".score");
   let answered = 0, right = 0;
   cards.forEach((card) => {
-    const buttons = [...card.querySelectorAll("button.opt")];
-    buttons.forEach((button) => button.addEventListener("click", () => {
-      if (card.dataset.picked) return;
+    const options = [...card.querySelectorAll(".opt-card")];
+    options.forEach((option) => onCard(option, () => {
+      const button = option.querySelector("button.opt");
+      if (card.dataset.picked || button.disabled) return;
       card.dataset.picked = button.dataset.letter;
       const correct = button.dataset.letter === card.dataset.answer;
-      buttons.forEach((other) => {
-        other.disabled = true;
-        if (other.dataset.letter === card.dataset.answer) other.classList.add("right");
+      options.forEach((other) => {
+        const head = other.querySelector("button.opt");
+        head.disabled = true;
+        if (head.dataset.letter === card.dataset.answer) [other, head].forEach((el) => el.classList.add("right"));
       });
-      if (!correct) button.classList.add("wrong");
+      if (!correct) [option, button].forEach((el) => el.classList.add("wrong"));
       const fb = card.querySelector(".fb");
       fb.querySelector(".verdict").textContent = correct ? "Right." : "Not quite.";
       fb.hidden = false;
@@ -29,7 +40,8 @@
 })();
 
 // Every mention of a name becomes a link naming its line under Names on this page, which the tip below shows beside it,
-// outside headings, buttons, links and a row's line, where a click opens the row.
+// outside headings, buttons, links and a row's line, where a click opens the row, and outside a step's picture, which
+// draws as the reader would see the thing (SVG doesn't draw a link inside its text): the step's words carry its names.
 (() => {
   const spellings = [];
   document.querySelectorAll(".names dt[id]").forEach((dt) => {
@@ -45,7 +57,7 @@
   const texts = [];
   const walk = document.createTreeWalker(document.querySelector(".wrap") || document.body, NodeFilter.SHOW_TEXT);
   while (walk.nextNode()) {
-    if (!walk.currentNode.parentElement.closest("a, button, summary, header, h1, h2, h3, h4, dt, script, style")) texts.push(walk.currentNode);
+    if (!walk.currentNode.parentElement.closest("a, button, summary, header, h1, h2, h3, h4, dt, script, style, .pic")) texts.push(walk.currentNode);
   }
   texts.forEach((node) => {
     const dd = node.parentElement.closest(".names dd");
@@ -401,7 +413,8 @@ if (approve) {
   const picked = new Map();
   cards.forEach((card) => {
     const buttons = [...card.querySelectorAll("button.pick")];
-    buttons.forEach((button) => button.addEventListener("click", async () => {
+    buttons.forEach((button) => onCard(button.closest(".pick-card"), async () => {
+      if (button.disabled) return;
       buttons.forEach((other) => other.setAttribute("aria-pressed", String(other === button)));
       picked.set(card, button.dataset.line);
       const sends = typeof sendPrompt === "function";
@@ -422,7 +435,7 @@ if (approve) {
   const load = crypto.randomUUID();
   const cards = [...document.querySelectorAll(".qz")];
   document.addEventListener("click", (event) => {
-    if (event.target.closest("button.opt") && cards.every((card) => card.dataset.picked)) box.hidden = false;
+    if (event.target.closest(".opt-card") && cards.every((card) => card.dataset.picked)) box.hidden = false;
   });
   const go = box.querySelector("button");
   go.addEventListener("click", () => {

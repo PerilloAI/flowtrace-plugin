@@ -1,32 +1,16 @@
 ---
 name: explain
-description: Ask the person to choose, or explain how code, a change or a piece of work fits together, so that someone who has never seen it understands it. In the chat when nothing waits on a choice; on a page when one does, with the whole picture first, one worked example with real values traced through before and after flowcharts, and questions that check the reading. Use whenever the person must choose between ways of doing something, large or small, and when they ask how something works, what a change did or why a bug happened.
+description: Ask the person to choose, or explain how code, a change or a piece of work fits together, so that someone who has never seen it understands it. In the chat when nothing waits on a choice; on a page when one does, with the whole picture first, one worked example with real values, drawn as a person would see it, traced through before and after flowcharts, and questions that check the reading. Use whenever the person must choose between ways of doing something, large or small, and when they ask how something works, what a change did or why a bug happened.
 ---
 
 # explain
 
-explain teaches someone a thing they haven't seen, so they can decide or act on it. Write for a **newcomer**: a person
-who knows software but has never read this code, this branch or this conversation, and who may read the explanation a
-week from now. Everything they need is in it.
+explain teaches someone a thing they haven't seen, so they can decide or act on it. Read
+[teaching.md](../teaching.md) in full before step 1: it holds the rules explain shares with the other skills (the
+reader, the worked example, charts, questions, showing the page, the cold read).
 
-It teaches the way people learn from explanations ([research.md](research.md) gives the sources, for whoever changes
-this skill; a run needn't open it):
-
-- **The whole before the parts**: the bigger goal this belongs to, its pieces in order, which are done, and where this
-  one sits, before any detail.
-- **Every name explained wherever it appears**, in plain words saying what the thing does for someone: on a page,
-  under Names on this page; in the chat, a few words where it first appears. A name that doesn't help the reader is
-  replaced by what it does. A step number, a branch, a tool or an error code always comes with what it is.
-- **One worked example** with real values, followed through before and after charts side by side.
-- **Where each fact comes from** (`file:line`, a test, a record, a document or a person), so checking it costs a
-  click. What you inferred and couldn't prove says so where it is used.
-- **Short and focused**: a chart holds only the steps the example needs, one idea a box; what matters most comes
-  first.
-- **Questions that check the reading**, each answer saying why: reading an explanation feels like understanding even
-  when it isn't.
-
-explain only reads: it writes nothing in the repository and makes no commit. A page's data goes in a temporary
-directory outside the repository.
+explain only reads: it writes nothing in the repository. A page's data goes in a temporary directory outside the
+repository.
 
 ## 1. Choose the chat or a page
 
@@ -58,11 +42,7 @@ each name you will use has a plain description, and every premise is proved from
 
 ## 3. Pick the worked example
 
-Pick the one case that shows the problem most plainly: a person doing one thing with real values, such as an export of
-order 1042, a request that gets 403, a run with its counts. Take every value from the code, a test or the data, and
-check it before you draw it.
-
-Done when the problem shows in the example alone.
+Pick it, and see it as a person would, by teaching.md's The worked example.
 
 ## 4. Write the page
 
@@ -90,13 +70,7 @@ doesn't need.
 8. **Already settled**: a `settled`, what isn't open, each item with who settled it.
 9. **Names on this page**: a `names`, every name the page uses.
 
-**Charts**: each step holds the example's own values in plain words, with `where` on a step of code; mark what works
-✓ and what never runs or is refused ✗ (`result`), and put the one thing to notice beside its step as `note`. A fact no
-chart carries cites its source where it is said.
-
-**Questions** ask what a person gets in a case, what happens next, which piece does what; a name, a path, a count or a
-date is never the answer. Each is complete on its own, naming the person, the values and the situation, and its wrong
-options are what a reader who skimmed would believe.
+Charts and questions follow teaching.md's Charts and Questions that check the reading.
 
 Done when every case has a chart, every box shows the example's value or state, and each name in a box has its line
 under Names on this page.
@@ -104,40 +78,26 @@ under Names on this page.
 ## 5. Show it
 
 - **In the chat**: under about 40 lines, with one case. Each chart goes in its own fenced block under its heading,
-  drawn with `│` and `▼`, a branch fanning out as `┌──┴──┐`. Before sending, read it yourself with step 6's brief and
-  close what it finds.
-- **As a page**: draw it with `node <page.mjs> explain <the data file>` (`../../page/page.mjs` from this skill's
-  folder); it prints each failure with its line, so fix the file and run it again. Show the page at the path it prints
-  the way this harness shows a page best: in Claude Code, publish that file with the Artifact tool, the same path each
-  time; in Codex, with its visualize skill; elsewhere, draw with `--whole` and give the file's path.
+  drawn with `│` and `▼`, a branch fanning out as `┌──┴──┐`, and a step's example right under that step as a small
+  text picture (a grid of cells, the lines with the used part marked). Before sending, read it yourself with
+  teaching.md's cold-read brief and close what it finds.
+- **As a page**: draw and show it by teaching.md's Show the page.
 
   Then, at once: start the cold read (step 6), and ask the page's decision in the chat, your recommendation first (in
   the Claude app, as the next-step box's question), so the person reads and answers while the cold read runs. Picking
-  an option on the page copies its answer, such as `A · Retry once`, to paste into the chat; say so in a few words,
-  and leave the options and their charts to the page. A plan's
-  skills ask as their own steps say.
+  an option on the page copies its answer, such as `A · Retry once`; say so in a few words, and leave the options and
+  their charts to the page. A plan's skills ask as their own steps say.
 
 Done when the explanation is in front of the person, and for a decision, the question is asked.
 
 ## 6. Read it cold
 
-The writer knows the context and can't see what is missing; a reader with none can. Other skills read their pages cold
-by this step; for them, the decision is what the page asks its reader to do. Read it cold once, after the page is
-shown: start a fresh subagent the way this harness starts one (in Claude Code, the Agent tool with a general-purpose
-agent, which runs in the background), on a faster model where the harness lets you choose one, with nothing from this
-chat, and give it the data file's path with this brief:
+Read the page cold once, by teaching.md's Read it cold; for explain, what is still open goes under Still open. When a
+fix changes the decision (a new option, another recommendation), ask again; when the person has answered already, show
+them that fix before acting on their answer.
 
-> You have never seen this project or this conversation. Read the explanation in `<path>`. List, under two headings:
-> "Can't follow": every name, number, step or claim you can't understand from it alone; "Before deciding": every
-> question you would have to ask before you could decide or act on it, which the explanation neither answers nor lists
-> under Still open. Quote the words each is about, and mark an item "changes the decision" when its answer could change
-> what you would decide or do. Reply "Clear" when both are empty.
+Done when the fixes are on the page.
 
-Fix only what is wrong: a false or contradictory claim, a name missing from Names on this page or meaning two things,
-and an item marked "changes the decision", answered on the page when the code, the plan, the pull request or the
-records answer it, and otherwise put under Still open. Close each gap in the fewest words that close it: a long answer
-raises new questions. Check every new fact as in step 3. Make all the fixes at once, draw and show the page again at
-the same link, and say in a line what changed. When a fix changes the decision (a new option, another
-recommendation), ask again; when the person has answered already, show them that fix before acting on their answer.
+## 7. After an answer or a comment
 
-Done when the fixes are on the page. One round is enough: its fixes start no new cold read.
+Write it in by teaching.md's After an answer or a comment, then draw and show the page again.

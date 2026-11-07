@@ -48,8 +48,9 @@ export function readDocument(text) {
 
   const step = (v, path, flow) => {
     const s = shape(v, path, flow
-      ? { keyword: "string?", text: "string", mark: "string?", where: "string?", result: "string?", note: "string?", change: "string?", lookClosely: "array?", inner: "array?", answers: "array?" }
-      : { text: "string", kind: "string?", where: "string?", result: "string?", note: "string?", change: "string?", inner: "array?", answers: "array?" });
+      ? { keyword: "string?", text: "string", mark: "string?", where: "string?", result: "string?", note: "string?", change: "string?", lookClosely: "array?", inner: "array?", answers: "array?", shows: "object?" }
+      : { text: "string", kind: "string?", where: "string?", result: "string?", note: "string?", change: "string?", inner: "array?", answers: "array?", shows: "object?" });
+    if (flow && s.shows) fail([...path, "shows"], "a flow's step takes no picture: flows stay lean, and the example is drawn on a chart's step");
     if (s.result && !["ok", "bad"].includes(s.result)) fail([...path, "result"], '"result" is "ok" (✓) or "bad" (✗)');
     let kind = "step";
     let text = s.text;
@@ -64,10 +65,18 @@ export function readDocument(text) {
       if (!kind) fail([...path, "kind"], '"kind" is "start", "question" or "here"; leave it out for a plain step');
     }
     if (s.answers && kind !== "q") fail([...path, "answers"], flow ? "only a Check, Only if, Repeats or Tries step has answers" : 'only a step of "kind": "question" has answers');
+    // A picture of the example at this step, its lines as written and the line in the file of each, for check.mjs to read.
+    let shows = null;
+    if (s.shows) {
+      const p = [...path, "shows"];
+      shape(s.shows, p, { html: "strings", from: "string?" });
+      if (!s.shows.html.length) fail([...p, "html"], '"html" holds the picture, one line a string');
+      shows = { html: s.shows.html, from: s.shows.from ?? null, lines: s.shows.html.map((_, k) => lineOf([...p, "html", k])) };
+    }
     const flags = s.lookClosely ? list(s.lookClosely, [...path, "lookClosely"], (f, p) => ({ ...shape(f, p, { kind: "string", text: "string" }), line: lineOf(p) })) : [];
     const box = {
       text, kind, question: kind === "q", keyword: s.keyword ?? null, mark: s.result ?? null, note: s.note ?? null, change: s.change ?? null,
-      where: s.where ?? null, flags, line: lineOf(path),
+      where: s.where ?? null, flags, shows, line: lineOf(path),
       flowMark: flow ? s.mark ?? flow.mark ?? " " : undefined,
       source: JSON.stringify({ ...s, inner: undefined, answers: undefined, mark: flow ? s.mark ?? flow.mark : undefined }),
     };
@@ -145,11 +154,16 @@ export function readDocument(text) {
       return { title: v.title, about: v.about ?? null, chart: chart(v, path) };
     },
     question: (v, path) => {
-      shape(v, path, { question: "string", options: "strings", answer: "string", read: "string", why: "string", source: "string?" });
+      shape(v, path, { question: "string", steps: "array", options: "array", answer: "string", read: "string", why: "string", source: "string?" });
       if (v.source && !SOURCES.includes(v.source)) fail([...path, "source"], `"source" is one of ${SOURCES.join(", ")}`);
       const right = "ABC".indexOf(v.answer);
       if (v.answer.length !== 1 || right < 0 || right >= v.options.length) fail([...path, "answer"], '"answer" is the right option\'s letter: "A", "B" or "C"');
-      return { question: v.question, options: v.options.map((text, k) => ({ text, right: k === right })), read: v.read, why: v.why, source: v.source ?? null };
+      // The question's case, charted up to the step it asks about, and each option charted on from there.
+      const options = list(v.options, [...path, "options"], (o, p) => {
+        shape(o, p, { text: "string", steps: "array" });
+        return { text: o.text, line: lineOf(p), items: steps(o.steps, [...p, "steps"]) };
+      });
+      return { question: v.question, case: steps(v.steps, [...path, "steps"]), options: options.map((o, k) => ({ ...o, right: k === right })), read: v.read, why: v.why, source: v.source ?? null };
     },
     choice: (v, path) => {
       shape(v, path, { number: "number?", question: "string", today: "array?", recommended: "string", alternatives: "strings", options: "array", why: "string" });
