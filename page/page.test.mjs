@@ -15,6 +15,10 @@ import { inline } from "./render.mjs";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const script = path.join(here, "page.mjs");
 
+// A reading question's options, each charted on from the question's case to what the person gets, and a case to ask from.
+const opts = (...texts) => texts.map((text) => ({ text, steps: [{ text, kind: "start" }] }));
+const asked = [{ text: "Ana exports order 1042", kind: "start" }, { text: "What happens next?", kind: "question" }];
+
 // A repository with one commit holding orders.ts, and a plan that changes exportOrder in it.
 function repo() {
   const dir = mkdtempSync(path.join(os.tmpdir(), "page-test-"));
@@ -49,9 +53,9 @@ const plan = () => ({
     {
       heading: "Check your reading",
       content: [
-        { question: { question: "Ana's export times out twice. What does she see?", options: ["The file", '"Export failed"', "Nothing"], answer: "B", read: "How it's built", why: "It retries once." } },
-        { question: { question: "Ben's order doesn't exist. What happens?", options: ['"Export failed" at once', "A retry after 30 seconds, then failure", "Endless retries"], answer: "A", read: "exportOrder", why: "Only a timeout is retried." } },
-        { question: { question: "Cy's export finishes in 2 seconds. How many times is the warehouse asked?", options: ["Twice, to be sure", "Three times", "Once"], answer: "C", read: "Export an order", why: "Only a timeout asks again." } },
+        { question: { question: "Ana's export times out twice. What does she see?", steps: asked, options: opts("The file", '"Export failed"', "Nothing"), answer: "B", read: "How it's built", why: "It retries once." } },
+        { question: { question: "Ben's order doesn't exist. What happens?", steps: asked, options: opts('"Export failed" at once', "A retry after 30 seconds, then failure", "Endless retries"), answer: "A", read: "exportOrder", why: "Only a timeout is retried." } },
+        { question: { question: "Cy's export finishes in 2 seconds. How many times is the warehouse asked?", steps: asked, options: opts("Twice, to be sure", "Three times", "Once"), answer: "C", read: "Export an order", why: "Only a timeout asks again." } },
       ],
     },
     { heading: "What this rests on", content: [{ table: { head: ["The plan rests on", "How it was proved", "Where"], rows: [["Every export loads its order first", "Traced from the Export button", "exportOrder"]] } }] },
@@ -120,8 +124,13 @@ test("each option of a plan's question for the author is a button giving its num
   const run = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
   assert.equal(run.status, 0, run.stderr);
   const html = readFileSync(out, "utf8");
-  assert.match(html, /<button type="button" class="pick" aria-pressed="false" data-line="1 A"><span class="letter">A<\/span><span><span class="tag rec">recommended<\/span> <strong>No: one retry/);
-  assert.match(html, /data-line="1 B"><span class="letter">B<\/span><span>Yes: retry until it answers<\/span>/);
+  assert.match(html, /<div class="pick-card"><button type="button" class="pick" aria-pressed="false" data-line="1 A"><span class="letter">A<\/span><span><span class="pick-name"><span class="tag rec">recommended<\/span> Retry once<\/span><span class="pick-says"><strong>No: one retry/);
+  assert.match(html, /data-line="1 B"><span class="letter">B<\/span><span><span class="pick-name">Retry until it answers<\/span><span class="pick-says">Yes: retry until it answers<\/span>/);
+  // Each option's chart is inside its card, after its button and before the next card.
+  const cardB = html.slice(html.indexOf('data-line="1 B"'));
+  assert.ok(cardB.indexOf("Ana waits until the warehouse answers") < cardB.indexOf("</div></div></div>") || cardB.includes("Ana waits until the warehouse answers"));
+  const cardA = html.slice(html.indexOf('data-line="1 A"'), html.indexOf('data-line="1 B"'));
+  assert.ok(cardA.includes("after one retry"), "option A's chart is in its card");
   assert.match(html, /<p class="ask">Pick an option on each question to copy your answers/);
 });
 
@@ -192,7 +201,7 @@ test("every broken rule is reported at once, each with its line", () => {
   const data = plan();
   data.sections[2].content[0].screens.columns[1].steps[1].change = "Retry twice";
   data.sections[6].content[0].flow.steps[2].answers[0].steps[0].lookClosely[0].kind = "Slow";
-  data.sections[3].content[0].question.options[2] = "The file";
+  data.sections[3].content[0].question.options[2] = opts("The file")[0];
   const file = write(dir, data);
   const run = draw(dir, "plan", "docs/plans/retry.json", "--out", path.join(dir, "page.html"));
   assert.equal(run.status, 1);
@@ -252,7 +261,7 @@ test("a drawing outlines only what changed since the author last read the plan, 
   const data = plan();
   data.sections[6].content[0].flow.steps[1].text = "Load the order and its lines";
   data.sections[3].content[0].question.answer = "A";
-  data.sections[3].content[0].question.options = ['"Export failed"', "The file", "Nothing"];
+  data.sections[3].content[0].question.options = opts('"Export failed"', "The file", "Nothing");
   write(dir, data);
   const run = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
   assert.equal(run.status, 0, run.stderr);
@@ -647,8 +656,8 @@ test("a link goes only to the web, mail or the page itself", () => {
 const reviewPage = (extra) => JSON.stringify({
   title: "A review", ...extra,
   sections: [{ heading: "Questions", content: [
-    { question: { question: "Which?", options: ["one", "two", "three"], answer: "A", read: "Questions", why: "It is.", source: "map" } },
-    { question: { question: "Which now?", options: ["one", "two", "three"], answer: "B", read: "Questions", why: "It is.", source: "test ran" } }
+    { question: { question: "Which?", steps: asked, options: opts("one", "two", "three"), answer: "A", read: "Questions", why: "It is.", source: "map" } },
+    { question: { question: "Which now?", steps: asked, options: opts("one", "two", "three"), answer: "B", read: "Questions", why: "It is.", source: "test ran" } }
   ] }]
 });
 const drawn = (data) => {
@@ -675,4 +684,94 @@ test("a question's source is one of the four the page knows", () => {
   const { run } = drawn(reviewPage({}).replace('"map"', '"a guess"'));
   assert.equal(run.status, 1);
   assert.match(run.stderr, /"source" is one of map, test ran, test read, reading/);
+});
+
+test("a step's picture is drawn inside its card under its words, saying where it came from or that it was drawn for the page", () => {
+  const dir = repo();
+  const data = plan();
+  const [today, after] = data.sections[2].content[0].screens.columns;
+  today.steps[0].shows = { html: ["<table>", "<tr><th>Order</th><td>1042</td></tr>", "</table>"], from: "the warehouse's answer" };
+  after.steps[0].shows = { html: ['<svg viewBox="0 0 40 10"><rect width="40" height="10" fill="#ccc"/><text x="2" y="8">1042</text></svg>'] };
+  write(dir, data);
+  const out = path.join(dir, "page.html");
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
+  assert.equal(run.status, 0, run.stderr);
+  const html = readFileSync(out, "utf8");
+  assert.ok(html.includes('Ana exports order 1042<div class="pic"><table>\n<tr><th>Order</th><td>1042</td></tr>\n</table></div><div class="pic-src">the warehouse\'s answer</div>'));
+  assert.ok(html.includes('<text x="2" y="8">1042</text></svg></div><div class="pic-src">Drawn for this page</div>'));
+});
+
+test("a picture that runs, loads or styles anything, holds an id, or leaves a tag open is refused at its line", () => {
+  const dir = repo();
+  const data = plan();
+  data.sections[2].content[0].screens.columns[0].steps[0].shows = { html: [
+    '<img src="https://tracker.example.com/open.gif">',
+    "<style>table{display:none}</style>",
+    '<div id="w-exportorder" onclick="go()">',
+    "<span>left open",
+  ] };
+  const file = write(dir, data);
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", path.join(dir, "page.html"));
+  assert.equal(run.status, 1);
+  assert.match(run.stderr, new RegExp(`line ${lineOf(file, "open.gif")}: a picture holds no \`<img>\``));
+  assert.match(run.stderr, new RegExp(`line ${lineOf(file, "open.gif")}: a picture holds no \`src\``));
+  assert.match(run.stderr, new RegExp(`line ${lineOf(file, "<style>")}: a picture holds no \`<style>\``));
+  assert.match(run.stderr, new RegExp(`line ${lineOf(file, "onclick")}: a picture holds no \`id\``));
+  assert.match(run.stderr, new RegExp(`line ${lineOf(file, "onclick")}: a picture holds no \`onclick\``));
+  assert.match(run.stderr, new RegExp(`line ${lineOf(file, "left open")}: \`<span>\` is never closed`));
+});
+
+test("a flow's step takes no picture", () => {
+  const dir = repo();
+  const data = plan();
+  data.sections[6].content[0].flow.steps[1].shows = { html: ["<b>order 1042</b>"] };
+  const file = write(dir, data);
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", path.join(dir, "page.html"));
+  assert.equal(run.status, 1);
+  assert.match(run.stderr, new RegExp(`line ${lineOf(file, "order 1042</b>")}: a flow's step takes no picture`));
+});
+
+test("a reading question draws its case above its options, each a card holding its own chart", () => {
+  const html = drawnPlan((_, data) => {
+    const q = data.sections[3].content[0].question;
+    q.steps = [{ text: "Ana exports order 1042", kind: "start" }, { text: "It times out twice", kind: "question" }];
+    q.options = [
+      { text: "The file", steps: [{ text: "A third try starts", kind: "start" }] },
+      { text: '"Export failed"', steps: [{ text: "No third try", kind: "start" }] },
+      { text: "Nothing", steps: [{ text: "The page waits", kind: "start" }] },
+    ];
+  });
+  const quiz = html.slice(html.indexOf('<div class="qz'), html.indexOf('<div class="fb"'));
+  assert.ok(quiz.indexOf("It times out twice") < quiz.indexOf('class="opts"'), "the case comes before the options");
+  const cardB = quiz.slice(quiz.indexOf('<div class="opt-card" data-letter="B">'), quiz.indexOf('<div class="opt-card" data-letter="C">'));
+  assert.match(cardB, /^<div class="opt-card" data-letter="B"><button type="button" class="opt" data-letter="B"><span class="letter">B<\/span><span>&quot;Export failed&quot;<\/span><\/button><div class="chart">/);
+  assert.ok(cardB.includes("No third try"));
+});
+
+test("a reading question needs its case's chart, and each option its chart with no ✓ or ✗", () => {
+  const dir = repo();
+  const refused = (change, message) => {
+    const data = plan();
+    change(data.sections[3].content[0].question);
+    const file = write(dir, data);
+    const run = draw(dir, "plan", "docs/plans/retry.json", "--out", path.join(dir, "page.html"));
+    assert.equal(run.status, 1);
+    assert.match(run.stderr, message(file));
+  };
+  refused((q) => { delete q.steps; }, () => /question needs "steps"/);
+  refused((q) => { q.options[1] = q.options[1].text; }, () => /options\.1 must be an object/);
+  refused((q) => { q.options[0].steps = [{ text: "A third try is made", kind: "start", result: "ok" }]; }, (file) => new RegExp(`line ${lineOf(file, "A third try is made")}: an option's chart carries no ✓ or ✗`));
+});
+
+test("in each browser tried, a click on a name inside an option's card picks nothing, a click elsewhere on it picks it, and a picture's words stay as written", () => {
+  const seen = observation("browsers/closed-row").evidence;
+  assert.ok(seen.length >= 2);
+  for (const browser of seen) {
+    const { nameInCard, cardClick, pictureWords } = browser;
+    assert.deepEqual({ nameInCard, cardClick, pictureWords }, {
+      nameInCard: { tipShown: true, notPicked: true },
+      cardClick: { picked: true, feedbackShown: true },
+      pictureWords: { namesLinked: 0, drawn: true, inFull: true },
+    }, browser.name);
+  }
 });

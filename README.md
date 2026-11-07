@@ -7,7 +7,7 @@ change before you make it or approve it, by drawing a page you can read, answer 
 |---|---|
 | `plan-flows` | Plans a change before any code, from the code it touches. You read the plan's page, answer its questions and approve it. |
 | `plan-check` | Has a fresh subagent test what the approved plan takes as true and find the cases it leaves open, then asks you each one. |
-| `explain` | Explains how something works, or asks you to choose, with one worked example traced through before and after flowcharts. |
+| `explain` | Explains how something works, or asks you to choose, with one worked example traced through before and after flowcharts, each step drawing the example as you would see it. |
 | `pr-review` | Reviews a pull request or merge request from a copy of its code, and checks your reading with questions a second reader has answered blind. |
 
 In Claude Code a skill runs as `/flowtrace:plan-flows`, and in Codex as `$flowtrace:plan-flows`. Claude or Codex may also
@@ -79,7 +79,10 @@ Everything below happens for the person using the plugin. Nothing else in this r
   answered, the skill starts building at once, changing your code under your harness's usual permissions, and shows you
   every change before anything is committed.
 - `page/page.mjs` draws each page from a data file, to a temporary folder. It runs `git` to look up names and the default
-  branch. It makes no network call of its own.
+  branch. It makes no network call of its own. A step's picture of the example is HTML or SVG a skill writes; the script
+  refuses one that would run anything or load anything from elsewhere.
+- The four skills share their rules on teaching a reader in `skills/teaching.md`, which each reads before its first
+  step.
 - pr-review fetches the pull request's commits into your repository's git objects, and copies its head to a temporary
   folder outside your checkout. It runs the pull request's tests and installs what they need in that copy, where your
   harness asks before a command. For a pull request from a fork, or one whose source it can't tell, it asks you first,
@@ -117,8 +120,8 @@ imports only Node's file reading, and sends nothing anywhere.
 |---|---|
 | `pull_request` | the pull request's link; a workspace's name, when you have more than one |
 | `code_impact` | the link; the workspace; a commit id; each changed file's path, with the ranges of lines changed |
-| `record_drop` | the link; the workspace; the head commit; pr-review's version; the model running it; a question pr-review dropped, its options and its answer; a random id for the run; the rule it broke, or the option a second reader picked instead |
-| `record_pick` | the link; the workspace; the head commit; pr-review's version; the model running it; a page's question and options; a random id for the page load; where the answer came from; the option you picked first and whether it was right |
+| `record_drop` | the link; the workspace; the head commit; pr-review's version; the model running it; a question pr-review dropped, its options' words (not their charts) and its answer; a random id for the run; the rule it broke, or the option a second reader picked instead |
+| `record_pick` | the link; the workspace; the head commit; pr-review's version; the model running it; a page's question and its options' words (not their charts); a random id for the page load; where the answer came from; the option you picked first and whether it was right |
 
 `pull_request` also has Perillo read that pull request's title, description and author from the forge, through the
 workspace's own connection, and keep them with its review.
@@ -133,7 +136,8 @@ Send answers on a page. Neither carries your name. Perillo's general privacy pol
 `observations/` holds what outside tools were seen to do, each with the small script that captured it
 (`*.probe.mjs`). Those probes are for people working on this plugin. The plugin never runs them, and each says what it
 runs: `plugin-hook-deny.probe.mjs` and `plugin-mcp-session-open.probe.mjs` each run one `claude -p` turn, which calls a
-model; `transcript-rows.probe.mjs` reads the transcripts you name; `plugin-marketplace-and-manifest.probe.mjs` runs the
+model; `skill-reads-teaching.probe.mjs` runs four `claude -p` turns, one per skill, which call a model;
+`transcript-rows.probe.mjs` reads the transcripts you name; `plugin-marketplace-and-manifest.probe.mjs` runs the
 Codex CLI on scratch folders, with no model; `import-meta-dirname.probe.mjs` prints what Node gives.
 
 ```bash
