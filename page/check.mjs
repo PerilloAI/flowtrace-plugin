@@ -1,5 +1,6 @@
 // The checks a page's data must pass before it is drawn: every rule blocks.md and plan-format.md mark **checked**, on
 // the data itself, so the page is never read back. An explanation gets the rules its blocks share with a plan.
+import { pictureProblems } from "./picture.mjs";
 
 export const PLAN_SECTIONS = [
   "What I'm asking",
@@ -37,6 +38,12 @@ export function boxes(items) {
 }
 export function chartBoxes(chart) {
   return chart.columns ? chart.columns.flatMap((c) => boxes(c.items)) : boxes(chart.items);
+}
+// Every box a block draws as a chart: a chart's, a screen's or a trace's, a choice's today and options, a question's case
+// and options. A flow's steps are not a chart's.
+export function blockChartBoxes(b) {
+  if (b.kind === "question") return [...boxes(b.case), ...b.options.flatMap((o) => boxes(o.items))];
+  return [...(b.chart ? chartBoxes(b.chart) : []), ...boxes(b.today ?? [])];
 }
 
 export function changedSteps(doc) {
@@ -78,9 +85,9 @@ export function check(doc, { plan, nameFound }) {
     titles.add(row.title);
   }
   for (const b of all) {
-    const chart = b.chart ?? (b.kind === "flow" ? { items: b.items } : null);
-    if (!chart) continue;
-    for (const box of chartBoxes(chart)) {
+    const drawn = b.kind === "flow" ? boxes(b.items) : blockChartBoxes(b);
+    for (const box of drawn) {
+      for (const p of box.shows ? pictureProblems(box.shows.html) : []) at(box.shows.lines[p.k], p.message);
       if (box.change && !titles.has(box.change)) at(box.line, `"change": "${box.change}" names no row of "changes"`);
       for (const f of box.flags ?? []) {
         if (!LOOK_CLOSELY.includes(f.kind)) at(f.line, `Look closely's kind "${f.kind}" is not one of ${LOOK_CLOSELY.join(", ")}`);
@@ -93,6 +100,9 @@ export function check(doc, { plan, nameFound }) {
     const texts = q.options.map((o) => o.text);
     if (q.options.length !== 3 || new Set(texts).size !== 3) at(q.line, "a question has three different options");
     if (!readTarget(ids, q.read)) at(q.line, `"read": "${q.read}" names no chart, flow, section or step's "where" on the page`);
+    for (const o of q.options) {
+      for (const box of boxes(o.items).filter((b) => b.mark)) at(box.line, "an option's chart carries no ✓ or ✗ (\"result\"), so it doesn't give the answer away");
+    }
   }
   if (questions.length >= 2) {
     const places = questions.map((q) => q.options.findIndex((o) => o.right));
@@ -104,6 +114,11 @@ export function check(doc, { plan, nameFound }) {
     const cols = c.chart.columns ?? [];
     if (cols.length < 2 || cols.length > 4) at(c.line, `a choice charts 2 to 4 options, the recommended one first; this one has ${cols.length}`);
     if (c.alternatives.length !== cols.length - 1) at(c.line, `a choice with ${cols.length} options has ${cols.length - 1} "alternatives", one per option after the first`);
+    if (plan && !c.today) at(c.line, 'a plan\'s question for the author needs "today": its case as the code runs it now');
+    if (!plan && c.today) at(c.line, 'only a plan\'s question for the author takes "today"');
+    for (const box of boxes(c.today ?? [])) {
+      if (box.change) at(box.line, `"change": "${box.change}" is on a step of "today", which shows what happens now, before any change`);
+    }
     if (plan) {
       if (c.number === null) at(c.line, 'a plan\'s choice has a "number"');
       else if (numbers.has(c.number)) at(c.line, `two questions are numbered ${c.number}`);

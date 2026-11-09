@@ -11,10 +11,12 @@ fingerprint and approval. The plan file is the page's data: `page.mjs`, in the p
 page. The author reads the page, answers its questions, and comments and approves in the chat. The plan's flows are
 the contract the code is written to.
 
-Git stays with the author. While planning, write the plan file and nothing else: make no commit, and make or switch no branch. The
-author commits the plan when they choose, on the branch they're on.
+Read [teaching.md](../teaching.md) in full before step 1: it holds the rules plan-flows shares with the other skills
+(the reader, the worked example, charts, questions, showing the page, the cold read, the sweep after each answer). Then
+check the session by its Before reading the code.
 
-First check that this session has the code: a git repository in the working directory, and `node`. When either is missing, say that plan-flows needs Claude Code or Codex opened on the code, and stop.
+While planning, write the plan file and nothing else. The author commits the plan when they choose, on the branch
+they're on.
 
 ## 1. Read the code, and find how the change is best done
 
@@ -31,16 +33,14 @@ change makes none (a rename, a bug with one obvious fix, a change that follows a
 throughout and lets no one do anything new), research nothing.
 
 Read the stack from the repository's manifests (such as `package.json`, `pyproject.toml`, a `.csproj`, `go.mod`): its
-languages, frameworks and their versions. Then start one fresh subagent per choice, all at once, the way this harness
-starts one (in Claude Code, the Agent tool with a general-purpose agent, which runs in the background and can search
-the web), with this brief:
+languages, frameworks and their versions. Then start one fresh subagent per choice, all at once, by
+teaching.md's A fresh subagent (in Claude Code it runs in the background and can search the web), with this brief:
 
 > Find how this is best done: `<the choice, in a sentence>`. The author asked for: `<their request, in their words>`.
 > The problem behind it: `<what they want someone to be able to do, stop or fix>`. The stack, which is what exists today
 > and no limit on the answer: `<languages, frameworks, versions>`. Read only, and change nothing in the repository.
-> Search the web, and
-> prefer the framework's or library's own docs for these versions, standards and specifications, and guides from teams
-> known for the subject; use a blog post or forum answer only where those say nothing.
+> Search the web, and prefer the framework's or library's own docs for these versions, standards and specifications,
+> and guides from teams known for the subject; use a blog post or forum answer only where those say nothing.
 >
 > Return, in under 300 words:
 >
@@ -80,10 +80,11 @@ ways:
   the change's `why` in The changes and why links its source.
 - **It differs from the request in what someone gets, or costs something the author would weigh** (a dependency, a
   migration, more work): a question under Questions from plan-flows. The established way comes first unless the code
-  or a recorded decision speaks against it, the author's request is one of the options, each is charted on the plan's
-  case, and `why` links the sources. Never swap the request for it silently: the author decides, and the page shows
-  them there was a better way. The way that would change most what people get is question 1, and What I'm asking says
-  so. Keep the page short: another way gets an option only when it gives people something clearly different.
+  or a recorded decision speaks against it, the author's request is one of the options, the plan's case is charted as
+  it runs today and under each option, and `why` links the sources. Never swap the request for it silently: the
+  author decides, and the page shows them there was a better way. The way that would change most what people get is
+  question 1, and What I'm asking says so. Keep the page short: another way gets an option only when it gives people
+  something clearly different.
 - **It doesn't fit this code**: leave it out. The code or a recorded decision has to rule it out. Its cost doesn't,
   since that is for the author to weigh.
 
@@ -102,8 +103,10 @@ premise is proved from its source or is a question.
 ## 2. Write the plan
 
 Read [plan-format.md](plan-format.md) first: it gives the sections in order, each item's keys, and the rules every
-drawing checks; [blocks.md](../../page/blocks.md) gives the items a plan shares with any page. Name the file after the change, never the branch: `docs/plans/<change>.json`. Pick one example change
-with real values and follow it through the screens and traces.
+drawing checks; [blocks.md](../../page/blocks.md) gives the items a plan shares with any page. Name the file after
+the change, never the branch (`docs/plans/<change>.json`): a branch is gone once it merges, and the plan stays. Pick
+one example change by teaching.md's The worked example and follow it through the screens and traces, drawn as a person
+would see it.
 
 Done when all of these hold:
 
@@ -114,8 +117,9 @@ Done when all of these hold:
 - Every question can be answered from the plan alone.
 - What this rests on names every premise, so an author who knows better can see it at a glance.
 - Every open decision, every open behaviour you noted that the code doesn't settle, and every better way the research
-  found than the one asked for, is a question under Questions from plan-flows: one real case, the recommendation
-  first, a chart of the case under each option, and why. No other section asks the author to decide.
+  found than the one asked for, is a question under Questions from plan-flows: one real case, a chart of how it
+  runs today, the recommendation first, a chart of the case under each option, and why. No other section asks the
+  author to decide.
 - Every design choice the research covered is built the established way with its source linked, asked as a question,
   or left out because the code or a recorded decision rules it out.
 - A reader of What I'm asking alone learns of the best way the research found to solve their problem, when it isn't
@@ -132,14 +136,12 @@ edit the plan, so the drawings after it outline what changed since they read it.
    question and choice rules, the change titles, the Look closely kinds, the section order) and prints each failure
    with its line. Fix the plan and run it again. Done when it prints its line of JSON: the page's path and the
    fingerprint.
-2. **Show the page** at the path it printed: in Claude Code, publish that file with the Artifact tool, the same path
-   each time, so the page keeps its link; in Codex, show the file with the visualize skill. Where neither fits, draw
-   with `--whole` and give the file's path.
+2. **Show the page** at the path it printed, by teaching.md's Show the page.
 3. **Write the review page's link** after the first publish that gives one: `"reviewPage": "<link>"`, after `title`
    (and `approved`, if there is one). It is not part of the fingerprint, so nothing is drawn again.
 4. **Read it cold**, only when the plan has new words of its own: a new plan, or plan-check's findings. An answer, an
-   approval or a comment's small fix is the author's own and needs none. Start it once the page is shown, by explain's
-   step 6 (`../explain/SKILL.md`), giving the subagent the plan file's path.
+   approval or a comment's small fix is the author's own and needs none. Start it once the page is shown, by
+   teaching.md's Read it cold, giving the subagent the plan file's path.
 5. **Ask at once** after a new plan's first drawing, while the cold read runs: the author reads the page, answers its
    questions by picking an option on each (the page copies the answers, such as `1 A, 3 B`, to paste into the chat)
    or by typing their numbers and letters, comments in the chat, and approves, either with Approve's line or by saying
@@ -148,10 +150,10 @@ edit the plan, so the drawings after it outline what changed since they read it.
    own steps say.
 6. **When the cold read returns**, a fix only makes the plan's words clearer, and goes into the plan file; a gap whose
    answer would change what the plan does becomes a question for the author under Questions from plan-flows, never a
-   call of yours under Already settled. On a
-   plan approved at its current fingerprint, propose the fixes in the chat, and make them by step 6 of this skill
-   only on the author's OK. Write them in together with any message from the author that has arrived, then draw and
-   show the page again, at the same link, and say in a line what changed. Its fixes start no new cold read.
+   call of yours under Already settled. On a plan approved at its current fingerprint, propose the fixes in the chat,
+   and make them by step 6 of this skill only on the author's OK. Write them in together with any message from the
+   author that has arrived, then draw and show the page again, at the same link, and say in a line what changed. Its
+   fixes start no new cold read.
 
 Done when the page, at the current fingerprint, is in front of the author, with the cold read's fixes on it.
 
@@ -168,9 +170,10 @@ An answer to a question, from either Questions section, arrives as its number an
    row of the changes or of What this rests on), and remove the question, and its section once it's empty.
 3. When the changed steps then call for a different number of reading questions, add or rework them to match. They
    test the plan, so a new behaviour can be one.
+4. Sweep the whole plan by teaching.md's After an answer or a comment: no part may still say what the answer replaced.
 
-Write in everything one message from the author brings, then draw the page once (step 3). On an approved plan, the
-edit is a plan change (step 6).
+Write in everything one message from the author brings, comments included, sweep, then draw the page once (step 3).
+On an approved plan, the edit is a plan change (step 6).
 
 ## 5. Approve
 
@@ -194,8 +197,9 @@ and writes `approved` itself, with no need to come back here.
 
 ## 6. When an approved plan changes
 
-A comment on an approved plan, code that departs from it, or a drawing's refusal that makes you edit it, changes the plan
-with no new approval and no new plan-check.
+A comment on an approved plan, code that departs from it, or a drawing's refusal that makes you edit it, changes the
+plan with no new approval and no new plan-check: the author sees each change with the code (step 7), so nothing they
+approved changes unseen.
 
 1. Edit the flow and each part of the plan the change touches, and append a numbered entry to Plan changes, as
    plan-format.md shows it: what changed, why, and who.

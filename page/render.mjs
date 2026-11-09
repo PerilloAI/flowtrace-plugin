@@ -39,9 +39,10 @@ export function render(doc, o) {
   const keys = new Set();
   let outlined = 0;
   // Marks a part changed since the copy the reader last saw, by its source words.
+  const changedSince = (key) => Boolean(o.previous) && !o.previous.has(key);
   const since = (key) => {
     keys.add(key);
-    if (!o.previous || o.previous.has(key)) return "";
+    if (!changedSince(key)) return "";
     outlined++;
     return " since";
   };
@@ -51,6 +52,7 @@ export function render(doc, o) {
     return c ? ` class="${c}"` : "";
   };
   const comments = o.plan;
+  const warnWords = (f) => `<b>Look closely · ${esc(f.kind)}</b>: ${inline(f.text)}`;
   const changeIds = new Map(blocks(doc, "changes").flatMap((b) => b.rows.map((r) => [r.title, r.id])));
   let where = [];
   let inScreen = false;
@@ -102,12 +104,14 @@ export function render(doc, o) {
     const whereSpan = b.where ? `<span class="where">${esc(b.where)}</span>` : "";
     const change = b.change ? `<a class="to-change" href="#${changeIds.get(b.change) ?? ""}">change: ${esc(b.change)}</a>` : "";
     const toFlow = inScreen ? (flowsOf.get(b.change) ?? []).map((f) => `<a class="to-flow" href="#${f.step}">How it's built: ${inlineInLink(f.name)}</a>`).join("") : "";
-    const warns = (b.flags ?? []).map((f) => `<div class="warn${since(`${f.kind}: ${f.text}`)}"><b>Look closely · ${esc(f.kind)}</b>: ${inline(f.text)}</div>`).join("");
+    const warns = (b.flags ?? []).map((f) => `<div class="warn${since(`${f.kind}: ${f.text}`)}">${warnWords(f)}</div>`).join("");
     const id = b.whereId ? ` id="${b.whereId}"` : "";
+    // The example as it is at this step, drawn inside the step's card under its words, with where it came from.
+    const pic = b.shows ? `<div class="pic">${b.shows.html.join("\n")}</div><div class="pic-src">${b.shows.from ? inline(b.shows.from) : "Drawn for this page"}</div>` : "";
     const onlyLane = b.lanes?.length === 1 ? b.lanes[0] : null;
     const side = onlyLane ? `<div class="side"><div class="exit">${esc(onlyLane.label)}</div>${col(onlyLane.items, newFlow)}</div>` : "";
     const note = b.note ? (side ? `<div class="note">${inline(b.note)}</div>` : "") : "";
-    const row = `<div class="row"><div class="cell"${id}><div class="${cls}${since(b.source)}">${mk}${inline(b.text)}${mark}${whereSpan}${change}${toFlow}</div>${warns}${side ? note : ""}${cmt(b)}</div>${side || (b.note ? `<div class="note">${inline(b.note)}</div>` : "")}</div>`;
+    const row = `<div class="row"><div class="cell"${id}><div class="${cls}${since(b.source)}">${mk}${inline(b.text)}${mark}${whereSpan}${pic}${change}${toFlow}</div>${warns}${side ? note : ""}${cmt(b)}</div>${side || (b.note ? `<div class="note">${inline(b.note)}</div>` : "")}</div>`;
     const lanes = b.lanes && !onlyLane
       ? `${arrow}<div class="br">${b.lanes.map((l) => `<div class="lane"><div class="exit">${esc(l.label)}</div>${l.items.length ? arrow + col(l.items, newFlow) : ""}</div>`).join("")}</div>`
       : "";
@@ -145,8 +149,14 @@ export function render(doc, o) {
         const answer = "ABC"[b.options.findIndex((x) => x.right)];
         const look = b.read ? `<a href="#${readTarget(o.targets, b.read) ?? ""}">${inline(b.read)}</a>` : "";
         const key = [b.question, ...b.options.map((x) => `${x.right ? "*" : "-"} ${x.text}`), b.read, b.why].join("\n");
-        return `<div class="qz${since(key)}" data-answer="${answer}"${b.source ? ` data-source="${esc(b.source)}"` : ""}><p class="qt">${inline(b.question)}</p>${look ? `<p class="hint">Where to look: ${look}</p>` : ""}<div class="opts">${b.options
-          .map((x, k) => `<button type="button" class="opt" data-letter="${"ABC"[k]}">${"ABC"[k]}. ${inline(x.text)}</button>`).join("")}</div><div class="fb" hidden><strong class="verdict"></strong> ${inline(b.why ?? "")}${look ? ` See it in ${look}` : ""}${b.source ? ` <span class="src">· ${b.source === "map" ? "the map" : esc(b.source)}</span>` : ""}</div></div>`;
+        // The case charted up to the step asked about, then each option a card holding its chart on from there. The card's
+        // words are its button; a click elsewhere on the card picks it too, unless it lands on a link or a button in it.
+        const caseChart = `<figure class="qcase">${chartHtml({ items: b.case }, b.question)}</figure>`;
+        const opts = b.options.map((x, k) => {
+          const letter = "ABC"[k];
+          return `<div class="opt-card" data-letter="${letter}"><button type="button" class="opt" data-letter="${letter}"><span class="letter">${letter}</span><span>${inline(x.text)}</span></button>${chartHtml({ items: x.items }, `${b.question} › ${letter}`)}</div>`;
+        }).join("");
+        return `<div class="qz${since(key)}" data-answer="${answer}"${b.source ? ` data-source="${esc(b.source)}"` : ""}><p class="qt">${inline(b.question)}</p>${look ? `<p class="hint">Where to look: ${look}</p>` : ""}${caseChart}<div class="opts">${opts}</div><div class="fb" hidden><strong class="verdict"></strong> ${inline(b.why ?? "")}${look ? ` See it in ${look}` : ""}${b.source ? ` <span class="src">· ${b.source === "map" ? "the map" : esc(b.source)}</span>` : ""}</div></div>`;
       }
       case "choice": {
         const title = b.number !== null ? `${b.number} · ${b.question}` : b.question;
@@ -154,13 +164,19 @@ export function render(doc, o) {
         const ask = b.number === null ? `<p class="ask">${inline(b.question)} Pick an option to copy your answer, or answer in the chat.</p>` : "";
         // Each option is a button that gives the chat its answer: "3 A" on a plan, the letter and the option's name on an
         // explanation.
+        // Each option is a card: its button (letter, name and sentence) and its chart. A click elsewhere on the card picks it
+        // too, unless it lands on a link or a button in it.
         const picks = [b.recommended, ...b.alternatives].map((text, k) => {
           const letter = "ABCD"[k];
           const line = b.number !== null ? `${b.number} ${letter}` : `${letter} · ${b.names[k] ?? ""}`;
           const tag = k === 0 ? '<span class="tag rec">recommended</span> ' : "";
-          return `<button type="button" class="pick" aria-pressed="false" data-line="${esc(line)}"><span class="letter">${letter}</span><span>${tag}${k === 0 ? `<strong>${inline(text ?? "")}</strong>` : inline(text)}</span></button>`;
+          const column = b.chart.columns[k];
+          const chart = column ? chartHtml({ items: column.items }, `${title} › ${column.title}`) : "";
+          return `<div class="pick-card"><button type="button" class="pick" aria-pressed="false" data-line="${esc(line)}"><span class="letter">${letter}</span><span><span class="pick-name">${tag}${inline(b.names[k] ?? "")}</span><span class="pick-says">${k === 0 ? `<strong>${inline(text ?? "")}</strong>` : inline(text ?? "")}</span></span></button>${chart}</div>`;
         }).join("");
-        return `<div class="decision${since(key)}" id="${b.id}"><h3>${inline(title)}</h3><div class="picks">${picks}</div><div class="picked"><code hidden></code><p class="desc" hidden></p></div><figure>${chartHtml(b.chart, title)}${b.why ? `<figcaption>${inline(b.why)}</figcaption>` : ""}</figure></div>${ask}`;
+        // How the case goes today comes right under the question, before the options that would change it.
+        const today = b.today ? `<h4 class="today">How it works today</h4><figure>${chartHtml({ items: b.today }, `${title} › Today`)}</figure>` : "";
+        return `<div class="decision${since(key)}" id="${b.id}"><h3>${inline(title)}</h3>${today}<div class="picks">${picks}</div><div class="picked"><code hidden></code><p class="desc" hidden></p></div>${b.why ? `<p class="why">${inline(b.why)}</p>` : ""}</div>${ask}`;
       }
       case "changes":
         return `<div class="tablewrap"><table><thead><tr><th>Change</th><th>What users get</th><th>Why</th></tr></thead><tbody>${b.rows
@@ -181,15 +197,18 @@ export function render(doc, o) {
         const heading = `<h3${cls(`Flow: ${b.name}`)}>${tag}${inline(b.name)}</h3>`;
         const chart = `<figure><div class="chart">${col(b.items, newFlow)}</div></figure>`;
         if (!o.plan) return `<section class="flowbox" id="${b.id}">${heading}${chart}</section>`;
-        // On a plan, a closed row: its line says what opening it shows. A flow marked as a whole has its tag, not counts.
+        // On a plan, a closed row: its line says what opening it shows, and its warnings stand under the line until it opens,
+        // when they sit on their steps. A flow marked as a whole has its tag, not counts.
         const all = boxes(b.items);
         const counts = b.nameMark !== " " ? "" : [["+", "+", "new", "new"], ["~", "~", "chg", "changed"], ["-", "−", "gone", "removed"]].map(([mark, sign, c, word]) => {
           const n = all.filter((x) => x.flowMark === mark).length;
           return n ? `<span class="mk ${c}">${sign}${n} ${word}</span>` : "";
         }).join("");
+        // The step's own drawing counts a changed warning as outlined, so this one, the same warning, doesn't count again.
+        const warnings = all.flatMap((x) => x.flags ?? []).map((f) => `<span class="warn${changedSince(`${f.kind}: ${f.text}`) ? " since" : ""}">${warnWords(f)}</span>`).join("");
         const screens = seenIn.get(b.id) ?? [];
         const seen = screens.length ? `Seen in: ${screens.map((s) => `<a href="#${s.id}">${inlineInLink(s.title)}</a>`).join(", ")}` : "No screen links here";
-        return `<details class="flowbox" id="${b.id}"><summary>${heading}<span class="row-meta">${counts}<span>${all.length} step${all.length === 1 ? "" : "s"}</span><span>${seen}</span></span></summary>${chart}</details>`;
+        return `<details class="flowbox" id="${b.id}"><summary>${heading}<span class="row-meta">${counts}<span>${all.length} step${all.length === 1 ? "" : "s"}</span><span>${seen}</span></span>${warnings ? `<span class="row-warns">${warnings}</span>` : ""}</summary>${chart}</details>`;
       }
     }
     return "";

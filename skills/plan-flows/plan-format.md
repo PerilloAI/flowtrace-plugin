@@ -93,33 +93,29 @@ Questions test the plan (what it changes, who does what, how it works), never fa
 is complete on its own: it names the people, values and request it asks about, and never refers to another question by
 number. Its form and its checked rules are blocks.md's question.
 
-**Checked**: the number of questions follows the change. One changed step calls for 2 questions, and each doubling of
-the changed steps adds one more, up to 8. A changed step is a flow step whose `keyword` is `Step`, `Check` or `Only if`
-and whose mark is `+`, `~` or `-` (its own `mark`, or its flow's).
-
-| Changed steps | Questions |
-|---|---|
-| 0 or 1 | 2 |
-| 2–3 | 3 |
-| 4–7 | 4 |
-| 8–15 | 5 |
-| 16–31 | 6 |
-| 32–63 | 7 |
-| 64 or more | 8 |
+**Checked**: the number of questions follows the change, as [teaching.md](../teaching.md)'s Questions that check the
+reading gives it. A changed step is a flow step whose `keyword` is `Step`, `Check` or `Only if` and whose mark is `+`,
+`~` or `-` (its own `mark`, or its flow's).
 
 ## choice
 
 A `choice` is one question for the author: a decision still open, a behaviour the plan leaves open whose answer
 changes what someone gets (a response, a page, an exit status, an error, a write), or a better way than the one the
 author asked for, which the research found. A better way's options include the author's request, and its `why` links
-the sources. Its form is blocks.md's choice: the
-recommendation first, each option charted on one real case, then the reason.
+the sources. Its form is blocks.md's choice: one real
+case charted as it runs today, then under each option with the recommendation first, then the reason.
 
 - `question` carries its case: who does what, with which values, in which state.
 - **Checked**: each has a `number`, and no two share one. The numbers run down the page across both Questions
   sections, so a number names one question. A question keeps its number until it is answered, and new questions
   number on from the highest one still open, or from 1.
 - The case uses real values, from the code or the plan's example.
+- `today`, a list of steps after `question`, charts that case as the code runs it now, a step of code carrying its
+  `where`. The page draws it right under the question as How it works today, so the author knows what each option
+  would change. When the thing asked about doesn't exist yet, it shows what happens in its place, such as the error a
+  person gets or the step that runs without it. Each question has its own, even when a screen's Today column shows the
+  same case, because the author answers from the question alone. **Checked**: every question has one with at least one
+  step, and none of its steps names a `change`.
 - Write it in plain English, as the flows are: a reader who has never seen the code can answer it from the question
   and its charts alone.
 
@@ -163,7 +159,8 @@ traces come in this order:
 The flows are the contract the code is written to. Write one for each way in that the change adds or touches.
 
 On the page each flow is a closed row that opens in place. Its line shows the flow's name, its new or removed tag or its
-counts of marked steps, its number of steps, and the screens that link to it (`Seen in`, or `No screen links here`). A
+counts of marked steps, its number of steps, and the screens that link to it (`Seen in`, or `No screen links here`). The
+flow's Look closely warnings stand under that line while the row is closed, and sit on their steps once it is open. A
 question's `read`, or any other link, that names a flow or a step's `where` opens a copy of the flow in a modal over the
 page, with the step lit.
 

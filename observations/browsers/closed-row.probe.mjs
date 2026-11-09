@@ -27,10 +27,10 @@ const plan = {
   title: "Export an order",
   sections: [
     { heading: "What I'm asking", content: [{ p: "Approve each step, and see [the last answer](#w-lastanswer) and [the questions](#s-check-your-reading)." }] },
-    { heading: "What you'd see", content: [{ screens: { title: "Exporting an order", columns: [{ title: "Today", steps: [{ text: "It gives up" }] }, { title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } }] },
+    { heading: "What you'd see", content: [{ screens: { title: "Exporting an order", columns: [{ title: "Today", steps: [{ text: "It gives up", shows: { html: ['<svg viewBox="0 0 160 20" width="160" height="20"><text x="2" y="14">the flow stops here</text></svg>'] } }] }, { title: "After", steps: [{ text: "It tries again", change: "Retry once" }] }] } }] },
     { heading: "Check your reading", content: [
-      { question: { question: "Where does it start?", options: ["At Export", "At Import", "At Print"], answer: "A", read: "Export an order", why: "It starts there." } },
-      { question: { question: "What loads the order?", options: ["exportOrder", "loadOrder", "Nothing"], answer: "B", read: "loadOrder", why: "That step does." } },
+      { question: { question: "Where does it start?", steps: [{ text: "Ana wants her order", kind: "start" }], options: [{ text: "At Export", steps: [{ text: "She presses Export" }] }, { text: "At Import", steps: [{ text: "She presses Import" }] }, { text: "At Print", steps: [{ text: "She presses Print" }] }], answer: "A", read: "Export an order", why: "It starts there." } },
+      { question: { question: "What loads the order?", steps: [{ text: "Ana opens an order", kind: "start" }], options: [{ text: "exportOrder", steps: [{ text: "The export's flow loads it" }] }, { text: "loadOrder", steps: [{ text: "Its own step loads it" }] }, { text: "Nothing", steps: [{ text: "It is never loaded" }] }], answer: "B", read: "loadOrder", why: "That step does." } },
     ] },
     { heading: "What this rests on", content: [
       { table: { head: ["The plan rests on", "How it was proved", "Where"], rows: [["An order loads", "Read it", "loadOrder"]] } },
@@ -43,7 +43,7 @@ const plan = {
         ...Array.from({ length: 40 }, (_, k) => ({ keyword: "Step", text: k === 30 ? "Do part 31, as [the changes say](#s-the-changes-and-why) in [its row](#c-retry-once)" : `Do part ${k + 1}`, ...(k === 30 ? { change: "Retry once" } : {}) })),
         { keyword: "Returns", text: "the file" },
       ] } },
-      { flow: { name: "Load an order", steps: [{ keyword: "Starts", text: "Ana opens an order" }, { keyword: "Step", text: "Load the order", where: "loadOrder" }] } },
+      { flow: { name: "Load an order", steps: [{ keyword: "Starts", text: "Ana opens an order" }, { keyword: "Step", text: "Load the order", where: "loadOrder", lookClosely: [{ kind: "Side effect", text: "Loading marks the order as read" }] }] } },
       { flow: { name: "Answer an order", steps: [{ keyword: "Starts", text: "Ana asks" }, { keyword: "Check", text: "Which answer?", answers: Array.from({ length: 8 }, (_, k) => ({ label: `answer ${k + 1}`, steps: [{ keyword: "Step", text: `Give answer ${k + 1}`, ...(k === 7 ? { where: "lastAnswer" } : {}) }] })) }] } },
     ] },
     { heading: "Names", content: [{ names: [{ name: "step", text: "one thing a flow does, as [the docs](https://example.com/docs) say" }, { name: "flow", text: "the steps of a behaviour" }] }] },
@@ -208,6 +208,22 @@ const out = {};
   await settled();
   out.backIntoClosedRow = { reopened: row.open, linkInView: inView(inRow) };
 
+  // A flow's warnings show on its closed row, and go once it opens, when they sit on their steps.
+  closeAll();
+  const warned = step.closest("details");
+  const onLine = warned.querySelector(".row-warns .warn");
+  const onStep = warned.querySelector("figure .warn");
+  out.warningOnRow = { shownClosed: onLine.checkVisibility(), stepsNotShownClosed: !onStep.checkVisibility() };
+  onLine.click();
+  out.warningOnRow.clickOpensRow = warned.open;
+  out.warningOnRow.goesOnceOpen = !onLine.checkVisibility();
+  out.warningOnRow.showsOnItsStep = onStep.checkVisibility();
+  closeAll();
+  await follow(toStep);
+  out.warningOnRow.copyHoldsItOnceOnItsStep = body.querySelectorAll(".warn").length === 1 && !body.querySelector(".row-warns");
+  modal.querySelector(".modal-close").click();
+  await wait(100);
+
   closeAll();
   row.querySelector(".row-meta span").click();
   const opens = row.open;
@@ -239,6 +255,22 @@ const out = {};
   await wait(100);
   out.seenInOnOpenRow.closes = !modal.open && document.activeElement === seenIn;
   closeAll();
+
+  // A click on a name inside an option's card shows its line and picks nothing; a click elsewhere on the card picks it.
+  const second = document.querySelectorAll(".qz")[1];
+  const nameInCard = second.querySelector(".opt-card a.term");
+  nameInCard.scrollIntoView({ block: "center", behavior: "instant" });
+  await wait(100);
+  nameInCard.click();
+  await settled();
+  out.nameInCard = { tipShown: !tip.hidden, notPicked: !second.dataset.picked };
+  document.body.click();
+  second.querySelectorAll(".opt-card")[1].querySelector(".n").click();
+  await wait(100);
+  out.cardClick = { picked: second.dataset.picked === "B", feedbackShown: !second.querySelector(".fb").hidden };
+  // A picture's words are drawn as written, with no name linked inside them.
+  const drawnText = document.querySelector(".pic svg text");
+  out.pictureWords = { namesLinked: document.querySelectorAll(".pic a.term").length, drawn: drawnText.getBBox().width > 0, inFull: drawnText.textContent === "the flow stops here" };
 
   // A question in a copy looks disabled and says where to answer it, and a later copy holds an answer given on the page.
   const toQuestions = document.querySelector('a[href="#s-check-your-reading"]');

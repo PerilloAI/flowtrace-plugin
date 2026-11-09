@@ -1,11 +1,17 @@
-# Why explain teaches the way it does
+# Why the skills teach the way they do
 
-For people maintaining this skill: where each of its rules comes from. Most rest on research into how people learn
+For people maintaining [teaching.md](teaching.md) and the skills that read it: where each rule comes from. Most rest on research into how people learn
 from explanations and from AI; some come from readers of these pages saying what they couldn't follow. Almost none of
 the research studied developers reading about code, so the rules are a starting point to measure, not a proof.
 
 | Rule | Where it comes from |
 |---|---|
+| The example drawn as a person would see it, inside its step's card | Words and pictures built into one diagram are learnt from better than ones kept apart (split attention: Chandler & Sweller 1991; spatial contiguity: Ginns 2006; Mayer 2017). Showing the data at each step lets a reader check the process against what they recognise (Victor 2012). Readers of these pages asked for pictures over code, and for the example inside the card rather than beside it, after a mock of both. |
+| A second example where the code goes two ways | Comparing two examples side by side gives better procedural knowledge and flexibility than studying one (Rittle-Johnson & Star 2007), and sample code should span a range of cases (Google's technical writing guide). That varied examples help transfer did not replicate in every study, so it is one second example, only where the cases part. |
+| An example drawn even with no real copy, marked as drawn for the page | A plan for a feature not built yet has no real file, and its reader most needs to see what it will produce; marking it keeps a drawn example from passing as real data. |
+| Each question's options as cards holding their charts | Readers of these pages asked for the reading questions to be charted as the questions for the author are, and for each chart inside its option's card. A click on a link in a card picks nothing, so reading a name never answers. |
+| One shared file of rules, linked one level deep | Both harnesses install the whole plugin folder, and a skill reads a linked file reliably when the link is one level deep and says when to read it (Anthropic's skill authoring guide; agentskills.io). A rule written in several skills drifted apart. |
+| After each answer, sweep the whole page | A reader found a page still saying, in other sections, what their answer had replaced. |
 | One worked example, before and after side by side | Comparing concrete cases side by side, then naming the principle, helps people learn (d = 0.50 over 57 experiments; Alfieri 2013), as do worked examples generally (Atkinson 2000). |
 | Questions that check the reading | People who only read an AI's explanation felt they understood and scored worse when tested later: students (Bastani 2025) and developers learning unfamiliar code (Shen & Tamkin 2026). Feeling one has learned and having learned differ (Deslauriers 2019). Answering questions beats re-reading (g 0.73 against 0.39; Rowland 2014). |
 | Each answer says why | Answering helps only with feedback (Yang 2021), and feedback that explains carries over to new questions where the bare right answer doesn't (.45 against .30; Butler 2013). |
@@ -28,22 +34,29 @@ the research studied developers reading about code, so the rules are a starting 
 ## Sources
 
 - Alfieri, Nokes-Malach, Schunn (2013). Learning through case comparisons: a meta-analytic review. *Educational Psychologist* 48(2). doi.org/10.1080/00461520.2013.775712
+- Anthropic (2026). Skill authoring best practices. platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices
+- Agent Skills (2026). Skill creation best practices. agentskills.io/skill-creation/best-practices
 - Atkinson, Derry, Renkl, Wortham (2000). Learning from examples: instructional principles from the worked examples research. *Review of Educational Research* 70(2). doi.org/10.3102/00346543070002181
 - Bansal et al. (2021). Does the whole exceed its parts? The effect of AI explanations on complementary team performance. *CHI '21*. arxiv.org/abs/2006.14779
 - Bastani et al. (2025). Generative AI without guardrails can harm learning. *PNAS* 122(26). doi.org/10.1073/pnas.2422633122
 - Butcher (2006). Learning from text with diagrams. *Journal of Educational Psychology* 98(1). doi.org/10.1037/0022-0663.98.1.182
 - Butler, Godbole, Marsh (2013). Explanation feedback is better than correct answer feedback for promoting transfer of learning. *Journal of Educational Psychology* 105(2). doi.org/10.1037/a0031026
+- Chandler, Sweller (1991). Cognitive load theory and the format of instruction. *Cognition and Instruction* 8(4). doi.org/10.1207/s1532690xci0804_2
 - Deslauriers et al. (2019). Measuring actual learning versus feeling of learning in response to being actively engaged in the classroom. *PNAS* 116(39). doi.org/10.1073/pnas.1821936116
 - Elidan, Haramaty (2025). Towards an AI-Augmented Textbook. Google Research. arxiv.org/abs/2509.13348
 - Fregnan et al. (2022). First come first served: the impact of file position on code review. *ESEC/FSE 2022*. arxiv.org/abs/2208.04259
+- Ginns (2006). Integrating information: a meta-analysis of the spatial contiguity and temporal contiguity effects. *Learning and Instruction* 16(6). doi.org/10.1016/j.learninstruc.2006.10.001
+- Google (2026). Technical writing two: sample code. developers.google.com/tech-writing/two/sample-code
 - Kabir et al. (2024). Is Stack Overflow obsolete? An empirical study of the characteristics of ChatGPT answers to Stack Overflow questions. *CHI '24*. arxiv.org/abs/2308.02312
 - Mayer (2017). Using multimedia for e-learning. *Journal of Computer Assisted Learning* 33(5). doi.org/10.1111/jcal.12197
 - Oreopoulos, Low (2026). One click away: AI tutoring with Khanmigo in a two-year school experiment. NBER Working Paper 35620. nber.org/papers/w35620
 - Pirouzkhah, Wurzel Gonçalves, Bacchelli (2026). The value of effective pull request description. *MSR '26*. arxiv.org/abs/2602.14611
+- Rittle-Johnson, Star (2007). Does comparing solution methods facilitate conceptual and procedural knowledge? *Journal of Educational Psychology* 99(3). doi.org/10.1037/0022-0663.99.3.561
 - Rowland (2014). The effect of testing versus restudy on retention: a meta-analytic review of the testing effect. *Psychological Bulletin*. doi.org/10.1037/a0037559
 - Shen, Tamkin (2026). How AI impacts skill formation. arxiv.org/abs/2601.20245
 - Shneiderman, Mayer, McKay, Heller (1977). Experimental investigations of the utility of detailed flowcharts in programming. *Communications of the ACM* 20(6). doi.org/10.1145/359605.359610
 - Tao, Dang, Xie, Zhang, Kim (2012). How do software engineers understand code changes? An exploratory study in industry. *FSE 2012*. doi.org/10.1145/2393596.2393656
 - Tetzlaff, Simonsmeier, Peters, Brod (2025). A cornerstone of adaptivity: a meta-analysis of the expertise reversal effect. *Learning and Instruction* 98. doi.org/10.1016/j.learninstruc.2025.102142
 - Vasconcelos et al. (2023). Explanations can reduce overreliance on AI systems during decision-making. *PACM HCI* 7 (CSCW1). arxiv.org/abs/2212.06823
+- Victor (2012). Learnable programming. worrydream.com/LearnableProgramming
 - Yang, Luo, Vadillo, Yu, Shanks (2021). Testing (quizzing) boosts classroom learning: a systematic and meta-analytic review. *Psychological Bulletin*. doi.org/10.1037/bul0000309

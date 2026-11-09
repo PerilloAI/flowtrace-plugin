@@ -41,13 +41,22 @@ ul.prose li + li, ol.prose li + li { margin-top: 6px; }
 .ask { font-weight: 600; color: var(--accent); }
 .decision { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 4px 18px 14px; margin: 18px 0; }
 .decision h3 { margin-top: 16px; }
-.decision .picks { display: grid; gap: 6px; margin: 10px 0; max-width: 74ch; }
-.decision button.pick { display: flex; gap: 10px; align-items: baseline; text-align: left; font: inherit; font-size: 14px; padding: 8px 12px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
-.decision button.pick .letter { font-weight: 700; color: var(--muted); }
-.decision button.pick:hover { border-color: var(--accent); }
-.decision button.pick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.decision button.pick[aria-pressed="true"] { border-color: var(--ok); background: var(--ok-soft); }
+.decision h4.today { margin: 12px 0 6px; font-family: var(--body); font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.decision h4.today + figure { margin: 0 0 14px; }
+/* Each option of a question is a card holding its chart, one under another: its words are its button, and the card shows
+   what it picks. */
+.decision .picks, .qz .opts { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 10px 0; }
+.pick-card, .opt-card { display: flex; flex-direction: column; gap: 8px; min-width: 0; border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg); padding: 8px; cursor: pointer; }
+.pick-card:hover, .opt-card:hover { border-color: var(--accent); }
+.pick-card .chart, .opt-card .chart { padding: 10px 6px; }
+.decision button.pick, .qz button.opt { display: flex; gap: 10px; align-items: baseline; text-align: left; font: inherit; font-size: 14px; padding: 4px 6px; border: 0; border-radius: 6px; background: transparent; color: var(--fg); cursor: pointer; }
+.decision button.pick .letter, .qz button.opt .letter { font-weight: 700; color: var(--muted); }
+.decision button.pick:focus-visible, .qz button.opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pick-name, .pick-says { display: block; }
+.pick-name { font-weight: 600; }
+.pick-card:has(button.pick[aria-pressed="true"]) { border-color: var(--ok); background: var(--ok-soft); }
 .decision button.pick[aria-pressed="true"] .letter { color: var(--ok); }
+.decision .why { color: var(--muted); font-size: 13.5px; max-width: 74ch; }
 .decision .picked code { display: inline-block; user-select: all; }
 .decision .picked .desc { font-size: 13px; margin: 4px 0 0; }
 [id] { scroll-margin-top: 24px; }
@@ -106,6 +115,9 @@ details.flowbox > summary:focus-visible { outline: 2px solid var(--accent); outl
 details.flowbox > summary h3 { display: inline; margin: 0; font-size: 1.1rem; }
 .row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 4px; font-size: 13px; color: var(--muted); }
 .row-meta .mk { margin-right: 0; }
+/* A flow's warnings stay readable under its closed row. Opened, they sit on their steps. */
+.row-warns { display: grid; gap: 4px; margin-top: 6px; max-width: 90ch; }
+details[open] > summary .row-warns { display: none; }
 details.flowbox > figure { margin: 4px 14px 14px; }
 /* What a link names, opened over the dimmed page, or in a sheet across the bottom at phone width. */
 .modal { box-sizing: border-box; width: min(980px, calc(100vw - 32px)); max-width: none; max-height: 86vh; padding: 0; overflow: hidden; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 40px rgb(0 0 0 / .3); }
@@ -122,7 +134,8 @@ details.flowbox > figure { margin: 4px 14px 14px; }
 .modal-body:focus { outline: none; }
 /* What only works on the page looks it in a copy, which says where to go instead. */
 .modal-body button:disabled, .modal-body .qz button.opt:disabled { opacity: .55; cursor: not-allowed; }
-.modal-body button.pick:disabled:hover { border-color: var(--line); }
+.modal-body :is(.pick-card, .opt-card):has(button:disabled) { cursor: not-allowed; }
+.modal-body :is(.pick-card, .opt-card):has(button:disabled):hover { border-color: var(--line); }
 .modal-note { margin: 0 0 10px; font-size: 13px; }
 .modal-body > div > :first-child { margin-top: 0; }
 .modal-body .row-meta { margin-bottom: 4px; }
@@ -179,13 +192,17 @@ td:first-child { font-weight: 600; width: 28%; }
 .qz { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
 .qz p.qt { font-weight: 600; margin: 0 0 8px; }
 .qz .hint { margin: -4px 0 8px; font-size: 13px; color: var(--muted); }
-.qz .opts { display: grid; gap: 6px; }
-.qz button.opt { text-align: left; font: inherit; font-size: 14px; padding: 7px 11px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
-.qz button.opt:hover:not(:disabled) { border-color: var(--accent); }
-.qz button.opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.qz button.opt:disabled { cursor: default; }
-.qz button.opt.right { border-color: var(--ok); background: var(--ok-soft); }
-.qz button.opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.qz .qcase { margin: 6px 0 4px; }
+.opt-card:has(button.opt:disabled) { cursor: default; }
+.opt-card:has(button.opt:disabled):hover { border-color: var(--line); }
+.opt-card.right { border-color: var(--ok); background: var(--ok-soft); }
+.opt-card.wrong { border-color: var(--bad); background: var(--bad-soft); }
+/* A step's picture of the example, under its words in its card, scrolling inside the card when it is wider. */
+.n .pic { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); text-align: left; overflow-x: auto; max-width: 100%; font-weight: 400; }
+.n .pic svg { max-width: 100%; height: auto; }
+.n .pic table { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.n .pic :is(th, td) { border: 1px solid var(--line); padding: 3px 8px; }
+.n .pic-src { font: 400 11px/1.4 var(--mono); color: var(--muted); margin-top: 4px; text-align: left; }
 .qz .fb { margin-top: 8px; font-size: 14px; }
 .score { font-weight: 600; color: var(--accent); }
 

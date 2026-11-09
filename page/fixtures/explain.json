@@ -39,7 +39,19 @@
               {
                 "title": "Today",
                 "steps": [
-                  { "text": "Ana presses Export on order 1042", "kind": "start" },
+                  {
+                    "text": "Ana presses Export on order 1042",
+                    "kind": "start",
+                    "shows": {
+                      "html": [
+                        "<table>",
+                        "<tr><th>Order</th><th>Status</th></tr>",
+                        "<tr><td>1042</td><td>Ready to export</td></tr>",
+                        "</table>"
+                      ],
+                      "from": "the warehouse's answer for order 1042"
+                    }
+                  },
                   { "text": "The warehouse answers after 31 seconds" },
                   { "text": "\"Export failed\"", "result": "bad", "note": "Ana has to press Export again" }
                 ]
@@ -65,26 +77,71 @@
           "question": {
             "question": "Ana's export of order 1042 times out twice in a row. What does she see?",
             "options": [
-              "The file, after a third try",
-              "\"Export failed\", after the one retry",
-              "Nothing until she reloads the page"
+              {
+                "text": "The file, after a third try",
+                "steps": [
+                  { "text": "A third try starts", "kind": "start" },
+                  { "text": "The file downloads" }
+                ]
+              },
+              {
+                "text": "\"Export failed\", after the one retry",
+                "steps": [
+                  { "text": "No third try", "kind": "start" },
+                  { "text": "Ana sees \"Export failed\"" }
+                ]
+              },
+              {
+                "text": "Nothing until she reloads the page",
+                "steps": [
+                  { "text": "The page waits", "kind": "start" },
+                  { "text": "Ana sees nothing until she reloads" }
+                ]
+              }
             ],
             "answer": "B",
             "read": "How it decides",
-            "why": "The export retries once; a second timeout ends it."
+            "why": "The export retries once; a second timeout ends it.",
+            "steps": [
+              { "text": "Ana exports order 1042", "kind": "start" },
+              { "text": "The warehouse times out" },
+              { "text": "It times out again on the retry", "kind": "question" }
+            ]
           }
         },
         {
           "question": {
             "question": "Ben's export fails at once because order 7 doesn't exist. What happens?",
             "options": [
-              "\"Export failed\" at once, with no retry",
-              "One retry after 30 seconds, then \"Export failed\"",
-              "The export keeps trying every 30 seconds"
+              {
+                "text": "\"Export failed\" at once, with no retry",
+                "steps": [
+                  { "text": "Not a timeout, so no retry", "kind": "start" },
+                  { "text": "Ben sees \"Export failed\" at once" }
+                ]
+              },
+              {
+                "text": "One retry after 30 seconds, then \"Export failed\"",
+                "steps": [
+                  { "text": "Wait 30 seconds", "kind": "start" },
+                  { "text": "Ask once more, then \"Export failed\"" }
+                ]
+              },
+              {
+                "text": "The export keeps trying every 30 seconds",
+                "steps": [
+                  { "text": "Wait 30 seconds", "kind": "start" },
+                  { "text": "Ask again, every 30 seconds" }
+                ]
+              }
             ],
             "answer": "A",
             "read": "How it decides",
-            "why": "Only a timeout is retried."
+            "why": "Only a timeout is retried.",
+            "steps": [
+              { "text": "Ben exports order 7", "kind": "start" },
+              { "text": "The warehouse answers: no such order", "kind": "question" }
+            ]
           }
         }
       ]

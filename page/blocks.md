@@ -1,7 +1,8 @@
 # A page's data
 
 A page is drawn from a JSON file by `page.mjs`, in this folder. You write the file; the script checks it and draws the
-page, with its styles and its script, the same way every time. You never write the page's HTML.
+page, with its styles and its script, the same way every time. The one HTML you write is a step's picture of the
+example (`shows`, below).
 
 ```sh
 node <this folder>/page.mjs plan docs/plans/<change>.json      # a plan (plan-flows, plan-check)
@@ -82,15 +83,27 @@ A step's keys, each optional but `text`:
 - `answers`: on a question only, each `{ "label": "yes", "steps": [ … ] }`. Several fan out side by side; one alone
   sits beside its question while the chart carries on below.
 - `inner`: steps drawn in a dashed box under this one.
+- `shows`: on a chart's step, never a flow's, the example as it is at this step, drawn inside the step's card under its
+  words: `{ "html": ["<table>", "…", "</table>"], "from": "tests/fixtures/order-1042.json" }`. `html` is the picture,
+  in HTML or SVG, one line a string; `from`, where it came from, is left out when there is no such file, and the card
+  then says it was drawn for this page. **Checked**: a picture only draws, with HTML boxes and tables or SVG shapes and
+  text. It holds no script, `style` tag, frame, image, link, form, `id`, `on…` attribute, nothing that loads from
+  elsewhere (`src`, `href`, `url(…)` in a `style`), and no tag left open; write a `<` in its words as `&lt;`.
 
 ## question
 
-A question that checks the reading.
+A question that checks the reading: its case charted up to the step it asks about, and each option charted on from
+there to what the person gets, drawn as a card holding its chart.
 
 ```json
 { "question": {
   "question": "The question, complete on its own: it names the people, values and situation?",
-  "options": ["a wrong option a skimming reader would believe", "the right option", "another wrong option"],
+  "steps": [ { "text": "The case, up to the step asked about", "kind": "start" } ],
+  "options": [
+    { "text": "a wrong option a skimming reader would believe", "steps": [ { "text": "what the person gets under it" } ] },
+    { "text": "the right option", "steps": [ { "text": "what the person gets under it" } ] },
+    { "text": "another wrong option", "steps": [ { "text": "what the person gets under it" } ] }
+  ],
   "answer": "B",
   "read": "a chart's title, a section's heading, a flow's name, or a step's where",
   "why": "One or two sentences."
@@ -99,11 +112,13 @@ A question that checks the reading.
 
 A review's question also takes `source`, where its answer comes from: `map`, `test ran`, `test read` or `reading`.
 
-On the page, the link to `read` opens what it names in a modal over the page, so the reader keeps their place.
+On the page, the link to `read` opens what it names in a modal over the page, so the reader keeps their place. A click
+on an option's words, or anywhere else on its card but a link or a button in it, picks it.
 
 Write the options about the same length, so the right one doesn't stand out. **Checked**: three different options,
-`answer` the right one's letter, and a `read` that names a part of the page. Across the page, the right option doesn't
-sit in the same place every time.
+each with its chart, `answer` the right one's letter, a `read` that names a part of the page, and no `result` on an
+option's steps, which would give the answer away. Across the page, the right option doesn't sit in the same place
+every time.
 
 ## choice
 
@@ -123,13 +138,15 @@ One decision, charted on one real case under each option, the recommendation fir
 } }
 ```
 
-Each option is drawn as a button the reader picks. Picking one gives the chat its answer: sent where the page can
+Each option is drawn as a card holding its chart, which the reader picks with a click on its words or anywhere else on
+it but a link or a button in it. Picking one gives the chat its answer: sent where the page can
 send to the chat, otherwise copied, with a line saying so. A plan's answer is its number and letter (`3 A`), and the
 picks of every question so far are copied together (`1 A, 3 B`), so one paste answers them all; an explanation's is
 the letter and the option's name (`A · Retry once`).
 
-The first of `options` is the recommended one; they are lettered A, B, C, D in order. A plan numbers each choice; an
-explanation leaves `number` out. **Checked**: 2 to 4 options, and one `alternatives` text per option after the first.
+The first of `options` is the recommended one; they are lettered A, B, C, D in order. A plan numbers each choice and
+adds `today` (plan-format.md); an explanation leaves both out. **Checked**: 2 to 4 options, and one `alternatives` text per
+option after the first.
 
 ## settled
 
