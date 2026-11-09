@@ -5,7 +5,9 @@ everything the plugin runs, reads and sends: when a change alters any of that, c
 review reads it against the code.
 
 Check with `node --test hooks/*.test.mjs page/*.test.mjs scripts/*.test.mjs` and
-`claude plugin validate . --strict --profile directory`. There is no `package.json` and nothing to install.
+`claude plugin validate . --strict --profile directory`. On a Mac with Chrome,
+`node observations/browsers/closed-row.probe.mjs --check` runs the page's script and compares what it does with the record.
+There is no `package.json` and nothing to install.
 
 ## Each release raises the version
 
