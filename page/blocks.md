@@ -83,7 +83,7 @@ A step's keys, each optional but `text`:
 - `answers`: on a question only, each `{ "label": "yes", "steps": [ … ] }`. Several fan out side by side; one alone
   sits beside its question while the chart carries on below.
 - `inner`: steps drawn in a dashed box under this one.
-- `shows`: on a chart's step, never a flow's, the example as it is at this step, drawn inside the step's card under its
+- `shows`: on a chart's step (a question's and a choice's steps are a chart's), never a flow's, the example as it is at this step, drawn inside the step's card under its
   words: `{ "html": ["<table>", "…", "</table>"], "from": "tests/fixtures/order-1042.json" }`. `html` is the picture,
   in HTML or SVG, one line a string; `from`, where it came from, is left out when there is no such file, and the card
   then says it was drawn for this page. **Checked**: a picture only draws, with HTML boxes and tables or SVG shapes and
@@ -92,13 +92,13 @@ A step's keys, each optional but `text`:
 
 ## question
 
-A question that checks the reading: its case charted up to the step it asks about, and each option charted on from
-there to what the person gets, drawn as a card holding its chart.
+A question that checks the reading: its case charted up to the step it asks about, with the example drawn as it stands
+there, and each option charted on from there to what the person gets, drawn as a card holding its chart.
 
 ```json
 { "question": {
   "question": "The question, complete on its own: it names the people, values and situation?",
-  "steps": [ { "text": "The case, up to the step asked about", "kind": "start" } ],
+  "steps": [ { "text": "The case, up to the step asked about", "kind": "start", "shows": { "html": ["<table>", "…", "</table>"] } } ],
   "options": [
     { "text": "a wrong option a skimming reader would believe", "steps": [ { "text": "what the person gets under it" } ] },
     { "text": "the right option", "steps": [ { "text": "what the person gets under it" } ] },
@@ -120,6 +120,10 @@ each with its chart, `answer` the right one's letter, a `read` that names a part
 option's steps, which would give the answer away. Across the page, the right option doesn't sit in the same place
 every time.
 
+The reader answers from the question alone, so it holds its own picture of the example (a step's `shows`), even when
+a chart elsewhere on the page draws the same one. **Checked**: at least one step of the case holds a picture, and
+either every option's chart holds one or none does.
+
 ## choice
 
 One decision, charted on one real case under each option, the recommendation first.
@@ -131,7 +135,7 @@ One decision, charted on one real case under each option, the recommendation fir
   "recommended": "The recommended option, in a sentence",
   "alternatives": ["Another option, in a sentence"],
   "options": [
-    { "name": "Retry once", "steps": [ { "text": "The case under the recommended option", "kind": "start" } ] },
+    { "name": "Retry once", "steps": [ { "text": "The case under the recommended option", "kind": "start", "shows": { "html": ["<table>", "…", "</table>"] } } ] },
     { "name": "Don't retry", "steps": [ { "text": "The same case under this one", "kind": "start" } ] }
   ],
   "why": "Why the recommendation: a test, a file and line, a doc, a decision, or the reason"
@@ -147,6 +151,10 @@ the letter and the option's name (`A · Retry once`).
 The first of `options` is the recommended one; they are lettered A, B, C, D in order. A plan numbers each choice and
 adds `today` (plan-format.md); an explanation leaves both out. **Checked**: 2 to 4 options, and one `alternatives` text per
 option after the first.
+
+The person decides from the choice alone, so it holds its own picture of the example (a step's `shows`): the case as
+it stands, and under each option what the person would get where they would see it. **Checked**: at least one step
+holds a picture, of `today` on a plan, of an option's chart on an explanation.
 
 ## settled
 

@@ -46,6 +46,9 @@ export function blockChartBoxes(b) {
   return [...(b.chart ? chartBoxes(b.chart) : []), ...boxes(b.today ?? [])];
 }
 
+// Whether any of these steps draws the example as a picture.
+const pictured = (items) => boxes(items).some((b) => b.shows);
+
 export function changedSteps(doc) {
   return blocks(doc, "flow").flatMap((f) => boxes(f.items)).filter((b) => "+~-".includes(b.flowMark) && ["Step", "Check", "Only if"].includes(b.keyword)).length;
 }
@@ -103,6 +106,10 @@ export function check(doc, { plan, nameFound }) {
     for (const o of q.options) {
       for (const box of boxes(o.items).filter((b) => b.mark)) at(box.line, "an option's chart carries no ✓ or ✗ (\"result\"), so it doesn't give the answer away");
     }
+    // The reader answers from the question alone, so its case is drawn there, and its options are drawn alike.
+    if (!pictured(q.case)) at(q.line, 'a question draws its case as a picture ("shows") on a step of its "steps", so the reader sees what it asks about');
+    const drawn = q.options.filter((o) => pictured(o.items)).length;
+    if (drawn && drawn !== q.options.length) at(q.line, "either every option's chart holds a picture or none does, so none stands out");
   }
   if (questions.length >= 2) {
     const places = questions.map((q) => q.options.findIndex((o) => o.right));
@@ -116,6 +123,8 @@ export function check(doc, { plan, nameFound }) {
     if (c.alternatives.length !== cols.length - 1) at(c.line, `a choice with ${cols.length} options has ${cols.length - 1} "alternatives", one per option after the first`);
     if (plan && !c.today) at(c.line, 'a plan\'s question for the author needs "today": its case as the code runs it now');
     if (!plan && c.today) at(c.line, 'only a plan\'s question for the author takes "today"');
+    if (plan && c.today && !pictured(c.today)) at(c.line, 'a question for the author draws its case as a picture ("shows") on a step of "today", so the author sees what it asks about');
+    if (!plan && !c.today && !cols.some((col) => pictured(col.items))) at(c.line, 'a choice draws its case as a picture ("shows") on a step of an option\'s chart, so the person sees what it asks about');
     for (const box of boxes(c.today ?? [])) {
       if (box.change) at(box.line, `"change": "${box.change}" is on a step of "today", which shows what happens now, before any change`);
     }

@@ -72,8 +72,8 @@ doesn't need.
 
 Charts and questions follow teaching.md's Charts and Questions that check the reading.
 
-Done when every case has a chart, every box shows the example's value or state, and each name in a box has its line
-under Names on this page.
+Done when every case has a chart, every box shows the example's value or state, each question and the choice draws
+the example in its own charts, and each name in a box has its line under Names on this page.
 
 ## 5. Show it
 

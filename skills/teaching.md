@@ -65,6 +65,13 @@ Each question charts its case in `steps`, up to the step it asks about, and each
 there to what the person gets; the page draws each option as a card holding its chart. The option charts are about the
 same length and carry no `result`, so none gives the answer away.
 
+**Draw what it asks about.** The reader answers from the question alone, without scrolling back to the page's charts,
+so the question's own charts draw the example, by The worked example's rules. The case draws it as it stands at the
+step asked about (a step's `shows`). When what the person gets under an option is something they would see (a screen,
+rows, a file, a message), each option's last step draws it, every option alike in size and care, so none stands out.
+A question for the author (a `choice`) is drawn the same way: its case as it stands today, and under each option what
+would be different.
+
 A plan or a review asks as many as its changed steps call for: 2 for 0 or 1, and one more each time they double, at
 most 8.
 

@@ -70,8 +70,9 @@ from this skill's folder):
 >   `<plan-format.md>` give it, with no `number`. Its `question` is complete on its own and carries one concrete case
 >   with real values: who does what, in which state. Its `today` charts that case as the code runs it now, traced
 >   yourself, each step of code carrying its `file:line`. Its 2 to 4 options are behaviours the code could have, each
->   charting the case to what the person gets, a step of code carrying its `where` (`file:line`, or "new code"). Where
->   the case's data changes, a step draws it as `<teaching.md>`'s The worked example says. Recommend first the one that
+>   charting the case to what the person gets, a step of code carrying its `where` (`file:line`, or "new code"). A
+>   step of `today` draws the case's example as it stands, as a picture, and each option draws what would be different
+>   under it, as `<teaching.md>`'s The worked example and Questions that check the reading say. Recommend first the one that
 >   the code, a test, a doc or the plan's own reason supports, and say which in `why` (a test by name, `file:line`, a
 >   doc, a decision). When nothing supports any of them, recommend the safest one for the people using the code, and say
 >   so. What an outside thing does under an option comes from its docs, linked in `why`.

@@ -114,8 +114,10 @@ case charted as it runs today, then under each option with the recommendation fi
   `where`. The page draws it right under the question as How it works today, so the author knows what each option
   would change. When the thing asked about doesn't exist yet, it shows what happens in its place, such as the error a
   person gets or the step that runs without it. Each question has its own, even when a screen's Today column shows the
-  same case, because the author answers from the question alone. **Checked**: every question has one with at least one
-  step, and none of its steps names a `change`.
+  same case, because the author answers from the question alone. For the same reason it draws the case's example as
+  it stands (a step's `shows`), and each option's chart draws what would be different under it, where a person would
+  see it. **Checked**: every question has one with at least one step, at least one of its steps holds a picture, and
+  none names a `change`.
 - Write it in plain English, as the flows are: a reader who has never seen the code can answer it from the question
   and its charts alone.
 

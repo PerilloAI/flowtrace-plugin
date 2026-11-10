@@ -194,7 +194,7 @@ Count the changed steps on all the flows, those from the map and those read from
 questions as teaching.md's Questions that check the reading gives for n.
 
 Each question, as teaching.md says and the question section of [blocks.md](../../page/blocks.md) gives it, with its
-case and each option charted:
+case and each option charted, and the example drawn in its case:
 
 - asks what the change does in one concrete case: what a caller gets, what is written, which way in reaches a step;
 - is complete on its own, and never refers to another question;

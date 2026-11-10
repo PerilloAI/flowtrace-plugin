@@ -15,9 +15,11 @@ import { inline } from "./render.mjs";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const script = path.join(here, "page.mjs");
 
-// A reading question's options, each charted on from the question's case to what the person gets, and a case to ask from.
+// A reading question's options, each charted on from the question's case to what the person gets, and a case to ask
+// from, with the example drawn on its first step.
 const opts = (...texts) => texts.map((text) => ({ text, steps: [{ text, kind: "start" }] }));
-const asked = [{ text: "Ana exports order 1042", kind: "start" }, { text: "What happens next?", kind: "question" }];
+const order1042 = { html: ["<table>", "<tr><th>Order</th><td>1042</td></tr>", "</table>"] };
+const asked = [{ text: "Ana exports order 1042", kind: "start", shows: order1042 }, { text: "What happens next?", kind: "question" }];
 
 // A repository with one commit holding orders.ts, and a plan that changes exportOrder in it.
 function repo() {
@@ -111,7 +113,7 @@ test("each option of a plan's question for the author is a button giving its num
   data.sections.splice(4, 0, { heading: "Questions from plan-flows", content: [
     { p: "1 question. Pick an option to answer it." },
     { choice: {
-      number: 1, question: "Ana's export times out twice. Is it retried again?", today: [{ text: "Ana sees \"Export failed\" at the first timeout", kind: "start", result: "bad" }], recommended: "No: one retry, then \"Export failed\"", alternatives: ["Yes: retry until it answers"],
+      number: 1, question: "Ana's export times out twice. Is it retried again?", today: [{ text: "Ana sees \"Export failed\" at the first timeout", kind: "start", result: "bad", shows: order1042 }], recommended: "No: one retry, then \"Export failed\"", alternatives: ["Yes: retry until it answers"],
       options: [
         { name: "Retry once", steps: [{ text: "Ana sees \"Export failed\" after one retry", kind: "start" }] },
         { name: "Retry until it answers", steps: [{ text: "Ana waits until the warehouse answers", kind: "start" }] },
@@ -139,7 +141,7 @@ test("a question for the author shows how its case runs today right under the qu
   const data = plan();
   data.sections[0].content[0].p = "Approve the retry. 1 question is open.";
   const choice = {
-    number: 1, question: "Ana's export times out twice. Is it retried again?", today: [{ text: "Ana sees \"Export failed\" at the first timeout", kind: "start", result: "bad" }], recommended: "No", alternatives: ["Yes"],
+    number: 1, question: "Ana's export times out twice. Is it retried again?", today: [{ text: "Ana sees \"Export failed\" at the first timeout", kind: "start", result: "bad", shows: order1042 }], recommended: "No", alternatives: ["Yes"],
     options: [{ name: "Retry once", steps: [{ text: "One retry", kind: "start" }] }, { name: "Keep retrying", steps: [{ text: "Many retries", kind: "start" }] }],
     why: "A warehouse that is down would hold her export forever.",
   };
@@ -734,7 +736,7 @@ test("a flow's step takes no picture", () => {
 test("a reading question draws its case above its options, each a card holding its own chart", () => {
   const html = drawnPlan((_, data) => {
     const q = data.sections[3].content[0].question;
-    q.steps = [{ text: "Ana exports order 1042", kind: "start" }, { text: "It times out twice", kind: "question" }];
+    q.steps = [{ text: "Ana exports order 1042", kind: "start" }, { text: "It times out twice", kind: "question", shows: order1042 }];
     q.options = [
       { text: "The file", steps: [{ text: "A third try starts", kind: "start" }] },
       { text: '"Export failed"', steps: [{ text: "No third try", kind: "start" }] },
@@ -761,6 +763,66 @@ test("a reading question needs its case's chart, and each option its chart with 
   refused((q) => { delete q.steps; }, () => /question needs "steps"/);
   refused((q) => { q.options[1] = q.options[1].text; }, () => /options\.1 must be an object/);
   refused((q) => { q.options[0].steps = [{ text: "A third try is made", kind: "start", result: "ok" }]; }, (file) => new RegExp(`line ${lineOf(file, "A third try is made")}: an option's chart carries no ✓ or ✗`));
+});
+
+test("a reading question draws the example in its case, and in every option's chart or in none", () => {
+  const dir = repo();
+  const drawWith = (change) => {
+    const data = plan();
+    change(data.sections[3].content[0].question);
+    const file = write(dir, data);
+    return { file, run: draw(dir, "plan", "docs/plans/retry.json", "--out", path.join(dir, "page.html")) };
+  };
+  const bare = drawWith((q) => { q.steps = [{ text: "Ana exports order 1042 again", kind: "start" }]; });
+  assert.equal(bare.run.status, 1);
+  assert.match(bare.run.stderr, new RegExp(`line ${lineOf(bare.file, "times out twice. What does she see") - 2}: a question draws its case as a picture`));
+
+  const one = drawWith((q) => { q.options[1].steps[0].shows = order1042; });
+  assert.equal(one.run.status, 1);
+  assert.match(one.run.stderr, /either every option's chart holds a picture or none does/);
+
+  const each = drawWith((q) => { for (const o of q.options) o.steps[0].shows = order1042; });
+  assert.equal(each.run.status, 0, each.run.stderr);
+  const html = readFileSync(path.join(dir, "page.html"), "utf8");
+  const quiz = html.slice(html.indexOf('<div class="qz'), html.indexOf('<div class="fb"'));
+  const picture = '<div class="pic"><table>\n<tr><th>Order</th><td>1042</td></tr>\n</table></div><div class="pic-src">Drawn for this page</div>';
+  assert.ok(quiz.slice(0, quiz.indexOf('class="opts"')).includes(picture), "the case holds its picture");
+  for (const letter of "ABC") {
+    const card = quiz.slice(quiz.indexOf(`<div class="opt-card" data-letter="${letter}">`));
+    assert.ok(card.slice(0, card.indexOf("</div></div></div></div>")).includes(picture), `option ${letter} holds its picture`);
+  }
+});
+
+test("a question for the author draws the example: on a step of today in a plan, of an option in an explanation", () => {
+  const dir = repo();
+  const data = plan();
+  data.sections[0].content[0].p = "Approve the retry. 1 question is open.";
+  const choice = {
+    number: 1, question: "Ana's export times out twice. Is it retried again?", today: [{ text: "Ana sees the export fail", kind: "start" }], recommended: "No", alternatives: ["Yes"],
+    options: [{ name: "Retry once", steps: [{ text: "One retry", kind: "start", shows: order1042 }] }, { name: "Keep retrying", steps: [{ text: "Many retries", kind: "start" }] }],
+    why: "A warehouse that is down would hold her export forever.",
+  };
+  data.sections.splice(4, 0, { heading: "Questions from plan-flows", content: [{ p: "1 question." }, { choice }] });
+  const file = write(dir, data);
+  const out = path.join(dir, "page.html");
+  const bare = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
+  assert.equal(bare.status, 1);
+  assert.match(bare.stderr, new RegExp(`line ${lineOf(file, '"choice": {') - 1}: a question for the author draws its case as a picture \\("shows"\\) on a step of "today"`));
+
+  choice.today[0].shows = order1042;
+  write(dir, data);
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
+  assert.equal(run.status, 0, run.stderr);
+  const html = readFileSync(out, "utf8");
+  const today = html.slice(html.indexOf("How it works today"), html.indexOf('class="picks"'));
+  assert.ok(today.includes('Ana sees the export fail<div class="pic"><table>'), "today holds its picture");
+
+  const explained = JSON.parse(readFileSync(path.join(here, "fixtures/explain.json"), "utf8"));
+  for (const o of explained.sections.flatMap((s) => s.content).find((n) => n.choice).choice.options) for (const step of o.steps) delete step.shows;
+  writeFileSync(path.join(dir, "explain.json"), `${formatJson(explained)}\n`);
+  const refused = draw(dir, "explain", "explain.json", "--out", out);
+  assert.equal(refused.status, 1);
+  assert.match(refused.stderr, /a choice draws its case as a picture \("shows"\) on a step of an option's chart/);
 });
 
 test("in each browser tried, a click on a name inside an option's card picks nothing, a click elsewhere on it picks it, and a picture's words stay as written", () => {

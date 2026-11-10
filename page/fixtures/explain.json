@@ -105,7 +105,19 @@
             "steps": [
               { "text": "Ana exports order 1042", "kind": "start" },
               { "text": "The warehouse times out" },
-              { "text": "It times out again on the retry", "kind": "question" }
+              {
+                "text": "It times out again on the retry",
+                "kind": "question",
+                "shows": {
+                  "html": [
+                    "<table>",
+                    "<tr><th>Try</th><th>Asked at</th><th>The warehouse</th></tr>",
+                    "<tr><td>1</td><td>09:00:00</td><td>no answer after 30 s</td></tr>",
+                    "<tr><td>2</td><td>09:01:00</td><td>no answer after 30 s</td></tr>",
+                    "</table>"
+                  ]
+                }
+              }
             ]
           }
         },
@@ -140,7 +152,18 @@
             "why": "Only a timeout is retried.",
             "steps": [
               { "text": "Ben exports order 7", "kind": "start" },
-              { "text": "The warehouse answers: no such order", "kind": "question" }
+              {
+                "text": "The warehouse answers: no such order",
+                "kind": "question",
+                "shows": {
+                  "html": [
+                    "<table>",
+                    "<tr><th>Try</th><th>Asked at</th><th>The warehouse</th></tr>",
+                    "<tr><td>1</td><td>09:00:00</td><td>no such order, at once</td></tr>",
+                    "</table>"
+                  ]
+                }
+              }
             ]
           }
         }
@@ -162,14 +185,36 @@
                 "steps": [
                   { "text": "Ana exports order 1042", "kind": "start" },
                   { "text": "Times out, waits 30 s, tries again", "result": "ok" },
-                  { "text": "The file downloads", "result": "ok" }
+                  {
+                    "text": "The file downloads",
+                    "result": "ok",
+                    "shows": {
+                      "html": [
+                        "<table>",
+                        "<tr><th>Order</th><th>Status</th></tr>",
+                        "<tr><td>1042</td><td>Exported 09:01</td></tr>",
+                        "</table>"
+                      ]
+                    }
+                  }
                 ]
               },
               {
                 "name": "Don't retry",
                 "steps": [
                   { "text": "Ana exports order 1042", "kind": "start" },
-                  { "text": "\"Export failed\"", "result": "bad" }
+                  {
+                    "text": "\"Export failed\"",
+                    "result": "bad",
+                    "shows": {
+                      "html": [
+                        "<table>",
+                        "<tr><th>Order</th><th>Status</th></tr>",
+                        "<tr><td>1042</td><td>Export failed 09:00</td></tr>",
+                        "</table>"
+                      ]
+                    }
+                  }
                 ]
               }
             ],
