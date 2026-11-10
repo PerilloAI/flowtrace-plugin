@@ -166,16 +166,27 @@ export function readDocument(text) {
       return { question: v.question, case: steps(v.steps, [...path, "steps"]), options: options.map((o, k) => ({ ...o, right: k === right })), read: v.read, why: v.why, source: v.source ?? null };
     },
     choice: (v, path) => {
-      shape(v, path, { number: "number?", question: "string", today: "array?", recommended: "string", alternatives: "strings", options: "array", why: "string" });
-      const columns = list(v.options, [...path, "options"], (o) => o);
+      shape(v, path, { number: "number?", fix: "boolean?", question: "string", today: "array?", recommended: "string", alternatives: "strings?", options: "array", why: "string" });
+      const fix = v.fix === true;
+      const alternatives = v.alternatives ?? [];
+      const columns = list(v.options, [...path, "options"], (o, p) => {
+        shape(o, p, { name: "string", steps: "array" });
+        return o;
+      });
       return {
-        number: v.number ?? null, question: v.question, today: v.today ? steps(v.today, [...path, "today"]) : null, recommended: v.recommended, alternatives: v.alternatives, why: v.why,
-        names: columns.map((o) => (typeof o?.name === "string" ? o.name : "")),
+        number: v.number ?? null, fix, question: v.question, today: v.today ? steps(v.today, [...path, "today"]) : null, recommended: v.recommended, alternatives, why: v.why,
+        names: columns.map((o) => o.name),
+        // The words a reader meets first, each with its line, for check.mjs: the question, each option's sentence and name.
+        words: [
+          { key: "question", text: v.question, line: lineOf([...path, "question"]) },
+          { key: "recommended", text: v.recommended, line: lineOf([...path, "recommended"]) },
+          ...alternatives.map((text, k) => ({ key: "alternatives", text, line: lineOf([...path, "alternatives", k]) })),
+          ...columns.map((o, k) => ({ key: "name", text: o.name, line: lineOf([...path, "options", k, "name"]) })),
+        ],
         chart: {
           columns: columns.map((o, k) => {
             const p = [...path, "options", k];
-            shape(o, p, { name: "string", steps: "array" });
-            return { title: `${"ABCD"[k] ?? "?"} · ${o.name}${k === 0 ? " (recommended)" : ""}`, line: lineOf(p), items: steps(o.steps, [...p, "steps"]) };
+            return { title: `${"ABCD"[k] ?? "?"} · ${o.name}${k === 0 && !fix ? " (recommended)" : ""}`, line: lineOf(p), items: steps(o.steps, [...p, "steps"]) };
           }),
         },
       };

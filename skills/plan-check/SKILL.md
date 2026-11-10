@@ -7,7 +7,8 @@ description: Question a plan before any code; running it approves the plan. A fr
 
 plan-check runs between the author's approval and the first line of code. Running it is the approval: the author is
 moving on from planning to building. Each **finding** is a premise of the plan that doesn't hold, or a behaviour the
-plan leaves open. The author decides every finding, and the plan records each answer before anything is built.
+plan leaves open. The author answers every finding, and the plan records each answer before anything is built: a
+**fix**, with one sensible outcome, they confirm or overrule; a **choice** they make.
 
 Read [teaching.md](../teaching.md) in full before step 1: it holds the rules plan-check shares with the other skills.
 Then check the session by its Before reading the code. While planning, write the plan file and nothing else; the
@@ -66,15 +67,19 @@ from this skill's folder):
 >
 > - a line `### <n>. <headline, at most 12 words>`;
 > - a line `Changes: <the plan's flows, steps, screens or traces this answer changes>`;
-> - the finding as one `choice`, in a `json` block, written as `<blocks.md>` and the choice section of
->   `<plan-format.md>` give it, with no `number`. Its `question` is complete on its own and carries one concrete case
->   with real values: who does what, in which state. Its `today` charts that case as the code runs it now, traced
->   yourself, each step of code carrying its `file:line`. Its 2 to 4 options are behaviours the code could have, each
->   charting the case to what the person gets, a step of code carrying its `where` (`file:line`, or "new code"). Where
->   the case's data changes, a step draws it as `<teaching.md>`'s The worked example says. Recommend first the one that
->   the code, a test, a doc or the plan's own reason supports, and say which in `why` (a test by name, `file:line`, a
->   doc, a decision). When nothing supports any of them, recommend the safest one for the people using the code, and say
->   so. What an outside thing does under an option comes from its docs, linked in `why`.
+> - the finding as one `choice`, in a `json` block, written as `<blocks.md>`, the choice section of `<plan-format.md>`
+>   and `<teaching.md>`'s Questions to decide give it, with no `number`. Its `question` says in a sentence or two what
+>   goes wrong, or what is undecided, for the people using the code, in their words, naming no code. Chart one
+>   concrete case with real values (who does what, in which state): `today` as the code runs it now, traced yourself,
+>   each step of code carrying its `file:line`; then the case under each option, to what the person gets, a step of
+>   code carrying its `where` (`file:line`, or "new code"). Where the case's data changes, a step draws it as
+>   `<teaching.md>`'s The worked example says. When one outcome alone is sensible for people, the finding is a fix
+>   (`"fix": true`) with that one option, and another way to reach the same outcome goes in `why`; otherwise it is a
+>   choice of 2 to 4 options, each a behaviour that gives people something different and reasonable. Each option's
+>   sentence says what the person gets. Recommend first the one that the code, a test, a doc
+>   or the plan's own reason supports, and say which in `why` (a test by name, `file:line`, a doc, a decision). When
+>   nothing supports any of them, recommend the safest one for the people using the code, and say so. What an outside
+>   thing does under an option comes from its docs, linked in `why`.
 >
 > Then a `names` item for each name your findings use that the plan's Names has no item for. Return "Nothing to ask"
 > when there is no finding.
@@ -93,12 +98,15 @@ When the subagent returns:
 1. Check each finding against the code yourself before it goes on the page, by reading the places its `why` and its
    steps' `where` cite: the subagent can be wrong, and the author decides on what the page says. Correct a case, a
    `today` chart or an option the code contradicts, and drop a finding the plan already answers. A false premise is
-   settled by the code, never by what the plan says, which is the claim in question.
-2. Put each finding's `choice` under Questions from plan-check, in the subagent's order, numbered on from the highest
-   question still open. Open the section with a paragraph saying how many findings there are and how to answer. Add
-   the subagent's `names` items under Names. A plan with no What this rests on gets the section now, holding the
-   premises the subagent traced and found true.
-3. Say in What I'm asking how many questions are open.
+   settled by the code, never by what the plan says, which is the claim in question. Make a fix of a choice whose
+   other options leave something broken or give people the same thing, and a choice of a fix when people could
+   sensibly get something else.
+2. Put each finding's `choice` under Questions from plan-check, the fixes first, then the choices, each in the
+   subagent's order, numbered on from the highest question still open. Open the section with a paragraph saying how
+   many fixes and how many choices there are, and how to answer: a fix by picking its one option, or by saying what to
+   do instead. Add the subagent's `names` items under Names. A plan with no What this rests on gets the section now,
+   holding the premises the subagent traced and found true.
+3. Say in What I'm asking how many fixes and how many choices are open.
 4. Draw the page by plan-flows' step 3 (`../plan-flows/SKILL.md`); its one cold read covers the new questions. Ask
    at once, while it runs: the author answers each question by picking an option on the page, which copies the
    answers (`3 A`, or `1 A, 3 B` for several) to paste into the chat, by typing its number and letter, with Comment on

@@ -50,10 +50,11 @@ A plan is **approved at its current fingerprint** when the fingerprint in its `a
 3. `What you'd see`: a paragraph introducing the example change that the screens and traces follow, then the
    `screens`. When nobody using the code would notice the plan, a paragraph says so in place of the screens.
 4. `Check your reading`, right after What you'd see: the `question`s.
-5. `Questions from plan-flows`: a paragraph saying how many there are and how to answer, then one `choice` for each
-   decision still open, each behaviour plan-flows found the plan leaves open, and each better way than the one asked
-   for that its research found. Leave the section out when none is open. Every decision waiting on the author is a
-   question here or under Questions from plan-check; no other section asks the author to decide.
+5. `Questions from plan-flows`: a paragraph saying how many fixes and how many choices there are and how to answer,
+   then one `choice` for each decision still open, each behaviour plan-flows found the plan leaves open, and each
+   better way than the one asked for that its research found. Leave the section out when none is open. Every
+   decision waiting on the author is a question here or under Questions from plan-check; no other section asks the
+   author to decide.
 6. `Questions from plan-check`: the same, for each finding plan-check's subagents returned that is still open.
 7. `What this rests on`: one `table` of the plan's premises (below).
 8. `The changes and why`: one `changes`.
@@ -102,22 +103,26 @@ reading gives it. A changed step is a flow step whose `keyword` is `Step`, `Chec
 A `choice` is one question for the author: a decision still open, a behaviour the plan leaves open whose answer
 changes what someone gets (a response, a page, an exit status, an error, a write), or a better way than the one the
 author asked for, which the research found. A better way's options include the author's request, and its `why` links
-the sources. Its form is blocks.md's choice: one real
-case charted as it runs today, then under each option with the recommendation first, then the reason.
+the sources. Its form is blocks.md's choice, worded as [teaching.md](../teaching.md)'s Questions to decide says: one
+real case charted as it runs today, then under each option with the recommendation first, then the reason.
 
-- `question` carries its case: who does what, with which values, in which state.
+- **A fix or a choice.** When one outcome alone is sensible for people, and the plan as written leaves someone with
+  something broken (a blank screen, a lost approval, an error with no way past it), the question is a **fix**:
+  `"fix": true`, with one option, the fix, which the author confirms by picking it or overrules in their own words.
+  Another way to reach the same outcome goes in `why`. When people could sensibly get different things, it is a
+  **choice**: 2 to 4 options, each giving people something different and reasonable. In each Questions section the
+  fixes come first, each read in a line, then the choices.
 - **Checked**: each has a `number`, and no two share one. The numbers run down the page across both Questions
   sections, so a number names one question. A question keeps its number until it is answered, and new questions
   number on from the highest one still open, or from 1.
-- The case uses real values, from the code or the plan's example.
+- The case uses real values, from the code or the plan's example, on the charts' steps.
 - `today`, a list of steps after `question`, charts that case as the code runs it now, a step of code carrying its
   `where`. The page draws it right under the question as How it works today, so the author knows what each option
   would change. When the thing asked about doesn't exist yet, it shows what happens in its place, such as the error a
   person gets or the step that runs without it. Each question has its own, even when a screen's Today column shows the
   same case, because the author answers from the question alone. **Checked**: every question has one with at least one
   step, and none of its steps names a `change`.
-- Write it in plain English, as the flows are: a reader who has never seen the code can answer it from the question
-  and its charts alone.
+- A reader who has never seen the code can answer it from the question and its charts alone.
 
 ## What this rests on
 

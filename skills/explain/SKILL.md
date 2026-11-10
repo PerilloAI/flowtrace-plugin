@@ -63,10 +63,10 @@ doesn't need.
    then a chart per case under an `h3`, on the example or its smallest variant that lands there, the case where it
    gives up or falls back included.
 6. **Check your reading**: 2 or 3 `question`s.
-7. **The choice**: one `choice`, each option the same example charted to what the person gets. Under it,
-   `{ "h3": "Still open" }` and a list of each question this choice leaves open, saying who answers it and when. A
-   page asks one decision: when the work holds several, ask the one that comes first and list the others here. With
-   nothing to decide, Still open is a section of its own.
+7. **The choice**: one `choice`, worded as teaching.md's Questions to decide says, each option the same example
+   charted to what the person gets. Under it, `{ "h3": "Still open" }` and a list of each question this choice leaves
+   open, saying who answers it and when. A page asks one decision: when the work holds several, ask the one that
+   comes first and list the others here. With nothing to decide, Still open is a section of its own.
 8. **Already settled**: a `settled`, what isn't open, each item with who settled it.
 9. **Names on this page**: a `names`, every name the page uses.
 

@@ -122,19 +122,21 @@ every time.
 
 ## choice
 
-One decision, charted on one real case under each option, the recommendation first.
+One decision, charted on one real case under each option, the recommendation first, and worded as
+[teaching.md](../skills/teaching.md)'s Questions to decide says: the question and each option's words say what a person
+sees or gets, and the code goes in the steps' `where` and in `why`.
 
 ```json
 { "choice": {
   "number": 3,
-  "question": "The question, carrying its case",
-  "recommended": "The recommended option, in a sentence",
-  "alternatives": ["Another option, in a sentence"],
+  "question": "A shop owner's export fails whenever the warehouse is slow. Should it try again?",
+  "recommended": "The shop owner gets the file, up to 30 seconds late",
+  "alternatives": ["The shop owner sees \"Export failed\" and presses Export again"],
   "options": [
-    { "name": "Retry once", "steps": [ { "text": "The case under the recommended option", "kind": "start" } ] },
-    { "name": "Don't retry", "steps": [ { "text": "The same case under this one", "kind": "start" } ] }
+    { "name": "Retry once", "steps": [ { "text": "Ana exports order 1042", "kind": "start", "where": "exports/run.ts:42" } ] },
+    { "name": "Don't retry", "steps": [ { "text": "Ana exports order 1042", "kind": "start" } ] }
   ],
-  "why": "Why the recommendation: a test, a file and line, a doc, a decision, or the reason"
+  "why": "Why the recommendation in a plain sentence, then its evidence: a test, a file and line, a doc, a decision"
 } }
 ```
 
@@ -145,8 +147,10 @@ picks of every question so far are copied together (`1 A, 3 B`), so one paste an
 the letter and the option's name (`A · Retry once`).
 
 The first of `options` is the recommended one; they are lettered A, B, C, D in order. A plan numbers each choice and
-adds `today` (plan-format.md); an explanation leaves both out. **Checked**: 2 to 4 options, and one `alternatives` text per
-option after the first.
+adds `today` (plan-format.md); an explanation leaves both out. A plan's question may be a fix (plan-format.md):
+`"fix": true`, with one option, its words in `recommended`, and no `alternatives`. Its heading says "fix to confirm",
+and picking its option confirms it. **Checked**: 2 to 4 options, or 1 for a fix, and one `alternatives` text per option
+after the first; only a plan has a fix; and no `code` in the question, an option's words or its name.
 
 ## settled
 

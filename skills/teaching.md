@@ -4,8 +4,8 @@ The rules explain, plan-flows, plan-check and pr-review share. Each skill reads 
 step; its own SKILL.md holds only what is its own. [teaching-sources.md](teaching-sources.md) gives where each rule
 comes from, for whoever changes them; a run needn't open it.
 
-Parts: The reader · The worked example · Charts · Questions that check the reading · Show the page · A fresh subagent ·
-Read it cold · After an answer or a comment · Before reading the code
+Parts: The reader · The worked example · Charts · Questions that check the reading · Questions to decide · Show the
+page · A fresh subagent · Read it cold · After an answer or a comment · Before reading the code
 
 ## The reader
 
@@ -77,6 +77,29 @@ most 8.
 | 16–31 | 6 |
 | 32–63 | 7 |
 | 64 or more | 8 |
+
+## Questions to decide
+
+A question that asks the person to decide, a `choice` on a page ([blocks.md](../page/blocks.md)) or the same question
+in the chat, is read by someone who must answer it, often with no code open. They get its point in 10 seconds, or not
+at all.
+
+- **The question leads with what goes wrong, or what is undecided, for the people the code serves**, in their words:
+  what someone sees, gets or can't do on a page, from a command, from a library's call, in a file. One or two short
+  sentences, complete on their own. It names no code: no file, function, setting or mechanism, nothing in backticks.
+- **Each option says in one short sentence what the person gets** under it, never how the code gets there. Its `name`
+  is a few words.
+- **The case and the code go in the charts and in `why`.** The case's real values (who does what, in which state) sit
+  on the charts' steps, and the code (`file:line`, a function) in each step's `where`. `why` opens with the reason in
+  a plain sentence, then its evidence: a test by name, `file:line`, a doc, a decision.
+- Write who does what, each subject next to its verb.
+
+| Written from the code | For the person |
+|---|---|
+| `submitPayment()` retries a timeout with a new idempotency key | A shopper whose payment times out can be charged twice. |
+| `--out` resolves against the directory `init` changed to | Someone who runs the export from a subfolder finds the file in another folder. |
+| `parse("")` returns `None`, and `parse(" ")` raises `ValueError` | A caller who parses an empty string gets nothing back, and one who parses a space gets an error. |
+| Option: store the key per checkout session and re-send it on each retry | Option: the shopper is charged once, however often the payment is retried. |
 
 ## Show the page
 

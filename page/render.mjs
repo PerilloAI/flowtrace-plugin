@@ -166,17 +166,19 @@ export function render(doc, o) {
         // explanation.
         // Each option is a card: its button (letter, name and sentence) and its chart. A click elsewhere on the card picks it
         // too, unless it lands on a link or a button in it.
+        // A fix's one option is the fix, recommended over nothing, and its heading says so.
         const picks = [b.recommended, ...b.alternatives].map((text, k) => {
           const letter = "ABCD"[k];
           const line = b.number !== null ? `${b.number} ${letter}` : `${letter} · ${b.names[k] ?? ""}`;
-          const tag = k === 0 ? '<span class="tag rec">recommended</span> ' : "";
+          const tag = k === 0 && !b.fix ? '<span class="tag rec">recommended</span> ' : "";
           const column = b.chart.columns[k];
           const chart = column ? chartHtml({ items: column.items }, `${title} › ${column.title}`) : "";
           return `<div class="pick-card"><button type="button" class="pick" aria-pressed="false" data-line="${esc(line)}"><span class="letter">${letter}</span><span><span class="pick-name">${tag}${inline(b.names[k] ?? "")}</span><span class="pick-says">${k === 0 ? `<strong>${inline(text ?? "")}</strong>` : inline(text ?? "")}</span></span></button>${chart}</div>`;
         }).join("");
         // How the case goes today comes right under the question, before the options that would change it.
         const today = b.today ? `<h4 class="today">How it works today</h4><figure>${chartHtml({ items: b.today }, `${title} › Today`)}</figure>` : "";
-        return `<div class="decision${since(key)}" id="${b.id}"><h3>${inline(title)}</h3>${today}<div class="picks">${picks}</div><div class="picked"><code hidden></code><p class="desc" hidden></p></div>${b.why ? `<p class="why">${inline(b.why)}</p>` : ""}</div>${ask}`;
+        const heading = `${b.number !== null ? `${b.number} · ` : ""}${b.fix ? '<span class="tag fix">fix to confirm</span> ' : ""}${inline(b.question)}`;
+        return `<div class="decision${since(key)}" id="${b.id}"><h3>${heading}</h3>${today}<div class="picks">${picks}</div><div class="picked"><code hidden></code><p class="desc" hidden></p></div>${b.why ? `<p class="why">${inline(b.why)}</p>` : ""}</div>${ask}`;
       }
       case "changes":
         return `<div class="tablewrap"><table><thead><tr><th>Change</th><th>What users get</th><th>Why</th></tr></thead><tbody>${b.rows
