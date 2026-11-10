@@ -87,10 +87,24 @@ export function check(doc, { plan, nameFound }) {
     if (titles.has(row.title)) at(row.line, `two changes are titled "${row.title}"`);
     titles.add(row.title);
   }
+  // Each picture as it is written, with the line it starts on: one written out a second time is a copy.
+  const written = new Map();
+  const copyOf = (html, line) => {
+    const key = html.join("\n");
+    if (written.has(key)) at(line, `this picture is written out at line ${written.get(key)} too: draw it once under "pictures" and show it with "use"`);
+    else written.set(key, line);
+  };
+  for (const picture of doc.pictures) {
+    copyOf(picture.html, picture.lines[0]);
+    for (const p of pictureProblems(picture.html)) at(picture.lines[p.k], p.message);
+    if (!picture.used) at(picture.line, `the picture "${picture.name}" is shown by no step: a step shows it with "shows": { "use": "${picture.name}" }`);
+  }
   for (const b of all) {
     const drawn = b.kind === "flow" ? boxes(b.items) : blockChartBoxes(b);
     for (const box of drawn) {
-      for (const p of box.shows ? pictureProblems(box.shows.html) : []) at(box.shows.lines[p.k], p.message);
+      // A named picture is checked once, where it is drawn, however many steps show it.
+      if (box.shows && !box.shows.use) copyOf(box.shows.html, box.shows.lines[0]);
+      for (const p of box.shows && !box.shows.use ? pictureProblems(box.shows.html) : []) at(box.shows.lines[p.k], p.message);
       if (box.change && !titles.has(box.change)) at(box.line, `"change": "${box.change}" names no row of "changes"`);
       for (const f of box.flags ?? []) {
         if (!LOOK_CLOSELY.includes(f.kind)) at(f.line, `Look closely's kind "${f.kind}" is not one of ${LOOK_CLOSELY.join(", ")}`);

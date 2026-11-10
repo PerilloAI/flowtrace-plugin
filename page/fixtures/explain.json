@@ -1,6 +1,17 @@
 {
   "title": "Should an export that times out be retried?",
   "about": "the shop repository · [branch export-retry](https://example.com/shop/tree/export-retry)",
+  "pictures": {
+    "order 1042, ready": {
+      "html": [
+        "<table>",
+        "<tr><th>Order</th><th>Status</th></tr>",
+        "<tr><td>1042</td><td>Ready to export</td></tr>",
+        "</table>"
+      ],
+      "from": "the warehouse's answer for order 1042"
+    }
+  },
   "sections": [
     {
       "heading": "What I'm asking",
@@ -42,15 +53,7 @@
                   {
                     "text": "Ana presses Export on order 1042",
                     "kind": "start",
-                    "shows": {
-                      "html": [
-                        "<table>",
-                        "<tr><th>Order</th><th>Status</th></tr>",
-                        "<tr><td>1042</td><td>Ready to export</td></tr>",
-                        "</table>"
-                      ],
-                      "from": "the warehouse's answer for order 1042"
-                    }
+                    "shows": { "use": "order 1042, ready" }
                   },
                   { "text": "The warehouse answers after 31 seconds" },
                   { "text": "\"Export failed\"", "result": "bad", "note": "Ana has to press Export again" }
@@ -59,10 +62,51 @@
               {
                 "title": "After",
                 "steps": [
-                  { "text": "Ana presses Export on order 1042", "kind": "start" },
+                  {
+                    "text": "Ana presses Export on order 1042",
+                    "kind": "start",
+                    "shows": { "use": "order 1042, ready" }
+                  },
                   { "text": "The warehouse answers after 31 seconds" },
                   { "text": "The export waits 30 seconds and tries once more", "result": "ok" },
                   { "text": "The file downloads", "result": "ok" }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "heading": "How it works",
+      "content": [
+        {
+          "chart": {
+            "title": "How it decides",
+            "steps": [
+              { "text": "The export asks the warehouse for order 1042", "kind": "start" },
+              {
+                "text": "Did it time out?",
+                "kind": "question",
+                "answers": [
+                  {
+                    "label": "yes, the first time",
+                    "steps": [
+                      { "text": "wait 30 seconds and ask again" }
+                    ]
+                  },
+                  {
+                    "label": "yes, again",
+                    "steps": [
+                      { "text": "\"Export failed\"", "result": "bad" }
+                    ]
+                  },
+                  {
+                    "label": "no",
+                    "steps": [
+                      { "text": "the file downloads", "result": "ok" }
+                    ]
+                  }
                 ]
               }
             ]
@@ -219,43 +263,6 @@
               }
             ],
             "why": "The warehouse is slow for a minute at a time (exports.log), so one retry catches most timeouts."
-          }
-        }
-      ]
-    },
-    {
-      "heading": "How it works",
-      "content": [
-        {
-          "chart": {
-            "title": "How it decides",
-            "steps": [
-              { "text": "The export asks the warehouse for order 1042", "kind": "start" },
-              {
-                "text": "Did it time out?",
-                "kind": "question",
-                "answers": [
-                  {
-                    "label": "yes, the first time",
-                    "steps": [
-                      { "text": "wait 30 seconds and ask again" }
-                    ]
-                  },
-                  {
-                    "label": "yes, again",
-                    "steps": [
-                      { "text": "\"Export failed\"", "result": "bad" }
-                    ]
-                  },
-                  {
-                    "label": "no",
-                    "steps": [
-                      { "text": "the file downloads", "result": "ok" }
-                    ]
-                  }
-                ]
-              }
-            ]
           }
         }
       ]

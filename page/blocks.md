@@ -43,7 +43,7 @@ node <this folder>/page.mjs seen <file>.json
 }
 ```
 
-A plan also takes `approved` and `reviewPage` (plan-format.md), and may open with `intro`, a `content` list before the
+`pictures`, before `sections`, holds each picture more than one step shows (Pictures, below). A plan also takes `approved` and `reviewPage` (plan-format.md), and may open with `intro`, a `content` list before the
 first section. A review (pr-review) may take `"send": true`, which offers Send answers once every question is answered. Each item of a `content` list is one object with one key:
 
 | Item | What it draws |
@@ -83,12 +83,45 @@ A step's keys, each optional but `text`:
 - `answers`: on a question only, each `{ "label": "yes", "steps": [ … ] }`. Several fan out side by side; one alone
   sits beside its question while the chart carries on below.
 - `inner`: steps drawn in a dashed box under this one.
-- `shows`: on a chart's step (a question's and a choice's steps are a chart's), never a flow's, the example as it is at this step, drawn inside the step's card under its
-  words: `{ "html": ["<table>", "…", "</table>"], "from": "tests/fixtures/order-1042.json" }`. `html` is the picture,
-  in HTML or SVG, one line a string; `from`, where it came from, is left out when there is no such file, and the card
-  then says it was drawn for this page. **Checked**: a picture only draws, with HTML boxes and tables or SVG shapes and
-  text. It holds no script, `style` tag, frame, image, link, form, `id`, `on…` attribute, nothing that loads from
-  elsewhere (`src`, `href`, `url(…)` in a `style`), and no tag left open; write a `<` in its words as `&lt;`.
+- `shows`: on a chart's step (a question's and a choice's steps are a chart's), never a flow's, the example as it is
+  at this step, drawn inside the step's card under its words (Pictures, below).
+
+## Pictures
+
+A step's `shows` is the example as it is at that step, as a picture:
+`{ "html": ["<table>", "…", "</table>"], "from": "tests/fixtures/order-1042.json" }`. `html` is the picture, in HTML or
+SVG, one line a string. `from`, where it came from, is left out when there is no such file, and the card then says it
+was drawn for this page.
+
+- **Drawn once, shown wherever it's needed.** A picture more than one step shows, such as a question's case showing
+  what a chart already draws, goes under `pictures` at the top of the file, by a name of your own, and each step shows
+  it by that name. A change to it then reaches every step, and the file holds no copies.
+
+  ```json
+  {
+    "title": "…",
+    "pictures": {
+      "order 1042, ready": { "html": ["<table>", "…", "</table>"], "from": "tests/fixtures/order-1042.json" }
+    },
+    "sections": [ … { "text": "Ana presses Export on order 1042", "shows": { "use": "order 1042, ready" } } … ]
+  }
+  ```
+
+- **Its lines are joined with line breaks.** Where a picture keeps white space as typed, a break between two strings
+  shows as one.
+- **Styling.** A tag may carry a `style` attribute; a picture has no classes to use. A `<table>` gets the page's own
+  borders. Colour with `currentColor` and the page's colours, which follow light and dark: `var(--fg)`,
+  `var(--muted)`, `var(--line)`, `var(--card)`, `var(--bg)`, `var(--accent)`, `var(--ok)`, `var(--bad)`, and the soft
+  backgrounds `var(--accent-soft)`, `var(--ok-soft)`, `var(--bad-soft)`. A fixed colour that reads on white can vanish
+  on dark. In SVG a page colour goes in `style` (`style="fill: var(--ok)"`), since an attribute takes no variable. The
+  page's fonts are `var(--body)` and `var(--mono)`.
+- **Width.** A step holding a picture takes its chart's whole width, or its column's in a chart drawn side by side,
+  and a wider picture scrolls inside its card. Draw for about 600px, or 400px in a column.
+
+**Checked**: a picture only draws, with HTML boxes and tables or SVG shapes and text. It holds no script, `style` tag,
+frame, image, link, form, `id`, `on…` attribute, nothing that loads from elsewhere (`src`, `href`, `url(…)` in a
+`style`), and no tag left open; write a `<` in its words as `&lt;`. Each `use` names one of `pictures`, each of
+`pictures` is shown by at least one step, and no picture is written out twice.
 
 ## question
 
@@ -121,7 +154,7 @@ option's steps, which would give the answer away. Across the page, the right opt
 every time.
 
 The reader answers from the question alone, so it holds its own picture of the example (a step's `shows`), even when
-a chart elsewhere on the page draws the same one. **Checked**: at least one step of the case holds a picture, and
+a chart elsewhere on the page draws the same one, which it then shows by its name (`use`). **Checked**: at least one step of the case holds a picture, and
 either every option's chart holds one or none does.
 
 ## choice
@@ -166,7 +199,9 @@ holds a picture, of `today` on a plan, of an option's chart on an explanation.
 ] }
 ```
 
-`who` is the person's name, or `Claude` (or the model's own name) for a call the person hasn't made.
+`who` is the person's name, as the conversation or `git config user.name` gives it, and `you` when neither does. A
+rule from a file is its author's when known, and otherwise `the repository`'s, with `from` naming the file. `Claude`
+(or the model's own name) is for a call the person hasn't made.
 
 ## names
 

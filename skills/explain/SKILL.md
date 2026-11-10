@@ -54,7 +54,9 @@ doesn't need.
 1. **What I'm asking** (or **In short**, when there is nothing to decide): one or two plain sentences, your
    recommendation first.
 2. **The big picture**: two or three sentences, and a chart of the goal's pieces in order, each done, this one
-   (`"kind": "here"`) or still to come, with the related work beside its piece.
+   (`"kind": "here"`) or still to come, with the related work beside its piece. When the thing belongs to no larger
+   piece of work, chart the thing itself: its parts in the order a person meets them, the one this page is about
+   marked `here`.
 3. **The example**: the case, in the reader's terms.
 4. **What you'd see**: for each thing a person does that this changes (signs in, runs a command, opens a page), one
    chart with Today and After as `columns`, as that person meets it: Today marked where it goes wrong, After under the

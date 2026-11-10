@@ -55,7 +55,9 @@ teaching.md's A fresh subagent (in Claude Code it runs in the background and can
 >
 > Return "No established way" when the sources disagree or say nothing, and say what they disagree about.
 
-Where the harness can't start a subagent that searches the web, research nothing and say so in the chat.
+Where the harness can't start a subagent that searches the web, research nothing, and say so in the chat and in What
+I'm asking, so the author knows no better way was looked for. A premise about an outside thing is still proved from
+its own docs, read yourself (below): that checks what the plan rests on, and looks for no better way.
 
 **Read the code yourself** while the research runs:
 
@@ -97,8 +99,8 @@ so read again from there. A premise nothing here can prove is a question under Q
 being the one who can answer it.
 
 Done when every step you will mark as existing, changed or removed names a function or file you have read, you know
-which tests pin what each one does today, every research subagent has returned and its findings are weighed, and every
-premise is proved from its source or is a question.
+which tests pin what each one does today, every research subagent you started has returned and its findings are
+weighed, and every premise is proved from its source or is a question.
 
 ## 2. Write the plan
 
@@ -107,6 +109,10 @@ drawing checks; [blocks.md](../../page/blocks.md) gives the items a plan shares 
 the change, never the branch (`docs/plans/<change>.json`): a branch is gone once it merges, and the plan stays. Pick
 one example change by teaching.md's The worked example and follow it through the screens and traces, drawn as a person
 would see it.
+
+While a question is open, write the screens, traces and flows as if its recommended option were taken, and say so in
+What I'm asking: the author reads one plan, and an answer that differs rewrites it by step 4. Keep the reading
+questions, and the pictures in them, to what no open question would change, so no answer makes one wrong.
 
 Done when all of these hold:
 
@@ -120,6 +126,9 @@ Done when all of these hold:
   found than the one asked for, is a question under Questions from plan-flows: one real case, a chart of how it
   runs today, the recommendation first, a chart of the case under each option, and why. No other section asks the
   author to decide.
+- A `Claude` item under Already settled is only a detail with one sensible answer, which follows a convention the code
+  or its platform already has, named in the item (how a new option is spelled beside the existing ones, which of the
+  code's own error shapes a new failure takes). Whatever a reasonable author could want either way is a question.
 - Every design choice the research covered is built the established way with its source linked, asked as a question,
   or left out because the code or a recorded decision rules it out.
 - A reader of What I'm asking alone learns of the best way the research found to solve their problem, when it isn't

@@ -68,9 +68,10 @@ same length and carry no `result`, so none gives the answer away.
 **Draw what it asks about.** The reader answers from the question alone, without scrolling back to the page's charts,
 so the question's own charts draw the example, by The worked example's rules. The case draws it as it stands at the
 step asked about (a step's `shows`). When what the person gets under an option is something they would see (a screen,
-rows, a file, a message), each option's last step draws it, every option alike in size and care, so none stands out.
-A question for the author (a `choice`) is drawn the same way: its case as it stands today, and under each option what
-would be different.
+rows, a file, a message), each option's last step draws it, every option the same kind of picture at the same level of
+detail, so none stands out. A question for the author (a `choice`) is drawn the same way: its case as it stands today,
+and under each option what would be different. A picture another chart already draws is shown again by its name
+(`pictures`, blocks.md), never copied.
 
 A plan or a review asks as many as its changed steps call for: 2 for 0 or 1, and one more each time they double, at
 most 8.
