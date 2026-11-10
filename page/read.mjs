@@ -35,8 +35,8 @@ export function readDocument(text) {
         continue;
       }
       const x = v[key];
-      const ok = t === "string" ? typeof x === "string" && x.trim() !== "" : t === "number" ? Number.isInteger(x) : t === "boolean" ? typeof x === "boolean" : t === "array" ? Array.isArray(x) : t === "strings" ? Array.isArray(x) && x.every((s) => typeof s === "string") : true;
-      const said = { string: "text in quotes, not empty", number: "a whole number", boolean: "true or false", array: "a list [ … ]", strings: "a list of texts in quotes" }[t];
+      const ok = t === "string" ? typeof x === "string" && x.trim() !== "" : t === "number" ? Number.isInteger(x) : t === "boolean" ? typeof x === "boolean" : t === "array" ? Array.isArray(x) : t === "strings" ? Array.isArray(x) && x.every((s) => typeof s === "string") : Boolean(x) && typeof x === "object" && !Array.isArray(x);
+      const said = { string: "text in quotes, not empty", number: "a whole number", boolean: "true or false", array: "a list [ … ]", strings: "a list of texts in quotes", object: "an object { … }" }[t];
       if (!ok) fail([...path, key], `"${key}" must be ${said}`);
     }
     return v;
@@ -45,6 +45,15 @@ export function readDocument(text) {
     if (!Array.isArray(v)) fail(path, `${where(path)} must be a list [ … ]`);
     return v.map((x, k) => each(x, [...path, k]));
   };
+
+  shape(value, [], { title: "string", approved: "string?", reviewPage: "string?", about: "string?", send: "boolean?", pictures: "object?", intro: "array?", sections: "array" });
+  // The pictures drawn once at the top of the file, each by its name, for the steps that show them with "use".
+  const pictures = new Map(Object.entries(value.pictures ?? {}).map(([name, v]) => {
+    const p = ["pictures", name];
+    shape(v, p, { html: "strings", from: "string?" });
+    if (!v.html.length) fail([...p, "html"], '"html" holds the picture, one line a string');
+    return [name, { name, html: v.html, from: v.from ?? null, lines: v.html.map((_, k) => lineOf([...p, "html", k])), line: lineOf(p), used: 0 }];
+  }));
 
   const step = (v, path, flow) => {
     const s = shape(v, path, flow
@@ -69,16 +78,25 @@ export function readDocument(text) {
     let shows = null;
     if (s.shows) {
       const p = [...path, "shows"];
-      shape(s.shows, p, { html: "strings", from: "string?" });
-      if (!s.shows.html.length) fail([...p, "html"], '"html" holds the picture, one line a string');
-      shows = { html: s.shows.html, from: s.shows.from ?? null, lines: s.shows.html.map((_, k) => lineOf([...p, "html", k])) };
+      shape(s.shows, p, { html: "strings?", from: "string?", use: "string?" });
+      if (s.shows.use) {
+        if (s.shows.html || s.shows.from) fail(p, 'a "shows" naming a picture with "use" takes no "html" or "from": they are the picture\'s own');
+        const picture = pictures.get(s.shows.use);
+        if (!picture) fail([...p, "use"], `"use": "${s.shows.use}" names no picture under "pictures", at the top of the file`);
+        picture.used++;
+        shows = { html: picture.html, from: picture.from, lines: picture.lines, use: picture.name };
+      } else {
+        if (!s.shows.html?.length) fail(p, '"shows" holds the picture as "html", one line a string, or names one of "pictures" with "use"');
+        shows = { html: s.shows.html, from: s.shows.from ?? null, lines: s.shows.html.map((_, k) => lineOf([...p, "html", k])), use: null };
+      }
     }
     const flags = s.lookClosely ? list(s.lookClosely, [...path, "lookClosely"], (f, p) => ({ ...shape(f, p, { kind: "string", text: "string" }), line: lineOf(p) })) : [];
     const box = {
       text, kind, question: kind === "q", keyword: s.keyword ?? null, mark: s.result ?? null, note: s.note ?? null, change: s.change ?? null,
       where: s.where ?? null, flags, shows, line: lineOf(path),
       flowMark: flow ? s.mark ?? flow.mark ?? " " : undefined,
-      source: JSON.stringify({ ...s, inner: undefined, answers: undefined, mark: flow ? s.mark ?? flow.mark : undefined }),
+      // A step showing a named picture changes when that picture does, so its source holds the picture too.
+      source: JSON.stringify({ ...s, inner: undefined, answers: undefined, mark: flow ? s.mark ?? flow.mark : undefined, ...(shows?.use ? { shows: { use: shows.use, html: shows.html, from: shows.from } } : {}) }),
     };
     if (s.inner) box.inner = list(s.inner, [...path, "inner"], (x, p) => step(x, p, flow));
     if (s.answers) {
@@ -196,9 +214,9 @@ export function readDocument(text) {
     return { type: "block", kind: key, line: lineOf(path), ...BLOCKS[key](v[key], [...path, key]) };
   };
 
-  shape(value, [], { title: "string", approved: "string?", reviewPage: "string?", about: "string?", send: "boolean?", intro: "array?", sections: "array" });
   const doc = {
     title: value.title, titleLine: lineOf(["title"]), approved: value.approved ?? null, reviewPage: value.reviewPage ?? null, about: value.about ?? null, send: value.send === true,
+    pictures: [...pictures.values()],
     intro: value.intro ? list(value.intro, ["intro"], node) : [],
     sections: list(value.sections, ["sections"], (s, p) => {
       shape(s, p, { heading: "string", content: "array" });

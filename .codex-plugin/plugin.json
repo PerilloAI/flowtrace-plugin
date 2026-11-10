@@ -1,6 +1,6 @@
 {
   "name": "flowtrace",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "description": "Plan a change before any code, explain one to someone who has never seen it, and review a pull request. plan-flows reads the code the change touches, writes the plan and draws its page for you to read, answer and approve; plan-check then questions the approved plan; explain traces one worked example through before and after flowcharts; pr-review teaches a pull request from its code, and adds how far each change reaches for a member of a Perillo workspace.",
   "author": {
     "name": "Perillo"

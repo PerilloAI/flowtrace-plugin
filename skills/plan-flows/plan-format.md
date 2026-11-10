@@ -45,7 +45,7 @@ A plan is **approved at its current fingerprint** when the fingerprint in its `a
 **Checked**: the sections stand in this order, and What I'm asking comes first. Each is a `heading` as written here.
 
 1. `What I'm asking`: one or two plain sentences saying what the author approves and how many questions are open, and
-   the better way the research found, when there is one.
+   the better way the research found, when there is one, or that no research ran, when it couldn't.
 2. `The case`: one `case`.
 3. `What you'd see`: a paragraph introducing the example change that the screens and traces follow, then the
    `screens`. When nobody using the code would notice the plan, a paragraph says so in place of the screens.
@@ -114,8 +114,10 @@ case charted as it runs today, then under each option with the recommendation fi
   `where`. The page draws it right under the question as How it works today, so the author knows what each option
   would change. When the thing asked about doesn't exist yet, it shows what happens in its place, such as the error a
   person gets or the step that runs without it. Each question has its own, even when a screen's Today column shows the
-  same case, because the author answers from the question alone. **Checked**: every question has one with at least one
-  step, and none of its steps names a `change`.
+  same case, because the author answers from the question alone. For the same reason it draws the case's example as
+  it stands (a step's `shows`), and each option's chart draws what would be different under it, where a person would
+  see it. **Checked**: every question has one with at least one step, at least one of its steps holds a picture, and
+  none names a `change`.
 - Write it in plain English, as the flows are: a reader who has never seen the code can answer it from the question
   and its charts alone.
 
@@ -183,7 +185,9 @@ page, with the step lit.
   (`no`, `fails (someone saved the same name first)`). A step with none, as inside an answer, is plain words.
 - **Marks**: `"mark": "+"` new, `"~"` changed (its code changes), `"-"` removed, and no mark for what exists. Keep a step
   for each existing step the change sits among, so the reader sees where it lands. A flow the plan adds as a whole is
-  `"mark": "+"` on the flow, and its steps carry none; a flow it removes is `"mark": "-"`.
+  `"mark": "+"` on the flow, and its steps carry none; a flow it removes is `"mark": "-"`. Every step of a new flow
+  counts as changed, one that calls code that exists too, since the whole way in is new to its reader; such a step
+  still names that code in `where`.
 - **Change names.** A plan's step names in `change` the change whose row describes what the step does, by the writer's
   judgement, and a review leaves `change` out.
 - **Lean.** List the flow's top-level steps, one per function the change adds, changes or removes on it, in the order
