@@ -35,7 +35,7 @@ test("every skill reads the shared teaching file, and each shared rule is writte
     const text = readFileSync(path.join(root, "skills", skill, "SKILL.md"), "utf8");
     assert.match(text, /Read\s+\[teaching\.md\]\(\.\.\/teaching\.md\)\s+in\s+full\s+before\s+step\s+1/, skill);
   }
-  const shared = ["the way this harness starts one", "with the Artifact tool, the same path", "| 64 or more | 8 |", "You have never seen this project or this conversation"];
+  const shared = ["the way this harness starts one", "with the Artifact tool, the same path", "| 64 or more | 8 |", "You have never seen this project or this conversation", "| Written from the code | For the person |"];
   const markdown = files(path.join(root, "skills")).filter((file) => file.endsWith(".md") && !file.endsWith("teaching.md"));
   for (const words of shared) {
     assert.ok(readFileSync(path.join(root, "skills/teaching.md"), "utf8").includes(words), words);

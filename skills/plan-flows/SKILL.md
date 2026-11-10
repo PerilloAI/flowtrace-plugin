@@ -117,9 +117,10 @@ Done when all of these hold:
 - Every question can be answered from the plan alone.
 - What this rests on names every premise, so an author who knows better can see it at a glance.
 - Every open decision, every open behaviour you noted that the code doesn't settle, and every better way the research
-  found than the one asked for, is a question under Questions from plan-flows: one real case, a chart of how it
-  runs today, the recommendation first, a chart of the case under each option, and why. No other section asks the
-  author to decide.
+  found than the one asked for, is a question under Questions from plan-flows, a choice or a fix as plan-format.md's
+  choice gives them, worded as teaching.md's Questions to decide says: one real case, a chart of how it runs today,
+  the recommendation first, a chart of the case under each option, and why. No other section asks the author to
+  decide.
 - Every design choice the research covered is built the established way with its source linked, asked as a question,
   or left out because the code or a recorded decision rules it out.
 - A reader of What I'm asking alone learns of the best way the research found to solve their problem, when it isn't

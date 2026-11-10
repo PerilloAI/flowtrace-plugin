@@ -205,7 +205,8 @@ case and each option charted:
   `reading`, until step 11 runs its test.
 
 Before running any test, check whether the pull request comes from a fork. When it does, or its source is unknown, ask
-in the chat before running anything, whatever the harness's mode, naming its author (or saying you can't tell) and the
+in the chat before running anything, whatever the harness's mode. Lead with what a yes means for the reviewer: code from
+outside the project runs on this machine, with their access. Then name its author (or say you can't tell) and the
 install and test commands you would run. On no, every test is read, not run.
 
 ## 11. Check each question

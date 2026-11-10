@@ -112,8 +112,18 @@ export function check(doc, { plan, nameFound }) {
   const numbers = new Set();
   for (const c of all.filter((b) => b.kind === "choice")) {
     const cols = c.chart.columns ?? [];
-    if (cols.length < 2 || cols.length > 4) at(c.line, `a choice charts 2 to 4 options, the recommended one first; this one has ${cols.length}`);
-    if (c.alternatives.length !== cols.length - 1) at(c.line, `a choice with ${cols.length} options has ${cols.length - 1} "alternatives", one per option after the first`);
+    if (c.fix) {
+      if (cols.length !== 1) at(c.line, `a fix has one option, the fix, and this one has ${cols.length}; a question where people could sensibly get something else is a choice, without "fix"`);
+      else if (c.alternatives.length) at(c.line, 'a fix has no "alternatives": its one option\'s words are its "recommended"');
+    } else {
+      if (cols.length < 2 || cols.length > 4) at(c.line, `a choice charts 2 to 4 options, the recommended one first; this one has ${cols.length}`);
+      if (c.alternatives.length !== cols.length - 1) at(c.line, `a choice with ${cols.length} options has ${cols.length - 1} "alternatives", one per option after the first`);
+    }
+    if (!plan && c.fix) at(c.line, "only a plan's question for the author is a fix: an explanation asks a choice, and a go-ahead goes in the chat");
+    for (const w of c.words) {
+      const code = /`[^`]+`/.exec(w.text);
+      if (code) at(w.line, `"${w.key}" holds ${code[0]}: a question to decide and its options say what a person sees or gets, with no code, which goes in a step's "where" or in "why" (teaching.md, Questions to decide)`);
+    }
     if (plan && !c.today) at(c.line, 'a plan\'s question for the author needs "today": its case as the code runs it now');
     if (!plan && c.today) at(c.line, 'only a plan\'s question for the author takes "today"');
     for (const box of boxes(c.today ?? [])) {

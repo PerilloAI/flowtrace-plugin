@@ -184,6 +184,88 @@ test("an explanation's choice takes no today", () => {
   assert.match(refused.stderr, /only a plan's question for the author takes "today"/);
 });
 
+// A plan with one question for the author under Questions from plan-flows.
+const asking = (choice) => {
+  const data = plan();
+  data.sections[0].content[0].p = "Approve the retry. 1 question is open.";
+  data.sections.splice(4, 0, { heading: "Questions from plan-flows", content: [{ p: "1 question." }, { choice }] });
+  return data;
+};
+const timesOutTwice = () => ({
+  number: 1, question: "Ana's export fails for good when the warehouse is slow twice in a row.", today: [{ text: "Ana sees \"Export failed\" at the first timeout", kind: "start", where: "exportOrder", result: "bad" }],
+  fix: true, recommended: "Ana gets her file once the warehouse answers, however slow it is",
+  options: [{ name: "Wait for the warehouse", steps: [{ text: "Ana exports order 1042", kind: "start" }, { text: "The file downloads after the second wait", result: "ok" }] }],
+  why: "Nobody wants a slow warehouse to cost Ana her export.",
+});
+
+test("a fix has one option and says so on its heading, with no option recommended over another", () => {
+  const dir = repo();
+  write(dir, asking(timesOutTwice()));
+  const out = path.join(dir, "page.html");
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", out);
+  assert.equal(run.status, 0, run.stderr);
+  const html = readFileSync(out, "utf8");
+  assert.ok(html.includes('<h3>1 · <span class="tag fix">fix to confirm</span> Ana\'s export fails for good'), "the heading tags the fix");
+  assert.equal(html.match(/class="pick-card"/g)?.length, 1);
+  assert.match(html, /data-line="1 A"><span class="letter">A<\/span><span><span class="pick-name">Wait for the warehouse<\/span>/);
+  assert.ok(!html.includes('<span class="tag rec">recommended</span>'));
+});
+
+test("a fix has exactly one option and no alternatives, and a choice 2 to 4, each refused at the question's line", () => {
+  const refused = (change, message) => {
+    const dir = repo();
+    const choice = timesOutTwice();
+    change(choice);
+    const file = write(dir, asking(choice));
+    const run = draw(dir, "plan", "docs/plans/retry.json", "--out", path.join(dir, "page.html"));
+    assert.equal(run.status, 1);
+    assert.match(run.stderr, new RegExp(`line ${lineOf(file, '"choice"') - 1}: ${message.source}`));
+    return run.stderr;
+  };
+  const second = { name: "Give up", steps: [{ text: "Ana sees \"Export failed\"", kind: "start" }] };
+  const twice = refused((c) => { c.options.push(second); c.alternatives = ["Ana sees \"Export failed\""]; }, /a fix has one option, the fix, and this one has 2/);
+  assert.ok(!twice.includes("alternatives"), "a fix with two options is told that once");
+  refused((c) => { c.alternatives = ["Ana sees \"Export failed\""]; }, /a fix has no "alternatives"/);
+  refused((c) => { delete c.fix; }, /a choice charts 2 to 4 options, the recommended one first; this one has 1/);
+});
+
+test("an explanation's choice is never a fix", () => {
+  const dir = repo();
+  const data = JSON.parse(readFileSync(path.join(here, "fixtures/explain.json"), "utf8"));
+  const choice = data.sections.flatMap((s) => s.content).find((n) => n.choice).choice;
+  Object.assign(choice, { fix: true, options: choice.options.slice(0, 1) });
+  delete choice.alternatives;
+  writeFileSync(path.join(dir, "explain.json"), `${formatJson(data)}\n`);
+  const run = draw(dir, "explain", "explain.json", "--out", path.join(dir, "page.html"));
+  assert.equal(run.status, 1);
+  assert.match(run.stderr, /only a plan's question for the author is a fix/);
+});
+
+test("a question to decide and its options' words name no code, each refused at its line, while its charts and why may", () => {
+  const dir = repo();
+  const choice = {
+    number: 1, question: "Ana's `exportOrder` times out twice. Is it retried again?", today: [{ text: "Ana sees \"Export failed\" from `giveUp`", kind: "start", where: "exports/run.ts:42", result: "bad" }],
+    recommended: "One retry, by `retryOnce`", alternatives: ["Keep calling `fetchForever`"],
+    options: [
+      { name: "Retry `ONCE`", steps: [{ text: "Ana exports order 1042", kind: "start", where: "retryOnce" }] },
+      { name: "Keep retrying", steps: [{ text: "Ana waits", kind: "start" }] },
+    ],
+    why: "`exports/run.ts:42` gives up at 30 seconds, and the warehouse is slow for a minute at a time.",
+  };
+  const file = write(dir, asking(choice));
+  const run = draw(dir, "plan", "docs/plans/retry.json", "--out", path.join(dir, "page.html"));
+  assert.equal(run.status, 1);
+  const said = [["question", "`exportOrder`"], ["recommended", "`retryOnce`"], ["alternatives", "`fetchForever`"], ["name", "`ONCE`"]];
+  for (const [key, code] of said) assert.match(run.stderr, new RegExp(`line ${lineOf(file, code)}: "${key}" holds ${code}: a question to decide and its options say what a person sees or gets`), key);
+  assert.equal(run.stderr.trim().split("\n").length, said.length, run.stderr);
+
+  Object.assign(choice, { question: "Ana's export times out twice. Is it retried again?", recommended: "Ana gets her file after one retry", alternatives: ["Ana waits until the warehouse answers"] });
+  choice.options[0].name = "Retry once";
+  write(dir, asking(choice));
+  const passes = draw(dir, "plan", "docs/plans/retry.json", "--out", path.join(dir, "page.html"));
+  assert.equal(passes.status, 0, passes.stderr);
+});
+
 test("a step marked as existing whose name the code doesn't have stops the drawing, naming its line", () => {
   const dir = repo();
   const data = plan();

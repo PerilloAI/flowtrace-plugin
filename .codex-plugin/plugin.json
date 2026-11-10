@@ -1,6 +1,6 @@
 {
   "name": "flowtrace",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "description": "Plan a change before any code, explain one to someone who has never seen it, and review a pull request. plan-flows reads the code the change touches, writes the plan and draws its page for you to read, answer and approve; plan-check then questions the approved plan; explain traces one worked example through before and after flowcharts; pr-review teaches a pull request from its code, and adds how far each change reaches for a member of a Perillo workspace.",
   "author": {
     "name": "Perillo"
@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "Flowtrace",
     "shortDescription": "Plan a change before any code, explain how code works, review a pull request",
-    "longDescription": "plan-flows reads the code a change touches (the functions it edits, what calls them and the tests that run them), writes the plan as flows, and draws the plan's page from the plan file for you to read, answer and approve. plan-check then has a fresh subagent look for the edge cases and gaps the approved plan leaves, and asks you each as multiple choice, recommendation first. explain teaches a change or a decision with one worked example traced through before and after flowcharts, and has a fresh subagent read the page cold. No skill commits or switches branches. pr-review reviews a pull request from a copy of its code, and for a member of a Perillo workspace adds how far each change reaches, from Perillo's map.",
+    "longDescription": "plan-flows reads the code a change touches (the functions it edits, what calls them and the tests that run them), writes the plan as flows, and draws the plan's page from the plan file for you to read, answer and approve. plan-check then has a fresh subagent look for the edge cases and gaps the approved plan leaves, and asks you each in a line saying what goes wrong for a person: a fix to confirm, or a choice with the recommendation first. explain teaches a change or a decision with one worked example traced through before and after flowcharts, and has a fresh subagent read the page cold. No skill commits or switches branches. pr-review reviews a pull request from a copy of its code, and for a member of a Perillo workspace adds how far each change reaches, from Perillo's map.",
     "developerName": "Perillo",
     "category": "Developer Tools",
     "capabilities": [
