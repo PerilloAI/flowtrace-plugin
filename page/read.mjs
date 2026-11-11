@@ -16,8 +16,9 @@ export function slug(text) {
 
 const SOURCES = ["map", "test ran", "test read", "reading"];
 
-export function readDocument(text) {
-  const { value, lineOf } = readJson(text);
+// The strict reader every page's data shares: an object with only the keys given, each of its type, and a list, each
+// failure naming the line to fix.
+export function reader(lineOf) {
   const fail = (path, message) => {
     throw new PageError(lineOf(path), message);
   };
@@ -45,6 +46,13 @@ export function readDocument(text) {
     if (!Array.isArray(v)) fail(path, `${where(path)} must be a list [ … ]`);
     return v.map((x, k) => each(x, [...path, k]));
   };
+
+  return { fail, where, shape, list };
+}
+
+export function readDocument(text) {
+  const { value, lineOf } = readJson(text);
+  const { fail, where, shape, list } = reader(lineOf);
 
   shape(value, [], { title: "string", approved: "string?", reviewPage: "string?", about: "string?", send: "boolean?", pictures: "object?", intro: "array?", sections: "array" });
   // The pictures drawn once at the top of the file, each by its name, for the steps that show them with "use".

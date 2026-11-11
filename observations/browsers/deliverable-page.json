@@ -1,0 +1,445 @@
+{
+  "claim": "On a deliverable plan's page, a card opens from its title, from a click anywhere on its card and from its tile's picture, alone, with the map kept beside it as a strip, its heading focused and the page at the top; Escape, Back to all cards and the page's name go back to the map, and Escape gives the focus back to the card that was open. An option picks from a click anywhere on it and unpicks on a second, and a pick or a Let's discuss changes the card's status on the map and in the card, the strip's dot and the answers bar. An option's title starts on its letter's line. Nothing scrolls sideways, on the map or in a card. With a global sendPrompt the button reads Send answers and sends the answers line; without one it reads Copy answers, and in both browsers here the clipboard refused a write the page's own script asked for, so the line showed in the paste box. Chrome headless draws no narrower than 500 wide, so its narrow run is 500, and WebKit's is 375.",
+  "source": "Google Chrome 157 headless, and WebKit 21624.2.5.11.8 in a WKWebView on macOS",
+  "observed": "2026-11-10",
+  "how": "node observations/browsers/deliverable-page.probe.mjs on a Mac. It draws page/fixtures/deliverable.json, adds the checks script, and loads the page in each browser at 1280 wide with no sendPrompt and at 375 wide (Chrome: its 500 minimum) with a stand-in sendPrompt that keeps what it was given.",
+  "recheckWhen": "page/deliverable.js, page/deliverable.css or how page/deliverable.mjs draws a card, an option or the bar changes, or Chrome or WebKit is upgraded.",
+  "evidence": [
+    {
+      "name": "Google Chrome 157.0.8103.40",
+      "width": 1280,
+      "sends": false,
+      "atLoad": {
+        "map": true,
+        "zoomHidden": true,
+        "panelsShown": 0,
+        "button": "Copy answers",
+        "buttonDisabled": true,
+        "picks": "1 – · 2 –",
+        "fits": true
+      },
+      "cardBodyHit": {
+        "isTitleButton": true
+      },
+      "tileThumbHit": {
+        "isTitleButton": true
+      },
+      "openQuestion": {
+        "mapHidden": true,
+        "zoom": true,
+        "panels": [
+          "q1"
+        ],
+        "focus": "H2 Where do you hold it?",
+        "current": [
+          "q1"
+        ],
+        "top": 0,
+        "fits": true
+      },
+      "optionTitles": [
+        {
+          "k": "A",
+          "onLettersLine": true
+        },
+        {
+          "k": "B",
+          "onLettersLine": true
+        }
+      ],
+      "pick": {
+        "pressed": [
+          "A false",
+          "B true"
+        ],
+        "statuses": [
+          "st st-you You picked B, The office, doors shut",
+          "st st-you You picked B, The office, doors shut"
+        ],
+        "pip": "pip st-you",
+        "picks": "1 B · 2 –",
+        "buttonDisabled": false
+      },
+      "pickAgain": {
+        "pressed": [
+          "false",
+          "false"
+        ],
+        "statuses": [
+          "st st-rec Recommended: A, A venue an hour away",
+          "st st-rec Recommended: A, A venue an hour away"
+        ],
+        "picks": "1 – · 2 –",
+        "buttonDisabled": true
+      },
+      "openFromStrip": {
+        "panels": [
+          "e1"
+        ],
+        "fits": true
+      },
+      "verdict": {
+        "pressed": [
+          "ok false",
+          "discuss true"
+        ],
+        "onMap": "You: let's discuss",
+        "picks": "1 A · 2 – · discuss 1"
+      },
+      "escape": {
+        "map": true,
+        "zoomHidden": true,
+        "panels": 0,
+        "focus": "Three people can't travel"
+      },
+      "openDeliverable": {
+        "panels": [
+          "d1"
+        ],
+        "fits": true
+      },
+      "backToMap": {
+        "map": true,
+        "zoomHidden": true
+      },
+      "homeToMap": {
+        "map": true,
+        "zoomHidden": true
+      },
+      "answer": {
+        "button": "Copy answers",
+        "sent": null,
+        "fallbackShown": true,
+        "fallbackValue": "1 A. Let's discuss edge case 1 (Three people can't travel)"
+      }
+    },
+    {
+      "name": "Google Chrome 157.0.8103.40",
+      "width": 500,
+      "sends": true,
+      "atLoad": {
+        "map": true,
+        "zoomHidden": true,
+        "panelsShown": 0,
+        "button": "Send answers",
+        "buttonDisabled": true,
+        "picks": "1 – · 2 –",
+        "fits": true
+      },
+      "cardBodyHit": {
+        "isTitleButton": true
+      },
+      "tileThumbHit": {
+        "isTitleButton": true
+      },
+      "openQuestion": {
+        "mapHidden": true,
+        "zoom": true,
+        "panels": [
+          "q1"
+        ],
+        "focus": "H2 Where do you hold it?",
+        "current": [
+          "q1"
+        ],
+        "top": 0,
+        "fits": true
+      },
+      "optionTitles": [
+        {
+          "k": "A",
+          "onLettersLine": true
+        },
+        {
+          "k": "B",
+          "onLettersLine": true
+        }
+      ],
+      "pick": {
+        "pressed": [
+          "A false",
+          "B true"
+        ],
+        "statuses": [
+          "st st-you You picked B, The office, doors shut",
+          "st st-you You picked B, The office, doors shut"
+        ],
+        "pip": "pip st-you",
+        "picks": "1 B · 2 –",
+        "buttonDisabled": false
+      },
+      "pickAgain": {
+        "pressed": [
+          "false",
+          "false"
+        ],
+        "statuses": [
+          "st st-rec Recommended: A, A venue an hour away",
+          "st st-rec Recommended: A, A venue an hour away"
+        ],
+        "picks": "1 – · 2 –",
+        "buttonDisabled": true
+      },
+      "openFromStrip": {
+        "panels": [
+          "e1"
+        ],
+        "fits": true
+      },
+      "verdict": {
+        "pressed": [
+          "ok false",
+          "discuss true"
+        ],
+        "onMap": "You: let's discuss",
+        "picks": "1 A · 2 – · discuss 1"
+      },
+      "escape": {
+        "map": true,
+        "zoomHidden": true,
+        "panels": 0,
+        "focus": "Three people can't travel"
+      },
+      "openDeliverable": {
+        "panels": [
+          "d1"
+        ],
+        "fits": true
+      },
+      "backToMap": {
+        "map": true,
+        "zoomHidden": true
+      },
+      "homeToMap": {
+        "map": true,
+        "zoomHidden": true
+      },
+      "answer": {
+        "button": "Sent",
+        "sent": [
+          "1 A. Let's discuss edge case 1 (Three people can't travel)"
+        ],
+        "fallbackShown": false,
+        "fallbackValue": ""
+      }
+    },
+    {
+      "name": "WebKit 21624.2.5.11.8 in a WKWebView",
+      "width": 1280,
+      "sends": false,
+      "atLoad": {
+        "map": true,
+        "zoomHidden": true,
+        "panelsShown": 0,
+        "button": "Copy answers",
+        "buttonDisabled": true,
+        "picks": "1 – · 2 –",
+        "fits": true
+      },
+      "cardBodyHit": {
+        "isTitleButton": true
+      },
+      "tileThumbHit": {
+        "isTitleButton": true
+      },
+      "openQuestion": {
+        "mapHidden": true,
+        "zoom": true,
+        "panels": [
+          "q1"
+        ],
+        "focus": "H2 Where do you hold it?",
+        "current": [
+          "q1"
+        ],
+        "top": 0,
+        "fits": true
+      },
+      "optionTitles": [
+        {
+          "k": "A",
+          "onLettersLine": true
+        },
+        {
+          "k": "B",
+          "onLettersLine": true
+        }
+      ],
+      "pick": {
+        "pressed": [
+          "A false",
+          "B true"
+        ],
+        "statuses": [
+          "st st-you You picked B, The office, doors shut",
+          "st st-you You picked B, The office, doors shut"
+        ],
+        "pip": "pip st-you",
+        "picks": "1 B · 2 –",
+        "buttonDisabled": false
+      },
+      "pickAgain": {
+        "pressed": [
+          "false",
+          "false"
+        ],
+        "statuses": [
+          "st st-rec Recommended: A, A venue an hour away",
+          "st st-rec Recommended: A, A venue an hour away"
+        ],
+        "picks": "1 – · 2 –",
+        "buttonDisabled": true
+      },
+      "openFromStrip": {
+        "panels": [
+          "e1"
+        ],
+        "fits": true
+      },
+      "verdict": {
+        "pressed": [
+          "ok false",
+          "discuss true"
+        ],
+        "onMap": "You: let's discuss",
+        "picks": "1 A · 2 – · discuss 1"
+      },
+      "escape": {
+        "map": true,
+        "zoomHidden": true,
+        "panels": 0,
+        "focus": "Three people can't travel"
+      },
+      "openDeliverable": {
+        "panels": [
+          "d1"
+        ],
+        "fits": true
+      },
+      "backToMap": {
+        "map": true,
+        "zoomHidden": true
+      },
+      "homeToMap": {
+        "map": true,
+        "zoomHidden": true
+      },
+      "answer": {
+        "button": "Copy answers",
+        "sent": null,
+        "fallbackShown": true,
+        "fallbackValue": "1 A. Let's discuss edge case 1 (Three people can't travel)"
+      }
+    },
+    {
+      "name": "WebKit 21624.2.5.11.8 in a WKWebView",
+      "width": 375,
+      "sends": true,
+      "atLoad": {
+        "map": true,
+        "zoomHidden": true,
+        "panelsShown": 0,
+        "button": "Send answers",
+        "buttonDisabled": true,
+        "picks": "1 – · 2 –",
+        "fits": true
+      },
+      "cardBodyHit": {
+        "isTitleButton": true
+      },
+      "tileThumbHit": {
+        "isTitleButton": true
+      },
+      "openQuestion": {
+        "mapHidden": true,
+        "zoom": true,
+        "panels": [
+          "q1"
+        ],
+        "focus": "H2 Where do you hold it?",
+        "current": [
+          "q1"
+        ],
+        "top": 0,
+        "fits": true
+      },
+      "optionTitles": [
+        {
+          "k": "A",
+          "onLettersLine": true
+        },
+        {
+          "k": "B",
+          "onLettersLine": true
+        }
+      ],
+      "pick": {
+        "pressed": [
+          "A false",
+          "B true"
+        ],
+        "statuses": [
+          "st st-you You picked B, The office, doors shut",
+          "st st-you You picked B, The office, doors shut"
+        ],
+        "pip": "pip st-you",
+        "picks": "1 B · 2 –",
+        "buttonDisabled": false
+      },
+      "pickAgain": {
+        "pressed": [
+          "false",
+          "false"
+        ],
+        "statuses": [
+          "st st-rec Recommended: A, A venue an hour away",
+          "st st-rec Recommended: A, A venue an hour away"
+        ],
+        "picks": "1 – · 2 –",
+        "buttonDisabled": true
+      },
+      "openFromStrip": {
+        "panels": [
+          "e1"
+        ],
+        "fits": true
+      },
+      "verdict": {
+        "pressed": [
+          "ok false",
+          "discuss true"
+        ],
+        "onMap": "You: let's discuss",
+        "picks": "1 A · 2 – · discuss 1"
+      },
+      "escape": {
+        "map": true,
+        "zoomHidden": true,
+        "panels": 0,
+        "focus": "Three people can't travel"
+      },
+      "openDeliverable": {
+        "panels": [
+          "d1"
+        ],
+        "fits": true
+      },
+      "backToMap": {
+        "map": true,
+        "zoomHidden": true
+      },
+      "homeToMap": {
+        "map": true,
+        "zoomHidden": true
+      },
+      "answer": {
+        "button": "Sent",
+        "sent": [
+          "1 A. Let's discuss edge case 1 (Three people can't travel)"
+        ],
+        "fallbackShown": false,
+        "fallbackValue": ""
+      }
+    }
+  ]
+}

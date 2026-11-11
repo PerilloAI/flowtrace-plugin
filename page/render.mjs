@@ -8,7 +8,7 @@ import { blocks, boxes, chartBoxes, readTarget } from "./check.mjs";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CSS = readFileSync(path.join(here, "page.css"), "utf8");
 const JS = readFileSync(path.join(here, "page.js"), "utf8");
-const FONTS =
+export const FONTS =
   '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">';
 
@@ -28,7 +28,7 @@ export function inline(text) {
   }).join("");
 }
 // The same words for inside a link, which can't hold another: a link in them is shown as its words.
-const inlineInLink = (text) => inline(String(text).replace(/\[([^\]]+)\]\([^)\s]+\)/g, "$1"));
+export const inlineInLink = (text) => inline(String(text).replace(/\[([^\]]+)\]\([^)\s]+\)/g, "$1"));
 
 /**
  * @param {object} doc parsed by read.mjs
