@@ -1,0 +1,75 @@
+{
+  "title": "A two-day offsite for a team of 14",
+  "about": "Plan · what you get, what to decide, what could go wrong",
+  "tldr": "Two days out of the office: day one on next year's plan, day two on how the team works. You get an agenda, a budget and the invite. Two questions for you, and two edge cases worth a look.",
+  "deliverables": [
+    {
+      "name": "Agenda",
+      "kind": "One page",
+      "line": "Both days hour by hour, with who leads each session.",
+      "picture": [
+        "<table style=\"width:100%;border-collapse:collapse;font-size:13px\">",
+        "<tr><th style=\"text-align:left;color:var(--muted);padding:4px 8px\">Time</th><th style=\"text-align:left;color:var(--muted);padding:4px 8px\">Day 1 · next year</th><th style=\"text-align:left;color:var(--muted);padding:4px 8px\">Day 2 · how we work</th></tr>",
+        "<tr><td style=\"padding:4px 8px\">9:00</td><td style=\"padding:4px 8px\">Where we stand, led by Priya</td><td style=\"padding:4px 8px\">What slowed us down</td></tr>",
+        "<tr><td style=\"padding:4px 8px\">11:00</td><td style=\"padding:4px 8px\">Three bets for next year</td><td style=\"padding:4px 8px\">Two changes we try</td></tr>",
+        "<tr><td style=\"padding:4px 8px\">14:00</td><td style=\"padding:4px 8px\">Walk, then dinner</td><td style=\"padding:4px 8px\">Travel home</td></tr>",
+        "</table>"
+      ],
+      "from": "your notes on last year's offsite"
+    },
+    {
+      "name": "Budget",
+      "kind": "Spreadsheet",
+      "line": "Venue, travel, food and a reserve, about 9,400 in all.",
+      "picture": [
+        "<svg viewBox=\"0 0 360 120\" role=\"img\" aria-label=\"Budget by line\">",
+        "<rect x=\"90\" y=\"8\" width=\"170\" height=\"18\" rx=\"4\" style=\"fill: var(--accent)\"/><text x=\"0\" y=\"21\" font-size=\"12\" style=\"fill: var(--fg)\">Venue</text><text x=\"266\" y=\"21\" font-size=\"12\" style=\"fill: var(--fg)\">4,200</text>",
+        "<rect x=\"90\" y=\"36\" width=\"110\" height=\"18\" rx=\"4\" style=\"fill: var(--accent)\"/><text x=\"0\" y=\"49\" font-size=\"12\" style=\"fill: var(--fg)\">Travel</text><text x=\"206\" y=\"49\" font-size=\"12\" style=\"fill: var(--fg)\">2,700</text>",
+        "<rect x=\"90\" y=\"64\" width=\"70\" height=\"18\" rx=\"4\" style=\"fill: var(--accent)\"/><text x=\"0\" y=\"77\" font-size=\"12\" style=\"fill: var(--fg)\">Food</text><text x=\"166\" y=\"77\" font-size=\"12\" style=\"fill: var(--fg)\">1,700</text>",
+        "<rect x=\"90\" y=\"92\" width=\"32\" height=\"18\" rx=\"4\" style=\"fill: var(--muted)\"/><text x=\"0\" y=\"105\" font-size=\"12\" style=\"fill: var(--fg)\">Reserve</text><text x=\"128\" y=\"105\" font-size=\"12\" style=\"fill: var(--fg)\">800</text>",
+        "</svg>"
+      ],
+      "more": { "label": "See each line's quote", "picture": ["<p>Venue: two quotes, 4,200 and 5,100. Travel: train fares for 14, booked six weeks out.</p>"] }
+    }
+  ],
+  "questions": [
+    {
+      "question": "Where do you hold it?",
+      "line": "A venue an hour away, or the office with the doors shut.",
+      "picture": ["<p style=\"margin:0\">Travel time from the office: venue <b>1 h</b>, office <b>0 h</b>.</p>"],
+      "options": [
+        { "name": "A venue an hour away", "gives": ["Nobody slips back to their desk", "Dinner and a walk on day one"], "costs": ["4,200 of the 9,400", "Two hours of travel each way"], "recommended": true },
+        { "name": "The office, doors shut", "gives": ["No venue cost", "No travel"], "costs": ["People drift back to their work", "No evening together"] }
+      ],
+      "why": "Last year's notes say the office day ran short because people left for meetings."
+    },
+    {
+      "question": "How much of day two is planned?",
+      "line": "Every hour set ahead, or the afternoon left open.",
+      "options": [
+        { "name": "Every hour set", "gives": ["Each session has a lead and an end"], "costs": ["Nothing new can come up"], "chosen": true },
+        { "name": "Afternoon left open", "gives": ["Room for what day one raises"], "costs": ["It can drift"], "recommended": true }
+      ],
+      "why": "You asked for every hour set; day one often raises something worth the afternoon."
+    }
+  ],
+  "edgeCases": [
+    {
+      "title": "Three people can't travel",
+      "line": "Day one is about the plan, which they need to hear.",
+      "happens": "Three of 14 miss the plan they'll work to.",
+      "consider": "A call-in for the morning, or a recap the next week led by Priya.",
+      "covered": false
+    },
+    {
+      "title": "The venue cancels a week before",
+      "line": "The second quote holds until the end of the month.",
+      "happens": "You lose the venue with a week to go.",
+      "consider": "Book the second venue's hold now; it costs nothing until the end of the month.",
+      "covered": true
+    }
+  ],
+  "settled": [
+    { "who": "You", "text": "Fourteen people, all of the team." }
+  ]
+}

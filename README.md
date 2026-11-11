@@ -1,18 +1,21 @@
 # Flowtrace
 
-Flowtrace is a plugin for Claude Code and Codex, by [Perillo](https://perillo.ai). Its four skills help you understand a
-change before you make it or approve it, by drawing a page you can read, answer and comment on.
+Flowtrace is a plugin for Claude Code and Codex, by [Perillo](https://perillo.ai). Its five skills help you understand a
+change before you make it or approve it, and plan work that isn't code, by drawing a page you can read, answer and
+comment on.
 
 | Skill | What it does |
 |---|---|
 | `plan-flows` | Plans a change before any code, from the code it touches. You read the plan's page, answer its questions and approve it. |
+| `plan-deliverable` | Plans something that isn't code, such as a course, an event or a report, from what you'll hold at the end. It asks why and for whom, then draws a page of what you get, the calls only you can make, and what could go wrong. |
 | `plan-check` | Has a fresh subagent test what the approved plan takes as true and find the cases it leaves open, then asks you each one. |
 | `explain` | Explains how something works, or asks you to choose, with one worked example traced through before and after flowcharts, each step drawing the example as you would see it. |
 | `pr-review` | Reviews a pull request or merge request from a copy of its code, and checks your reading with questions a second reader has answered blind. |
 
 In Claude Code a skill runs as `/flowtrace:plan-flows`, and in Codex as `$flowtrace:plan-flows`. Claude or Codex may also
-start one by itself when your request fits it: `plan-flows` when a change adds or alters behaviour, `explain` when you
-must choose or ask how something works, `pr-review` when you ask for a review.
+start one by itself when your request fits it: `plan-flows` when a change adds or alters behaviour, `plan-deliverable`
+when you plan something that isn't code, `explain` when you must choose or ask how something works, `pr-review` when
+you ask for a review.
 
 ## Install
 
@@ -42,7 +45,8 @@ codex plugin add flowtrace@flowtrace
   install.
 - **`gh` or `glab`** are optional. pr-review uses them when they are there and signed in.
 - **Claude Code or Codex opened on the code.** `plan-flows`, `plan-check` and `pr-review` check for what they need first,
-  and say so when it is missing, as in a chat with no files or commands. `explain` goes on without them.
+  and say so when it is missing, as in a chat with no files or commands. `explain` and `plan-deliverable` go on without
+  them.
 
 ## Updates
 
@@ -73,7 +77,8 @@ Everything below happens for the person using the plugin. Nothing else in this r
 
 **On your machine**
 
-- The skills read your code, and write plans under `docs/plans` when you plan a change. They make no commit and switch no
+- The skills read your code, and write plans under `docs/plans` when you plan a change, or plan something that isn't
+  code with `plan-deliverable`. They make no commit and switch no
   branch.
 - Once you approve a plan, or run `plan-check` on it, your approval is written into the plan. When its last question is
   answered, the skill starts building at once, changing your code under your harness's usual permissions, and shows you
@@ -81,8 +86,9 @@ Everything below happens for the person using the plugin. Nothing else in this r
 - `page/page.mjs` draws each page from a data file, to a temporary folder. It runs `git` to look up names and the default
   branch. It makes no network call of its own. A step's picture of the example is HTML or SVG a skill writes; the script
   refuses one that would run anything or load anything from elsewhere.
-- The four skills share their rules on teaching a reader in `skills/teaching.md`, which each reads before its first
-  step.
+- `plan-flows`, `plan-check`, `explain` and `pr-review` share their rules on teaching a reader in `skills/teaching.md`,
+  which each reads before its first step. `plan-deliverable` writes for someone who knows their field, and doesn't
+  read it.
 - pr-review fetches the pull request's commits into your repository's git objects, and copies its head to a temporary
   folder outside your checkout. It runs the pull request's tests and installs what they need in that copy, where your
   harness asks before a command. For a pull request from a fork, or one whose source it can't tell, it asks you first,
@@ -104,7 +110,8 @@ imports only Node's file reading, and sends nothing anywhere.
 - **Published pages.** In Claude Code, the skills, and Claude when the hook asks, may publish a page through Claude's
   Artifact tool, private to you unless you share it. A page holds what the skill wrote about your code. In Codex, a page is shown with its visualize skill.
 - **Web searches.** `plan-flows` may start subagents that search the web for how a thing is best done, in your harness's
-  own web tool. They are given the design choice, your request in your words, and your stack.
+  own web tool. They are given the design choice, your request in your words, and your stack. `plan-deliverable` may
+  search the web, in that same tool, for how people who make the thing you asked for do it, given what it is.
 - **Your forge.** pr-review reads the pull request the first way that works: a GitHub or GitLab tool your harness has,
   `gh` or `glab`, the forge's public address, or your git sign-in. It never reads a token from your environment.
 - **Perillo.** This plugin names one MCP server, `https://app.perillo.ai/mcp`, in `.mcp.json`:

@@ -88,7 +88,7 @@ most 8.
 
 ## Show the page
 
-Draw it with `node <page.mjs> plan|explain <data file>` (`../page/page.mjs` from this folder). It prints each failure
+Draw it with `node <page.mjs> plan|explain|deliverable <data file>` (`../page/page.mjs` from this folder). It prints each failure
 with its line: fix the file and run it again. Show the page at the path it prints the way this harness shows a page
 best: in Claude Code, publish that file with the Artifact tool, the same path each time, so the page keeps its link; in
 Codex, with its visualize skill; elsewhere, draw with `--whole` and give the file's path. Picking an option on the page

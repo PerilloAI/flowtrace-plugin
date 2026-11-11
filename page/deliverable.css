@@ -1,0 +1,126 @@
+
+/* A deliverable's plan: a map of cards (layer 1), one card open with the map beside it (layer 2), and a fold named by what
+   it opens (layer 3). */
+.dv { --gutter: max(16px, env(safe-area-inset-left, 0px)); }
+.dv h2 { margin: 0; padding: 0; border: 0; }
+.dv h3 { margin: 0; font-family: var(--body); font-size: 1rem; line-height: 1.3; }
+.dv .body { max-width: 1120px; margin: 0 auto; padding: 0 var(--gutter); }
+
+.dv .bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--card); border-bottom: 1px solid var(--line); }
+.dv .bar-in { max-width: 1120px; margin: 0 auto; padding: 9px var(--gutter); display: flex; align-items: center; gap: 12px; }
+.dv .home { font: inherit; font-weight: 600; color: var(--fg); flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: 0; background: none; padding: 0; text-align: left; cursor: pointer; }
+.dv .picks { font-family: var(--mono); font-size: 0.84rem; color: var(--muted); white-space: nowrap; }
+.dv .picks b { color: var(--fg); font-weight: 500; }
+.dv .btn { font: inherit; border: 1px solid var(--accent); background: var(--accent); color: var(--card); border-radius: 8px; padding: 6px 12px; font-size: 0.86rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.dv .btn[disabled] { background: transparent; color: var(--muted); border-color: var(--line); cursor: default; }
+.dv .fallback { width: 12em; font-family: var(--mono); font-size: 0.84rem; border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; background: var(--bg); color: var(--fg); }
+@media (max-width: 480px) { .dv .bar-in { flex-wrap: wrap; row-gap: 4px; } .dv .picks { order: 3; flex-basis: 100%; } .dv .fallback { order: 4; } }
+
+/* Status chips: a colour and its words, never the colour alone */
+.dv .st { display: inline-flex; align-items: center; font-size: 0.78rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; line-height: 1.5; }
+.dv .st-rec { background: var(--accent-soft); color: var(--accent); }
+.dv .st-you { background: var(--ok-soft); color: var(--ok); }
+.dv .st-plan { background: var(--code-bg); color: var(--fg); }
+.dv .st-gap { background: var(--note-soft); color: var(--note); }
+.dv .verdict { font-size: 0.8rem; color: var(--muted); }
+.dv .verdict b { color: var(--fg); font-weight: 600; }
+
+/* Layer 1: the map */
+.dv .hero { padding-block: 32px 18px; display: grid; gap: 10px; }
+.dv .hero h1 { margin: 0; }
+.dv .tldr { font-size: 1.12rem; max-width: 62ch; margin: 0; }
+.dv .col-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; border-bottom: 2px solid var(--fg); padding-bottom: 6px; }
+.dv .col-head h2 { font-size: 1.15rem; }
+.dv .col-head span { font-size: 0.8rem; color: var(--muted); }
+.dv .get { display: grid; gap: 10px; padding-block: 8px 18px; }
+.dv .dtiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.dv .cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; padding-block: 8px 24px; }
+@media (max-width: 820px) { .dv .cols { grid-template-columns: minmax(0, 1fr); } }
+.dv .col { display: grid; gap: 10px; align-content: start; }
+.dv .none { color: var(--muted); font-size: 0.9rem; }
+.dv .card, .dv .dtile { position: relative; text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.dv .card:hover, .dv .dtile:hover { border-color: var(--muted); }
+.dv .card.q { border-color: var(--accent); }
+.dv .card .num, .dv .dtile .kind { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+/* The title's button opens the card, and its hit area covers the whole card. */
+.dv .open { font: inherit; font-weight: 600; color: var(--fg); text-align: left; border: 0; background: none; padding: 0; cursor: pointer; }
+.dv .open::after { content: ""; position: absolute; inset: 0; border-radius: 12px; }
+.dv .open:focus-visible { outline: none; }
+.dv .open:focus-visible::after { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dv .cl { font-size: 0.88rem; color: var(--muted); margin: 0; }
+.dv .cf { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; justify-content: space-between; }
+.dv .go { font-size: 0.8rem; color: var(--muted); }
+.dv .thumb { max-height: 130px; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: var(--bg); pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent); mask-image: linear-gradient(to bottom, #000 72%, transparent); }
+/* A tile shows its deliverable's picture at a smaller scale, so a wide table or chart still reads as a whole. */
+.dv .thumb-in { zoom: 0.62; }
+.dv .thumb svg { width: 100%; height: auto; display: block; }
+.dv .settled { margin-bottom: 60px; }
+.dv .settled ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+
+/* Layer 2: one card open, the map beside it */
+.dv .zoom { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 28px; padding-block: 24px 80px; }
+@media (max-width: 820px) { .dv .zoom { grid-template-columns: minmax(0, 1fr); gap: 16px; } }
+.dv .mini { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 66px); align-self: start; display: grid; gap: 14px; }
+.dv .mini .all { font: inherit; color: var(--fg); border: 1px solid var(--muted); background: var(--card); border-radius: 10px; padding: 8px 10px; font-size: 0.9rem; cursor: pointer; text-align: left; display: grid; gap: 2px; }
+.dv .mini .g { display: grid; gap: 2px; }
+.dv .mini .g .eyebrow { margin-bottom: 2px; }
+.dv .mini .nav { display: grid; gap: 14px; }
+.dv .mini .it { font: inherit; border: 0; background: none; text-align: left; padding: 5px 8px; border-radius: 6px; font-size: 0.86rem; cursor: pointer; display: flex; gap: 8px; align-items: center; color: var(--muted); }
+.dv .mini .it:hover { background: var(--code-bg); color: var(--fg); }
+.dv .mini .it[aria-current="true"] { background: var(--card); color: var(--fg); font-weight: 600; box-shadow: inset 0 0 0 1px var(--line); }
+.dv .ico { width: 13px; height: 13px; flex: none; color: var(--ok); }
+.dv .pip { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.dv .pip.st-rec { background: var(--accent); } .dv .pip.st-you { background: var(--ok); } .dv .pip.st-plan { background: var(--muted); } .dv .pip.st-gap { background: var(--note); }
+@media (max-width: 820px) {
+  .dv .mini { position: static; gap: 10px; }
+  .dv .mini .all { justify-self: start; }
+  .dv .mini .all .eyebrow { display: none; }
+  .dv .mini .get-list { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .dv .mini .get-list .eyebrow { margin: 0 4px 0 0; }
+  .dv .mini .nav { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+  .dv .mini .nav .g { display: contents; }
+  .dv .mini .nav .g .eyebrow { display: none; }
+  .dv .mini .it { white-space: nowrap; border: 1px solid var(--line); background: var(--card); }
+}
+.dv .panels { min-width: 0; }
+.dv .panel { display: grid; gap: 20px; min-width: 0; }
+.dv .panel .head { display: grid; gap: 8px; }
+.dv .panel .head h2 { font-size: 1.7rem; }
+.dv .panel .line { font-size: 1.08rem; max-width: 62ch; margin: 0; }
+.dv .pic { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 12px; min-width: 0; overflow-x: auto; }
+.dv .pic svg { width: 100%; height: auto; display: block; overflow: visible; }
+.dv .prose { font-size: 0.96rem; max-width: 66ch; margin: 0; }
+.dv .why { color: var(--muted); font-size: 0.94rem; max-width: 66ch; margin: 0; }
+.dv .from { font-size: 0.8rem; color: var(--muted); margin: 0; }
+.dv .side { border-top: 3px solid var(--line); padding-top: 10px; display: grid; gap: 6px; }
+.dv .choice { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.dv .tog { font: inherit; color: var(--fg); border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 6px 12px; font-size: 0.9rem; cursor: pointer; }
+.dv .tog[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+/* A question's options: each its name, then what it gives and what it costs */
+.dv .options { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.dv .options:has(> .opt:nth-child(4):last-child) { grid-template-columns: repeat(auto-fit, minmax(max(190px, calc(50% - 10px)), 1fr)); }
+.dv .opt { border: 1px solid var(--line); background: var(--bg); border-radius: 12px; padding: 12px; cursor: pointer; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.dv .opt:hover { border-color: var(--accent); }
+.dv .opt:has(.ot[aria-pressed="true"]) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+/* The title starts on the letter's line and wraps under itself; the badges sit under the title. */
+.dv .ot { font: inherit; color: var(--fg); text-align: left; border: 0; background: none; padding: 0; cursor: pointer; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 8px; align-items: baseline; }
+.dv .ot:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+.dv .ot .letter { font-family: var(--mono); color: var(--accent); }
+.dv .ot .name { font-weight: 600; }
+.dv .ot .badges { grid-column: 2; display: flex; flex-wrap: wrap; gap: 4px; }
+.dv .rec { font-size: 0.72rem; font-weight: 700; color: var(--accent); background: var(--accent-soft); padding: 1px 7px; border-radius: 999px; }
+.dv .gc { display: grid; gap: 8px; }
+.dv .gc .lab { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.dv .gc .gv, .dv .gc .cs { border-left: 3px solid var(--ok); padding-left: 10px; display: grid; gap: 2px; }
+.dv .gc .cs { border-left-color: var(--note); }
+.dv .gc ul { margin: 0; padding-left: 1.05em; font-size: 0.86rem; display: grid; gap: 3px; }
+
+/* Layer 3: a fold named by what it opens */
+.dv details.work { border-top: 1px solid var(--line); padding-top: 12px; }
+.dv details.work summary { cursor: pointer; font-weight: 600; font-size: 0.95rem; list-style: none; display: flex; align-items: center; gap: 8px; }
+.dv details.work summary::-webkit-details-marker { display: none; }
+.dv details.work summary::before { content: "▸"; color: var(--muted); transition: transform .15s; }
+.dv details.work[open] summary::before { transform: rotate(90deg); }
+.dv details.work .inner { padding-top: 12px; display: grid; gap: 12px; }

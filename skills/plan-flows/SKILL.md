@@ -15,6 +15,9 @@ Read [teaching.md](../teaching.md) in full before step 1: it holds the rules pla
 (the reader, the worked example, charts, questions, showing the page, the cold read, the sweep after each answer). Then
 check the session by its Before reading the code.
 
+When what's planned isn't a change to code (a course, an event, a hiring round, a report), plan it with the
+plan-deliverable skill instead, from its step 1.
+
 While planning, write the plan file and nothing else. The author commits the plan when they choose, on the branch
 they're on.
 

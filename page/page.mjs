@@ -4,6 +4,7 @@
 //
 //   node page.mjs plan <docs/plans/change.json> [--out <page.html>] [--since <copy.json>] [--whole] [--name "<words>"]
 //   node page.mjs explain <explanation.json> [--out <page.html>] [--whole] [--name "<words>"]
+//   node page.mjs deliverable <docs/plans/deliverable.json> [--out <page.html>] [--whole] [--name "<words>"]
 //   node page.mjs fingerprint <docs/plans/change.json>
 //   node page.mjs seen <docs/plans/change.json>
 //
@@ -20,6 +21,7 @@ import path from "node:path";
 import { formatJson } from "./json.mjs";
 import { PageError, readDocument } from "./read.mjs";
 import { blocks, boxes, changedSteps, check, targets } from "./check.mjs";
+import { checkDeliverable, readDeliverable, renderDeliverable } from "./deliverable.mjs";
 import { esc, inline, render } from "./render.mjs";
 
 const [command, file, ...rest] = process.argv.slice(2);
@@ -27,8 +29,8 @@ const flag = (name) => {
   const k = rest.indexOf(name);
   return k < 0 ? null : rest[k + 1];
 };
-if (!["plan", "explain", "fingerprint", "seen"].includes(command) || !file) {
-  console.error("usage: page.mjs plan|explain|fingerprint|seen <file.json> [--out <page.html>] [--since <copy.json>] [--whole] [--name <words>]");
+if (!["plan", "explain", "deliverable", "fingerprint", "seen"].includes(command) || !file) {
+  console.error("usage: page.mjs plan|explain|deliverable|fingerprint|seen <file.json> [--out <page.html>] [--since <copy.json>] [--whole] [--name <words>]");
   process.exit(2);
 }
 
@@ -47,6 +49,28 @@ const fail = (errors) => {
   console.error(errors.map((e) => `✗ ${path.relative(process.cwd(), source)} ${e}`).join("\n"));
   process.exit(1);
 };
+// Where a page goes: one folder for each data file, kept between drawings.
+const home = path.join(os.tmpdir(), "flowtrace-pages", `${path.basename(source, ".json")}-${createHash("sha1").update(source).digest("hex").slice(0, 6)}`);
+
+// A deliverable's plan: read, checked and drawn by deliverable.mjs.
+if (command === "deliverable") {
+  let read;
+  try {
+    read = readDeliverable(text);
+  } catch (error) {
+    if (error instanceof PageError) fail([error.message]);
+    throw error;
+  }
+  const errors = checkDeliverable(read.doc, read.lineOf);
+  if (errors.length) fail(errors);
+  const out = path.resolve(flag("--out") ?? path.join(home, "page.html"));
+  const page = renderDeliverable(read.doc, { name: flag("--name") ?? read.doc.title.replace(/[^\p{L}\p{N}' ]+/gu, " ").split(/\s+/).filter(Boolean).slice(0, 4).map((w) => w[0].toUpperCase() + w.slice(1)).join(" "), whole: rest.includes("--whole") });
+  mkdirSync(path.dirname(out), { recursive: true });
+  writeFileSync(out, page.html);
+  console.log(JSON.stringify({ page: out, deliverables: read.doc.deliverables.length, questions: read.doc.questions.length, edgeCases: read.doc.edgeCases.length }));
+  process.exit(0);
+}
+
 let doc;
 let data;
 try {
@@ -67,8 +91,7 @@ if (command === "fingerprint") {
   process.exit(0);
 }
 
-// Where the page goes, and the copy of the data as the author last read it.
-const home = path.join(os.tmpdir(), "flowtrace-pages", `${path.basename(source, ".json")}-${createHash("sha1").update(source).digest("hex").slice(0, 6)}`);
+// The copy of the data as the author last read it.
 const copy = path.join(home, "last.json");
 if (command === "seen") {
   mkdirSync(home, { recursive: true });
