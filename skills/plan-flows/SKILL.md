@@ -35,6 +35,9 @@ shape a command's output. Keep at most three in all, the ones whose answer chang
 change makes none (a rename, a bug with one obvious fix, a change that follows a pattern the code already uses
 throughout and lets no one do anything new), research nothing.
 
+A recorded decision of the repository's takes no choice off this list. Whoever recorded it chose without what the
+research may find now, so research the choice as if the decision weren't there, and weigh the two below.
+
 Read the stack from the repository's manifests (such as `package.json`, `pyproject.toml`, a `.csproj`, `go.mod`): its
 languages, frameworks and their versions. Then start one fresh subagent per choice, all at once, by
 teaching.md's A fresh subagent (in Claude Code it runs in the background and can search the web), with this brief:
@@ -76,22 +79,42 @@ unhandled input or state (empty, missing, duplicate, too large, another person's
 stopped half-way), an unsaid outcome (an outside call that can fail), a pinned behaviour, a contradiction with a doc or
 decision.
 
-**Weigh what the research returns** against the code you read. The established way fits when the code, its framework
-and the repository's docs and recorded decisions allow it; a recorded decision of the repository's outweighs a general
-practice. Use no claim marked "unsourced", and nothing from "No established way". Then each finding goes one of three
-ways:
+**Weigh what the research returns** against the code you read. The established way fits when the code and its
+framework can take it. A recorded decision of the repository's (an entry in its decisions file or an ADR, a rule in
+its instruction files or docs) doesn't settle that by itself: it is a choice someone made before this research, and
+only the author can say whether it still holds. Use no claim marked "unsourced", and nothing from "No established
+way". Then each finding goes one of four ways:
 
 - **It agrees with the author's request, or adds a detail they wouldn't decide differently**: the plan builds it, and
   the change's `why` in The changes and why links its source.
 - **It differs from the request in what someone gets, or costs something the author would weigh** (a dependency, a
   migration, more work): a question under Questions from plan-flows. The established way comes first unless the code
-  or a recorded decision speaks against it, the author's request is one of the options, the plan's case is charted as
-  it runs today and under each option, and `why` links the sources. Never swap the request for it silently: the
-  author decides, and the page shows them there was a better way. The way that would change most what people get is
-  question 1, and What I'm asking says so. Keep the page short: another way gets an option only when it gives people
-  something clearly different.
-- **It doesn't fit this code**: leave it out. The code or a recorded decision has to rule it out. Its cost doesn't,
-  since that is for the author to weigh.
+  speaks against it, the author's request is one of the options, the plan's case is charted as it runs today and
+  under each option, and `why` links the sources. Never swap the request for it silently: the author decides, and the
+  page shows them there was a better way. The way that would change most what people get is question 1, unless a
+  recorded decision's question takes that place (next), and What I'm asking says so. Keep the page short: another way
+  gets an option only when it gives people something clearly different.
+- **A recorded decision stands in its way**: the code could take the finding, it would give the people using the code
+  something better, and a recorded decision forbids it. Never drop it, and never plan around the decision in silence.
+  The decision was made without this finding, so the author may not know what keeping it now costs, and a plan that
+  quietly obeys it hides the better way from the one person who can change it. Do both of these:
+  - **Tell the author at once, in the chat**, as soon as the finding is weighed and before the plan is written: the
+    decision in its own words and where it is recorded, the better way in a sentence, what it would give people that
+    the decision keeps from them, and that the page will ask it as its first question. Then go on planning without
+    waiting. An author who already knows the decision is out of date can say so now, which saves writing the plan
+    twice.
+  - **Ask it on the page** as question 1. The question quotes the decision and says where it is recorded. `today`
+    charts the plan's case as it runs under the decision, and the options chart the same case with the decision kept
+    and with the better way, so the author sees before and after side by side. `why` says what makes the better way
+    better, with its sources, then what the decision was protecting, from its own recorded reason when it gives one,
+    and whether that reason still holds against the finding. Put the better way first when the decision's reason
+    doesn't reach this case or the finding answers it, and keeping the decision first when its reason still holds.
+    What I'm asking names the decision and the better way.
+
+  A plan that takes the better way changes the record too: one of its changes rewrites or retires the decision where
+  it is recorded, so the repository's docs never contradict what gets built.
+- **It doesn't fit this code**: leave it out. The code has to rule it out, such as a framework that can't do it. A
+  recorded decision doesn't (above), and neither does its cost, since that is for the author to weigh.
 
 When a research subagent fails, plan without it, and say in the chat which choice wasn't researched.
 
@@ -103,7 +126,8 @@ being the one who can answer it.
 
 Done when every step you will mark as existing, changed or removed names a function or file you have read, you know
 which tests pin what each one does today, every research subagent you started has returned and its findings are
-weighed, and every premise is proved from its source or is a question.
+weighed, the author has been told in the chat of each recorded decision that stands in a better way's path, and every
+premise is proved from its source or is a question.
 
 ## 2. Write the plan
 
@@ -126,16 +150,16 @@ Done when all of these hold:
 - Every question can be answered from the plan alone.
 - What this rests on names every premise, so an author who knows better can see it at a glance.
 - Every open decision, every open behaviour you noted that the code doesn't settle, and every better way the research
-  found than the one asked for, is a question under Questions from plan-flows: one real case, a chart of how it
-  runs today, the recommendation first, a chart of the case under each option, and why. No other section asks the
-  author to decide.
+  found than the one asked for, one a recorded decision stands in the way of included, is a question under Questions
+  from plan-flows: one real case, a chart of how it runs today, the recommendation first, a chart of the case under
+  each option, and why. No other section asks the author to decide.
 - A `Claude` item under Already settled is only a detail with one sensible answer, which follows a convention the code
   or its platform already has, named in the item (how a new option is spelled beside the existing ones, which of the
   code's own error shapes a new failure takes). Whatever a reasonable author could want either way is a question.
 - Every design choice the research covered is built the established way with its source linked, asked as a question,
-  or left out because the code or a recorded decision rules it out.
+  or left out because the code rules it out. None is left out because a recorded decision forbids it.
 - A reader of What I'm asking alone learns of the best way the research found to solve their problem, when it isn't
-  what they asked for.
+  what they asked for, and of any recorded decision that stands in its way.
 
 ## 3. Draw the page
 
