@@ -45,7 +45,8 @@ A plan is **approved at its current fingerprint** when the fingerprint in its `a
 **Checked**: the sections stand in this order, and What I'm asking comes first. Each is a `heading` as written here.
 
 1. `What I'm asking`: one or two plain sentences saying what the author approves and how many questions are open, and
-   the better way the research found, when there is one, or that no research ran, when it couldn't.
+   the better way the research found, when there is one, with the recorded decision that stands in its way, when one
+   does, or that no research ran, when it couldn't.
 2. `The case`: one `case`.
 3. `What you'd see`: a paragraph introducing the example change that the screens and traces follow, then the
    `screens`. When nobody using the code would notice the plan, a paragraph says so in place of the screens.
@@ -102,7 +103,9 @@ reading gives it. A changed step is a flow step whose `keyword` is `Step`, `Chec
 A `choice` is one question for the author: a decision still open, a behaviour the plan leaves open whose answer
 changes what someone gets (a response, a page, an exit status, an error, a write), or a better way than the one the
 author asked for, which the research found. A better way's options include the author's request, and its `why` links
-the sources. Its form is blocks.md's choice: one real
+the sources. When a recorded decision stands in a better way's path, its question comes first and quotes the decision
+and where it is recorded, its options are the case with the decision kept and with the better way, and its `why` says
+what the decision was protecting and whether that still holds. Its form is blocks.md's choice: one real
 case charted as it runs today, then under each option with the recommendation first, then the reason.
 
 - `question` carries its case: who does what, with which values, in which state.
