@@ -7,7 +7,7 @@ comment on.
 | Skill | What it does |
 |---|---|
 | `plan-flows` | Plans a change before any code, from the code it touches. You read the plan's page, answer its questions and approve it. |
-| `plan-deliverable` | Plans something that isn't code, such as a course, an event or a report, from what you'll hold at the end. It asks why and for whom, then draws a page of what you get, the calls only you can make, and what could go wrong. |
+| `plan-deliverable` | Plans something that isn't code, such as a course, an event or a report, from what you'll hold at the end, starting with a small real sample of each thing. It asks why and for whom, then draws a page of what you get, the calls only you can make, and what could go wrong. |
 | `plan-check` | Has a fresh subagent test what the approved plan takes as true and find the cases it leaves open, then asks you each one. |
 | `explain` | Explains how something works, or asks you to choose, with one worked example traced through before and after flowcharts, each step drawing the example as you would see it. |
 | `pr-review` | Reviews a pull request or merge request from a copy of its code, and checks your reading with questions a second reader has answered blind. |
@@ -78,8 +78,9 @@ Everything below happens for the person using the plugin. Nothing else in this r
 **On your machine**
 
 - The skills read your code, and write plans under `docs/plans` when you plan a change, or plan something that isn't
-  code with `plan-deliverable`. They make no commit and switch no
-  branch.
+  code with `plan-deliverable`, which also writes a small sample of each thing you'll hold in a folder beside its plan.
+  It makes a sample with what your harness has for that format, and may install a library for one, such as a
+  spreadsheet library, under your harness's usual permissions. They make no commit and switch no branch.
 - Once you approve a plan, or run `plan-check` on it, your approval is written into the plan. When its last question is
   answered, the skill starts building at once, changing your code under your harness's usual permissions, and shows you
   every change before anything is committed.

@@ -1,19 +1,19 @@
 ---
 name: plan-deliverable
-description: Plan something that isn't a change to code (a course, an event, a hiring round, a launch, a report, a budget) with the person who wants it, starting from what they will hold at the end. Agrees the deliverable first with a sketch, asks why, for whom and what is fixed one question at a time, then draws a page in layers - what they get, the calls only they can make with what each option gives and costs, and the edge cases worth a look - which they answer and send back. Use when someone asks to plan, design or put together something that isn't code, and when plan-flows is asked to plan one.
+description: Plan something that isn't a change to code (a course, an event, a hiring round, a launch, a report, a budget) with the person who wants it, starting from what they will hold at the end. Agrees the deliverable first by making a small real sample of each, asks why, for whom and what is fixed one question at a time, then draws a page in layers - what they get, the calls only they can make with what each option gives and costs, and the edge cases worth a look - which they answer and send back. Use when someone asks to plan, design or put together something that isn't code, and when plan-flows is asked to plan one.
 ---
 
 # Plan a deliverable
 
 plan-deliverable plans a thing that isn't code with the person who will own it. They know their field, but may never
-have written a prompt and may not know what to ask for. So the plan starts from what they will hold at the end, asks
-one question at a time from the highest level down, and stops where they stop caring: a detail they don't need to
-decide goes into the deliverable, not into a question.
+have written a prompt and may not know what to ask for. So the plan starts from what they will hold at the end, shown
+as a small real sample of each thing, asks one question at a time from the highest level down, and stops where they
+stop caring: a detail they don't need to decide goes into the deliverable, not into a question.
 
 The plan is a JSON file, `docs/plans/<name>.json` in the folder you're working in, written as
 [deliverable.md](../../page/deliverable.md) describes. `page.mjs`, in the plugin's `page` folder (`../../page/page.mjs`
 from this skill's folder), checks it and draws its page, so you write the plan and never the page. While planning,
-write the plan file and nothing else.
+write step 1's samples, with the scripts that make them, and the plan file, and nothing else.
 
 ## How to ask
 
@@ -28,12 +28,26 @@ field uses it too, and the names of these steps never appear.
 ## 1. Agree the deliverable
 
 1. From their words, name what they will end up holding: each file or thing (an agenda, a budget and the invite; a
-   course map and a workbook for each project; a scorecard and a set of interview questions).
-2. Show it as a sketch in the chat, its shape in a few lines with one example filled in: a table is its header row and
-   one row, a document its headings, a spreadsheet its tabs and one filled row, a message its subject and first line.
-   Keep the whole sketch under about 15 lines.
-3. Ask whether that is what they want to end up with. Your sketch is the first answer; the others are the plausible
-   alternatives (more, less, a different form).
+   course map and a workbook for each project; a scorecard and a set of interview questions). Pick the plan's `<name>`.
+2. Make a small real sample of each, in the form they will use it: a spreadsheet as a spreadsheet file whose formulas
+   work, a document as a document, slides as slides, an email as the email. A sample is the smallest piece that shows
+   the form and how deep it goes: a table's header and its first two rows, a document's headings with one section
+   written in full, a workbook's tabs with the one that matters most filled in, a message in full. A set of like files
+   (a workbook for each week) gets one sample. Fill it from their words: mark a number they didn't give as your
+   estimate where it appears, and name a person they didn't name by role (a lender, a site manager), never a real
+   name. The samples show the form, not the finished work: all of them together take a few minutes, with no research
+   yet.
+3. Write them as files to `docs/plans/<name>/`, even where your harness offers somewhere else to keep documents, each
+   named as its deliverable will be, with any script that makes one beside it, so a changed answer remakes the sample
+   instead of writing it again. Make each with what your harness has for its format (a skill or a library), then open
+   or read it back to check it holds what you meant. When nothing you have makes a format, say so and make the nearest
+   you can (a CSV for a spreadsheet).
+4. Show them together: in the Claude app, send the files with SendUserFile; elsewhere, give each file's path. Under
+   them, one line each on what the sample shows and what the whole will hold, with how many of a set ("Agenda: the
+   first morning, minute by minute; the whole runs both days").
+5. Ask whether that is what they want to end up with. Your samples are the first answer; the others are the plausible
+   alternatives (more, less, a different form). When they answer otherwise, remake only the samples their answer
+   changes, and show those again.
 
 ## 2. Ask why, for whom, and what's fixed
 
@@ -63,7 +77,7 @@ comes back to them. What's fixed goes under `settled`, and shapes every option.
 
 ## 4. Write the plan
 
-1. **What you get.** Each deliverable from step 1, drawn as it will look with one real example filled in, in its
+1. **What you get.** Each deliverable from step 1, drawn as its sample shows it with one real example filled in, in its
    field's own form: a week-by-week table, a run of show, a budget's bars, an email as it will read. Never a flowchart
    of steps. Where an open question changes it, draw it with your recommendation, and redraw it when they pick
    otherwise.
@@ -104,5 +118,6 @@ comes back to them. What's fixed goes under `settled`, and shapes every option.
 
 ## 7. Make it
 
-When no question is open, ask once whether to make the deliverables now. Then make each as its picture showed, in the
-form agreed (a spreadsheet, a document, an email), and say where each one is.
+When no question is open, ask once whether to make the deliverables now. Then grow each sample into the whole thing, as
+its picture on the page now shows it and in the form agreed (a spreadsheet, a document, an email), and say where each
+one is.

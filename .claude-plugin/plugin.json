@@ -1,7 +1,7 @@
 {
   "name": "flowtrace",
   "displayName": "Flowtrace",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "description": "Plan a change before any code, plan work that isn't code, explain one to someone who has never seen it, and review a pull request. plan-flows reads the code the change touches, writes the plan and draws its page for you to read, answer and approve; plan-check then questions the approved plan; plan-deliverable agrees what you'll hold at the end, then draws what you get, the calls only you can make and what could go wrong; explain traces one worked example through before and after flowcharts; pr-review teaches a pull request from its code, and adds how far each change reaches for a member of a Perillo workspace. In the Claude app, a hook holds a choice in the next-step box until its page is out.",
   "author": {
     "name": "Perillo"
