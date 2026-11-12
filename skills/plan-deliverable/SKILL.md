@@ -1,14 +1,14 @@
 ---
 name: plan-deliverable
-description: Plan something that isn't a change to code (a course, an event, a hiring round, a launch, a report, a budget) with the person who wants it, starting from what they will hold at the end. Agrees the deliverable first with a sketch, asks why, for whom and what is fixed one question at a time, then draws a page in layers - what they get, the calls only they can make with what each option gives and costs, and the edge cases worth a look - which they answer and send back. Use when someone asks to plan, design or put together something that isn't code, and when plan-flows is asked to plan one.
+description: Plan something that isn't a change to code (a course, an event, a hiring round, a launch, a report, a budget) with the person who wants it, starting from what they will hold at the end. Agrees the deliverable first with a sketch, asks why, for whom and what is fixed in the same batch of up to five questions that come back to back, then draws a page in layers - what they get, the calls only they can make with what each option gives and costs, and the edge cases worth a look - which they answer and send back. Use when someone asks to plan, design or put together something that isn't code, and when plan-flows is asked to plan one.
 ---
 
 # Plan a deliverable
 
 plan-deliverable plans a thing that isn't code with the person who will own it. They know their field, but may never
 have written a prompt and may not know what to ask for. So the plan starts from what they will hold at the end, asks
-one question at a time from the highest level down, and stops where they stop caring: a detail they don't need to
-decide goes into the deliverable, not into a question.
+from the highest level down, with every opening question written before the first is asked so they come back to back,
+and stops where they stop caring: a detail they don't need to decide goes into the deliverable, not into a question.
 
 The plan is a JSON file, `docs/plans/<name>.json` in the folder you're working in, written as
 [deliverable.md](../../page/deliverable.md) describes. `page.mjs`, in the plugin's `page` folder (`../../page/page.mjs`
@@ -17,10 +17,18 @@ write the plan file and nothing else.
 
 ## How to ask
 
-Steps 1 and 2 ask in the chat, one question at a time, each with lettered answers and your best guess first, so the
-person can answer with a letter or in their own words. Use the harness's question tool when it has one (in Claude
-Code, AskUserQuestion), otherwise one short message. Skip any question their words already answer, and never ask two
-at once. From step 4 the questions go on the page, where several sit side by side and each opens on its own.
+Steps 1 and 2 ask in the chat, in one batch of at most five questions: write every one before asking any, then send
+them together, so the person answers one after another with no wait between. Each has lettered answers with your best
+guess first, so the person can answer with a letter or in their own words. Use the harness's question tool when it has
+one (in Claude Code, AskUserQuestion, which shows its questions one at a time and takes four to a call: send a fifth in
+a second call straight after the first, with no other work between), otherwise one message with the questions
+numbered. Skip any question their words already answer.
+
+Write each question so it stands without the others' answers: step 2's are written for the deliverable you sketched,
+and a likely follow-up goes into a question's answers, not a later question (when a date is likely fixed, its likely
+ranges are among the answers). Only an answer that leaves something you couldn't have written ahead, such as an exact
+date or a different deliverable from the one you sketched, calls for a short second round, which asks only what that
+answer changes. From step 4 the questions go on the page, where several sit side by side and each opens on its own.
 
 Write for them: their words and their field's terms. A software word (flow, field, schema) appears only where their
 field uses it too, and the names of these steps never appear.
@@ -37,7 +45,7 @@ field uses it too, and the names of these steps never appear.
 
 ## 2. Ask why, for whom, and what's fixed
 
-Three questions, one after the other, in plain words (never "job to be done"):
+Three questions, in the same batch as step 1's, in plain words (never "job to be done"):
 
 1. **Theirs**: what having it will let them do. Guesses span kinds: save preparation time, replace an old version,
    pass a review, win a client, run it again next year.
