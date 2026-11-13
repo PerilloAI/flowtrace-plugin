@@ -10,6 +10,7 @@ import { observation } from "../observations/observation.mjs";
 import { readJson } from "./json.mjs";
 import { PageError } from "./read.mjs";
 import { checkDeliverable, readDeliverable, renderDeliverable } from "./deliverable.mjs";
+import { FEEDBACK } from "./render.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const script = path.join(here, "page.mjs");
@@ -114,6 +115,13 @@ for (const [name, breakIt, at, message] of RULES) {
     assert.deepEqual(found, [`line ${lineIn(data, at)}: ${message}`]);
   });
 }
+
+test("the page ends with links to Discussions and to a new issue, under the map and the cards", () => {
+  const html = draw(sample());
+  assert.ok(html.includes(`</section>\n${FEEDBACK}\n</div>\n</div>`));
+  assert.ok(html.includes('<a href="https://github.com/PerilloAI/flowtrace-plugin/discussions">Discussions</a>'));
+  assert.ok(html.includes('<a href="https://github.com/PerilloAI/flowtrace-plugin/issues/new">open an issue</a>'));
+});
 
 test("words from the plan are escaped, and no link sits inside a button", () => {
   const data = sample();

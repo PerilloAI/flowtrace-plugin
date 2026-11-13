@@ -57,7 +57,7 @@ const onCard = (card, pick) => {
   const texts = [];
   const walk = document.createTreeWalker(document.querySelector(".wrap") || document.body, NodeFilter.SHOW_TEXT);
   while (walk.nextNode()) {
-    if (!walk.currentNode.parentElement.closest("a, button, summary, header, h1, h2, h3, h4, dt, script, style, .pic")) texts.push(walk.currentNode);
+    if (!walk.currentNode.parentElement.closest("a, button, summary, header, footer, h1, h2, h3, h4, dt, script, style, .pic")) texts.push(walk.currentNode);
   }
   texts.forEach((node) => {
     const dd = node.parentElement.closest(".names dd");

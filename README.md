@@ -138,6 +138,12 @@ is sent during the review without asking you, so that its questions can be impro
 Send answers on a page. Neither carries your name. Perillo's general privacy policy is at
 [perillo.ai/privacy](https://perillo.ai/privacy).
 
+## Feedback
+
+Say what helped and what didn't, or ask a question, in
+[Discussions](https://github.com/PerilloAI/flowtrace-plugin/discussions). Report a bug in
+[Issues](https://github.com/PerilloAI/flowtrace-plugin/issues). Every page a skill draws ends with these links.
+
 ## For developers
 
 `observations/` holds what outside tools were seen to do, each with the small script that captured it

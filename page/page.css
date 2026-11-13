@@ -36,6 +36,7 @@ ul.prose li + li, ol.prose li + li { margin-top: 6px; }
 .example { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px 18px; max-width: 74ch; }
 .example > :first-child { margin-top: 0; } .example > :last-child { margin-bottom: 0; }
 .desc { color: var(--muted); max-width: 70ch; margin-bottom: 4px; }
+.feedback { margin-top: 56px; padding: 14px 0 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13.5px; }
 .tag { display: inline-block; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; padding: 1px 7px; border-radius: 999px; border: 1px solid currentColor; vertical-align: 2px; white-space: nowrap; }
 .tag.rec { color: var(--ok); } .tag.alt { color: var(--muted); } .tag.who { color: var(--accent); } .tag.model { color: var(--note); }
 .ask { font-weight: 600; color: var(--accent); }
