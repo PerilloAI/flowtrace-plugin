@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,7 +10,7 @@ import { observation } from "../observations/observation.mjs";
 import { formatJson, readJson } from "./json.mjs";
 import { readDocument } from "./read.mjs";
 import { questionsFor } from "./check.mjs";
-import { inline } from "./render.mjs";
+import { FEEDBACK, inline } from "./render.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const script = path.join(here, "page.mjs");
@@ -604,6 +604,23 @@ test("an explanation is drawn without a repository, its names linked by the page
   assert.match(html, /<p class="ask">Should an export that times out be retried\? Pick an option to copy your answer, or answer in the chat\.<\/p>/);
   assert.match(html, /<button type="button" class="pick" aria-pressed="false" data-line="A · Retry once">/);
   assert.ok(!html.includes('class="cmt"'), "an explanation has no Comment buttons");
+});
+
+test("a plan's page and an explanation's each end with links to Discussions and to a new issue", (t) => {
+  const dir = repo();
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  write(dir, plan());
+  const pages = [
+    [draw(dir, "plan", "docs/plans/retry.json", "--out", path.join(dir, "plan.html")), "plan.html"],
+    [spawnSync(process.execPath, [script, "explain", path.join(here, "fixtures/explain.json"), "--out", path.join(dir, "explain.html"), "--whole"], { encoding: "utf8" }), "explain.html"],
+  ];
+  for (const [run, name] of pages) {
+    assert.equal(run.status, 0, run.stderr);
+    const html = readFileSync(path.join(dir, name), "utf8");
+    assert.ok(html.includes(`${FEEDBACK}\n</div>\n<script>`), `${name} ends its content with the feedback line`);
+    assert.ok(html.includes('<a href="https://github.com/PerilloAI/flowtrace-plugin/discussions">Discussions</a>'), name);
+    assert.ok(html.includes('<a href="https://github.com/PerilloAI/flowtrace-plugin/issues/new">open an issue</a>'), name);
+  }
 });
 
 test("an explanation's question must name a part of the page", () => {

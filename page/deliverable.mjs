@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { readJson } from "./json.mjs";
 import { pictureProblems } from "./picture.mjs";
 import { reader } from "./read.mjs";
-import { FONTS, esc, inline, inlineInLink } from "./render.mjs";
+import { FEEDBACK, FONTS, esc, inline, inlineInLink } from "./render.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CSS = readFileSync(path.join(here, "page.css"), "utf8") + readFileSync(path.join(here, "deliverable.css"), "utf8");
@@ -209,6 +209,7 @@ ${mini}
 ${[...dPanels, ...qPanels, ...ePanels].join("\n")}
 </div>
 </section>
+${FEEDBACK}
 </div>
 </div>`;
   const headTags = `<meta charset="utf-8">\n<title>${esc(o.name)}</title>\n${FONTS}\n<style>\n${CSS}</style>`;

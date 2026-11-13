@@ -12,6 +12,12 @@ export const FONTS =
   '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">';
 
+// Every page ends with where its reader can say what helped, ask, or report a bug.
+export const FEEDBACK =
+  '<footer class="feedback">Drawn by Flowtrace. Tell us what helped and what didn\'t in ' +
+  '<a href="https://github.com/PerilloAI/flowtrace-plugin/discussions">Discussions</a>, or ' +
+  '<a href="https://github.com/PerilloAI/flowtrace-plugin/issues/new">open an issue</a> for a bug.</footer>';
+
 export const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 // Inline markdown: `code`, **bold**, *emphasis* and [links](url). A link goes only to http(s), mailto or a place
@@ -233,6 +239,7 @@ export function render(doc, o) {
     body.push(`<section><h2 id="s-approve">Approve</h2><div class="approve">${approve}</div></section>`);
   }
   const legend = outlined ? '<p class="since-legend">Outlined: changed since the page you last read.</p>' : "";
+  body.push(FEEDBACK);
   const content = body.join("\n").replace("%%LEGEND%%", legend);
   const head = `<meta charset="utf-8">\n<title>${esc(o.name)}</title>\n${FONTS}\n<style>\n${CSS}</style>`;
   const page = `${head}\n<div class="wrap">\n${content}\n</div>\n<script>\n${JS}</script>\n`;
