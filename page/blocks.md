@@ -9,6 +9,7 @@ node <this folder>/page.mjs plan docs/plans/<change>.json      # a plan (plan-fl
 node <this folder>/page.mjs explain <file>.json                # an explanation (explain)
 node <this folder>/page.mjs fingerprint docs/plans/<change>.json
 node <this folder>/page.mjs seen <file>.json
+node <this folder>/page.mjs now                                # this moment, as "at" and "approved" write it
 ```
 
 - **It checks first.** On a failure it prints every problem, each with its line in your file (a missing comma, a key
@@ -44,7 +45,7 @@ node <this folder>/page.mjs seen <file>.json
 ```
 
 `pictures`, before `sections`, holds each picture more than one step shows (Pictures, below). A plan also takes `approved` and `reviewPage` (plan-format.md), and may open with `intro`, a `content` list before the
-first section. A review (pr-review) may take `"send": true`, which offers Send answers once every question is answered. Each item of a `content` list is one object with one key:
+first section. Each item of a `content` list is one object with one key:
 
 | Item | What it draws |
 |---|---|
@@ -53,7 +54,9 @@ first section. A review (pr-review) may take `"send": true`, which offers Send a
 | `{ "h3": "…" }` | a subheading |
 | `{ "table": { "head": ["…", "…"], "rows": [["…", "…"]] } }` | a table, each row one text per heading |
 | `{ "code": { "lang": "sh", "lines": ["…", "…"] } }` | code, shown as written |
-| `{ "chart": { … } }` | a flowchart (below); a plan also has `screens` and `trace` (plan-format.md) |
+| `{ "chart": { … } }` | a flowchart (below) |
+| `{ "case": { … } }` | one situation: `title`, `gets`, and `today` beside `after` for a change or `steps` for how something works (teaching.md, Cases) |
+| `{ "flow": { … } }` | a way in through the code, step by step (below); never on a plan |
 | `{ "question": { … } }`, `{ "choice": { … } }`, `{ "settled": [ … ] }`, `{ "names": [ … ] }` | below |
 
 ## chart
@@ -79,7 +82,10 @@ A step's keys, each optional but `text`:
 - `result`: `"ok"` it works (✓), `"bad"` it fails or is refused (✗).
 - `where`: a file and line, or a function; drawn small under the words.
 - `note`: the one thing to notice, beside the step.
-- `change`: in a plan, the title of the change that makes this step.
+- `part`: on a change that shows how its pieces fit, the part this step runs in, in the words of its box under How
+  the pieces fit (teaching.md).
+- `mark`: on a case's `after` or a How the pieces fit chart, what the change does to this step: `"+"` adds it, `"~"` changes it, `"-"` removes it.
+  Drawn as a tag before the words.
 - `answers`: on a question only, each `{ "label": "yes", "steps": [ … ] }`. Several fan out side by side; one alone
   sits beside its question while the chart carries on below.
 - `inner`: steps drawn in a dashed box under this one.
@@ -118,7 +124,9 @@ was drawn for this page.
 - **Width.** A step holding a picture takes its chart's whole width, or its column's in a chart drawn side by side,
   and a wider picture scrolls inside its card. Draw for about 600px, or 400px in a column.
 
-**Checked**: a picture only draws, with HTML boxes and tables or SVG shapes and text. It holds no script, `style` tag,
+**Checked**: a picture only draws, with HTML boxes and tables or SVG shapes and text: `div`, `span`, `p`, text tags
+such as `b`, `em`, `mark`, `kbd` and `code`, `pre`, tables, lists, `figure`, `h4` to `h6`, and SVG's shapes, `text`,
+gradients and markers. It holds no script, `style` tag,
 frame, image, link, form, `id`, `on…` attribute, nothing that loads from elsewhere (`src`, `href`, `url(…)` in a
 `style`), and no tag left open; write a `<` in its words as `&lt;`. Each `use` names one of `pictures`, each of
 `pictures` is shown by at least one step, and no picture is written out twice.
@@ -138,12 +146,10 @@ there, and each option charted on from there to what the person gets, drawn as a
     { "text": "another wrong option", "steps": [ { "text": "what the person gets under it" } ] }
   ],
   "answer": "B",
-  "read": "a chart's title, a section's heading, a flow's name, or a step's where",
+  "read": "a chart's or case's title, a section's heading, a flow's name, or a step's where",
   "why": "One or two sentences."
 } }
 ```
-
-A review's question also takes `source`, where its answer comes from: `map`, `test ran`, `test read` or `reading`.
 
 On the page, the link to `read` opens what it names in a modal over the page, so the reader keeps their place. A click
 on an option's words, or anywhere else on its card but a link or a button in it, picks it.
@@ -165,6 +171,7 @@ One decision, charted on one real case under each option, the recommendation fir
 { "choice": {
   "number": 3,
   "question": "The question, carrying its case",
+  "today": [ { "text": "On a plan, the case as the code runs it now", "kind": "start", "shows": { "html": ["…"] } } ],
   "recommended": "The recommended option, in a sentence",
   "alternatives": ["Another option, in a sentence"],
   "options": [
@@ -193,15 +200,60 @@ holds a picture, of `today` on a plan, of an option's chart on an explanation.
 
 ```json
 { "settled": [
-  { "who": "Sam", "text": "What was settled" },
-  { "who": "Sam", "from": "AGENTS.md", "text": "A rule from a file" },
-  { "who": "Claude", "text": "A call the person hasn't made" }
+  { "who": "Sam", "how": "said", "at": "2026-11-14T09:30:00-05:00", "text": "What was settled" },
+  { "who": "Sam", "how": "rule", "from": "AGENTS.md", "text": "A rule from a file" },
+  { "who": "Claude", "how": "claude", "text": "A call the person hasn't made", "alternatives": ["What else they could pick"] }
 ] }
 ```
 
 `who` is the person's name, as the conversation or `git config user.name` gives it, and `you` when neither does. A
 rule from a file is its author's when known, and otherwise `the repository`'s, with `from` naming the file. `Claude`
 (or the model's own name) is for a call the person hasn't made.
+
+Each item also says how and when it was decided, since the decisions are kept as a record (teaching.md, Recording
+each decision):
+
+- `how`: `"chose"` the person picked it, from a question or by flipping a call; `"said"` they said it, in their
+  request or a comment; `"rule"` a file holds it; `"claude"` Claude's call.
+- `at`: the moment it was decided, `YYYY-MM-DDTHH:MM:SS±HH:MM`, as `page.mjs now` prints it. A rule has none (its
+  file's history holds it), and neither has Claude's call: it stands once the person answers the page, or on a plan,
+  once it is approved.
+- `alternatives`: on Claude's call only, what else the person could pick, each a flip on the page.
+
+## flow
+
+A way in through the code, from what starts it down to what the caller gets, for an explanation (a plan
+draws cases instead). Write one for each way in that the change adds or touches.
+
+```json
+{ "flow": { "name": "The way in, in plain words", "steps": [
+  { "keyword": "Starts", "text": "who or what starts it: a request and who sends it, a person's action, a command, a schedule, a call into a library", "where": "file or function" },
+  { "keyword": "Step", "text": "what it does", "where": "function", "mark": "~", "inner": [
+    { "keyword": "Check", "text": "a question whose yes is the way out?", "mark": "+", "answers": [
+      { "label": "yes", "steps": [ { "keyword": "Raises", "text": "the error as the caller sees it", "mark": "+" } ] }
+    ] }
+  ] },
+  { "keyword": "Step", "text": "a step the change removes", "where": "function", "mark": "-" },
+  { "keyword": "Returns", "text": "what the caller gets" }
+] } }
+```
+
+- **Keywords**: `Starts`, `Step`, `Check`, `Only if`, `Repeats`, `Tries`, and to end `Returns`, `Raises`, `Exits` or
+  `Finishes`. A `Check`, `Only if`, `Repeats` or `Tries` takes `answers`, each `{ "label": "yes", "steps": [ … ] }`
+  (`no`, `fails (someone saved the same name first)`). A step with none, as inside an answer, is plain words.
+- **Marks**: `"mark": "+"` new, `"~"` changed (its code changes), `"-"` removed, and no mark for what exists. Keep a step
+  for each existing step the change sits among, so the reader sees where it lands. A flow added as a whole is
+  `"mark": "+"` on the flow, and its steps carry none; a flow removed is `"mark": "-"`.
+- **Lean.** List the flow's top-level steps, one per function the change adds, changes or removes on it, in the order
+  they run. Under them (in `inner`, or an answer's `steps`), put every check whose branches end differently for whoever
+  started the flow (another response or page, an error, an exit status, a write, an event), each answer with its end.
+  Leave out checks whose branches end alike for the caller, and nested helpers.
+- **Names.** `where` holds the code's name for a step: a function, a `Class.method`, or a file by its path from the
+  repository's root.
+- **Plain English.** Write each step the way you'd explain it to someone who uses the code and has never read it: what
+  the caller sees, what is checked about them or their data, and what is saved, sent or queued. The code's names go in
+  `where` and only there. A code the caller itself receives goes in parentheses after the words: `"not found" (404)`.
+- A flow's step takes no picture: the example is drawn on a chart's steps.
 
 ## names
 

@@ -1,7 +1,7 @@
 {
   "name": "flowtrace",
-  "version": "0.19.0",
-  "description": "Plan a change before any code, plan work that isn't code, explain one to someone who has never seen it, and review a pull request. plan-flows reads the code the change touches, writes the plan and draws its page for you to read, answer and approve; plan-check then questions the approved plan; plan-deliverable agrees what you'll hold at the end, then draws what you get, the calls only you can make and what could go wrong; explain traces one worked example through before and after flowcharts; pr-review teaches a pull request from its code, and adds how far each change reaches for a member of a Perillo workspace.",
+  "version": "0.20.0",
+  "description": "Plan a change before any code, and explain one to someone who has never seen it. plan-flows reads the code the change touches, researches how it is best done, writes the plan and draws its page for you to read, answer and approve; plan-check then questions the approved plan; explain teaches how something works or asks you to choose, with one worked example traced through today and after.",
   "author": {
     "name": "Perillo"
   },
@@ -12,15 +12,13 @@
     "planning",
     "plan",
     "flows",
-    "review",
-    "explain",
-    "pull request"
+    "explain"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Flowtrace",
-    "shortDescription": "Plan a change before any code, explain how code works, review a pull request",
-    "longDescription": "plan-flows reads the code a change touches (the functions it edits, what calls them and the tests that run them), writes the plan as flows, and draws the plan's page from the plan file for you to read, answer and approve. plan-check then has a fresh subagent look for the edge cases and gaps the approved plan leaves, and asks you each as multiple choice, recommendation first. explain teaches a change or a decision with one worked example traced through before and after flowcharts, and has a fresh subagent read the page cold. No skill commits or switches branches. pr-review reviews a pull request from a copy of its code, and for a member of a Perillo workspace adds how far each change reaches, from Perillo's map.",
+    "shortDescription": "Plan a change before any code, explain how code works",
+    "longDescription": "plan-flows reads the code a change touches (the functions it edits, what calls them and the tests that run them), researches how it is best done, and draws the plan's page: each case the change handles differently, today beside after, and only the questions you alone can decide. plan-check then has a fresh subagent look for the edge cases and gaps the approved plan leaves, and asks you each one. explain teaches how something works or asks you to choose, with one worked example traced through today and after, and has a fresh subagent read the page cold. No skill commits or switches branches.",
     "developerName": "Perillo",
     "category": "Developer Tools",
     "capabilities": [
@@ -30,9 +28,7 @@
     "defaultPrompt": [
       "Plan this change with plan-flows before writing any code.",
       "Run plan-check on the approved plan.",
-      "Explain how this works with explain.",
-      "Review this pull request with pr-review."
+      "Explain how this works with explain."
     ]
-  },
-  "mcpServers": "./.mcp.json"
+  }
 }

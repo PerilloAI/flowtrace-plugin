@@ -27,7 +27,7 @@ const prompts = {
   explain: "/flowtrace:explain how does exportOrder in orders.ts reach the warehouse?",
   "plan-flows": "/flowtrace:plan-flows retry exportOrder in orders.ts once when the warehouse times out",
   "plan-check": "/flowtrace:plan-check docs/plans/retry.json",
-  "pr-review": "/flowtrace:pr-review https://github.com/PerilloAI/flowtrace-plugin/pull/10",
+  "plan-flows-tech": "/flowtrace:plan-flows-tech docs/plans/retry.json",
 };
 const seen = [];
 for (const [skill, prompt] of Object.entries(prompts)) {

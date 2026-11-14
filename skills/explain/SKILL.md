@@ -1,13 +1,14 @@
 ---
 name: explain
-description: Ask the person to choose, or explain how code, a change or a piece of work fits together, so that someone who has never seen it understands it. In the chat when nothing waits on a choice; on a page when one does, with the whole picture first, one worked example with real values, drawn as a person would see it, traced through before and after flowcharts, and questions that check the reading. Use whenever the person must choose between ways of doing something, large or small, and when they ask how something works, what a change did or why a bug happened.
+description: Ask the person to choose, or explain how code, a change or a piece of work fits together, so that someone who has never seen it understands it. Every case it handles, one chart each, today beside after for a change, following one worked example drawn as a person would see it; only a choice that is the person's to make, Claude's other calls listed to flip, and two questions that check the reading. In the chat for one or two cases; on a page for more, or when a choice waits. Use whenever the person must choose between ways of doing something, large or small, and when they ask how something works, what a change did or why a bug happened.
 ---
 
 # explain
 
 explain teaches someone a thing they haven't seen, so they can decide or act on it. Read
 [teaching.md](../teaching.md) in full before step 1: it holds the rules explain shares with the other skills (the
-reader, the worked example, charts, questions, showing the page, the cold read).
+reader, the page and its cases, the worked example, charts, questions, asking the person and recording each decision,
+showing the page, the cold read). explain is that core and nothing more.
 
 explain only reads: it writes nothing in the repository. A page's data goes in a temporary directory outside the
 repository.
@@ -18,8 +19,11 @@ repository.
   explained or found): ask it in one sentence, your recommendation first, and stop here. In the Claude app it is the
   next-step box's question with one reply button, or the app's own buttons and at most one reply.
 - **An explanation** with nothing to choose (how something works, what a change did, why a bug happened): the chat,
-  by steps 2, 3 and 5. It becomes a page when it runs past about 40 lines or the person asks for one.
-- **A choice** between ways of doing something: a page, by every step. In the Claude app, the plugin's hook
+  by steps 2, 3 and 5, when it has one or two cases. It becomes a page when it has more, runs past about 40 lines, or
+  the person asks for one.
+- **A choice** between ways of doing something: first decide whether it is the person's to make, by teaching.md's
+  Asking the person. When it is your call, say in the chat what you'll do and what else they could pick, in a line or
+  two, and go ahead unless they say otherwise. When it is theirs: a page, by every step. In the Claude app, the plugin's hook
   (`hooks/explain-before-ask.mjs`) refuses a next-step box with two or more reply buttons until a page has been
   published, or opened again, since the person's last message. A step only they can take, such as signing in, goes in
   your message.
@@ -40,46 +44,38 @@ premise you can't prove is marked as unproved where you use it, and on a page go
 Done when you can say in two sentences, that a newcomer would follow, what this is and why it matters to the reader,
 each name you will use has a plain description, and every premise is proved from its source or marked unproved.
 
-## 3. Pick the worked example
+## 3. List the cases, and pick the worked example
 
-Pick it, and see it as a person would, by teaching.md's The worked example.
+List the cases by teaching.md's Cases: for a change, each situation that ends differently after it; for how something
+works, each situation that takes a different path, every way in included, so a reader who thinks of one finds it.
+Then pick one example by teaching.md's The worked example and follow it through every case, varied only as far as each
+case needs.
+
+Done when every situation is in a case, those that end alike grouped, and you can draw each one on the example.
 
 ## 4. Write the page
 
 Write the page's data as one JSON file, as [blocks.md](../../page/blocks.md) shows: its `title` (what is explained or
-asked), `about` (the repository, and the pull request, branch, plan or files, linked), then these sections in this
-order, so that a reader who stops after any section has had the most important part. Leave out a section the page
-doesn't need.
+asked), `about` (the repository, and the pull request, branch, plan or files, linked), then teaching.md's The page, its
+sections named:
 
-1. **What I'm asking** (or **In short**, when there is nothing to decide): one or two plain sentences, your
-   recommendation first.
-2. **The big picture**: two or three sentences, and a chart of the goal's pieces in order, each done, this one
-   (`"kind": "here"`) or still to come, with the related work beside its piece. When the thing belongs to no larger
-   piece of work, chart the thing itself: its parts in the order a person meets them, the one this page is about
-   marked `here`.
-3. **The example**: the case, in the reader's terms.
-4. **What you'd see**: for each thing a person does that this changes (signs in, runs a command, opens a page), one
-   chart with Today and After as `columns`, as that person meets it: Today marked where it goes wrong, After under the
-   recommendation.
-5. **How it works**, only when the after chooses between cases: a chart of how it decides, each exit naming its case,
-   then a chart per case under an `h3`, on the example or its smallest variant that lands there, the case where it
-   gives up or falls back included.
-6. **Check your reading**: 2 or 3 `question`s.
-7. **The choice**: one `choice`, each option the same example charted to what the person gets. Under it,
-   `{ "h3": "Still open" }` and a list of each question this choice leaves open, saying who answers it and when. A
-   page asks one decision: when the work holds several, ask the one that comes first and list the others here. With
-   nothing to decide, Still open is a section of its own.
-8. **Already settled**: a `settled`, what isn't open, each item with who settled it.
-9. **Names on this page**: a `names`, every name the page uses.
+1. `What I'm asking`, or `In short` when there is nothing to decide.
+2. `The question`: one `choice`, standing on its own by teaching.md's Asking the person. Under it, `{ "h3": "Still
+   open" }` and a list of the decisions it leaves open, saying who answers each and when. A page asks one decision:
+   when the work holds several, ask the one that comes first and list the others there.
+3. `How the pieces fit`, only when the change calls for it or the person asks how it will be built (teaching.md).
+4. `What changes, case by case` for a change, or `What happens, case by case` for how something works: one `case`
+   each.
+5. `Check your reading`: two `question`s.
+6. `Already settled`: your calls the page rests on, for the person to flip, and what they or a rule settled.
+7. `Names on this page`.
 
-Charts and questions follow teaching.md's Charts and Questions that check the reading.
-
-Done when every case has a chart, every box shows the example's value or state, each question and the choice draws
-the example in its own charts, and each name in a box has its line under Names on this page.
+Done when every case draws the example, the question and each reading question draw it in their own charts, and each
+name in a box has its line under Names on this page.
 
 ## 5. Show it
 
-- **In the chat**: under about 40 lines, with one case. Each chart goes in its own fenced block under its heading,
+- **In the chat**: under about 40 lines, with one or two cases. Each chart goes in its own fenced block under its heading,
   drawn with `│` and `▼`, a branch fanning out as `┌──┴──┐`, and a step's example right under that step as a small
   text picture (a grid of cells, the lines with the used part marked). Before sending, read it yourself with
   teaching.md's cold-read brief and close what it finds.
@@ -102,4 +98,6 @@ Done when the fixes are on the page.
 
 ## 7. After an answer or a comment
 
-Write it in by teaching.md's After an answer or a comment, then draw and show the page again.
+Write it in by teaching.md's After an answer or a comment: the choice they answered, and each call they flipped,
+becomes a `"chose"` item under Already settled with the moment `node <page.mjs> now` prints. Then draw and show the
+page again.

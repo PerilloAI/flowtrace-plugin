@@ -4,29 +4,20 @@ import { pictureProblems } from "./picture.mjs";
 
 export const PLAN_SECTIONS = [
   "What I'm asking",
-  "The case",
-  "What you'd see",
-  "Check your reading",
   "Questions from plan-flows",
   "Questions from plan-check",
-  "What this rests on",
-  "The changes and why",
+  "What changes, case by case",
+  "Check your reading",
   "Already settled",
-  "How it works, traced with",
-  "How it's built",
-  "Order of work",
-  "Tests",
-  "What comes next",
   "Plan changes",
   "Names",
 ];
-export const PREMISE_HEAD = ["The plan rests on", "How it was proved", "Where"];
-export const LOOK_CLOSELY = ["Breaking", "No undo", "Access check", "Default changed", "External call", "Migration", "Error hidden", "Side effect"];
-
-// 2 questions for 0 or 1 changed steps, one more each time they double, at most 8.
-export function questionsFor(changedSteps) {
-  return Math.min(8, 2 + Math.floor(Math.log2(Math.max(1, changedSteps))));
-}
+export const CASES = "What changes, case by case";
+// A plan asks two reading questions: enough to show the reader understood, few enough to stay worth answering.
+export const PLAN_QUESTIONS = 2;
+// "<who> · <date and time, with its offset> · <fingerprint>", and what changed an approved plan since.
+export const APPROVED = /^[^·]+ · \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:[+-]\d{2}:\d{2}|Z) · [0-9a-f]{7}(?: · after (?:plan change \d+|plan-check))?$/;
+const MOMENT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:[+-]\d{2}:\d{2}|Z)$/;
 
 export function blocks(doc, kind) {
   return [...doc.intro, ...doc.sections.flatMap((s) => s.nodes)].filter((n) => n.type === "block" && (!kind || n.kind === kind));
@@ -39,8 +30,8 @@ export function boxes(items) {
 export function chartBoxes(chart) {
   return chart.columns ? chart.columns.flatMap((c) => boxes(c.items)) : boxes(chart.items);
 }
-// Every box a block draws as a chart: a chart's, a screen's or a trace's, a choice's today and options, a question's case
-// and options. A flow's steps are not a chart's.
+// Every box a block draws as a chart: a chart's, a case's, a choice's today and options, a question's case and options. A
+// flow's steps are not a chart's.
 export function blockChartBoxes(b) {
   if (b.kind === "question") return [...boxes(b.case), ...b.options.flatMap((o) => boxes(o.items))];
   return [...(b.chart ? chartBoxes(b.chart) : []), ...boxes(b.today ?? [])];
@@ -49,9 +40,8 @@ export function blockChartBoxes(b) {
 // Whether any of these steps draws the example as a picture.
 const pictured = (items) => boxes(items).some((b) => b.shows);
 
-export function changedSteps(doc) {
-  return blocks(doc, "flow").flatMap((f) => boxes(f.items)).filter((b) => "+~-".includes(b.flowMark) && ["Step", "Check", "Only if"].includes(b.keyword)).length;
-}
+// What a reader's question can name, and what a plan's page counts: its cases.
+export const cases = (doc) => blocks(doc, "case");
 
 // What a question's "read" can name: a chart's or flow's title, a section's heading, or a step's "where".
 export function targets(doc) {
@@ -80,13 +70,6 @@ export function check(doc, { plan, nameFound }) {
   const all = blocks(doc);
   const ids = targets(doc);
 
-  const changes = all.filter((b) => b.kind === "changes").flatMap((b) => b.rows);
-  const titles = new Set();
-  for (const row of changes) {
-    if (row.title.split(/\s+/).length > 6) at(row.line, `the change title "${row.title}" is longer than six words`);
-    if (titles.has(row.title)) at(row.line, `two changes are titled "${row.title}"`);
-    titles.add(row.title);
-  }
   // Each picture as it is written, with the line it starts on: one written out a second time is a copy.
   const written = new Map();
   const copyOf = (html, line) => {
@@ -105,10 +88,6 @@ export function check(doc, { plan, nameFound }) {
       // A named picture is checked once, where it is drawn, however many steps show it.
       if (box.shows && !box.shows.use) copyOf(box.shows.html, box.shows.lines[0]);
       for (const p of box.shows && !box.shows.use ? pictureProblems(box.shows.html) : []) at(box.shows.lines[p.k], p.message);
-      if (box.change && !titles.has(box.change)) at(box.line, `"change": "${box.change}" names no row of "changes"`);
-      for (const f of box.flags ?? []) {
-        if (!LOOK_CLOSELY.includes(f.kind)) at(f.line, `Look closely's kind "${f.kind}" is not one of ${LOOK_CLOSELY.join(", ")}`);
-      }
     }
   }
 
@@ -116,7 +95,8 @@ export function check(doc, { plan, nameFound }) {
   for (const q of questions) {
     const texts = q.options.map((o) => o.text);
     if (q.options.length !== 3 || new Set(texts).size !== 3) at(q.line, "a question has three different options");
-    if (!readTarget(ids, q.read)) at(q.line, `"read": "${q.read}" names no chart, flow, section or step's "where" on the page`);
+    if (!plan && !q.read) at(q.line, 'a question names in "read" the part of the page to look at');
+    if (q.read && !readTarget(ids, q.read)) at(q.line, `"read": "${q.read}" names no chart, case, flow, section or step's "where" on the page`);
     for (const o of q.options) {
       for (const box of boxes(o.items).filter((b) => b.mark)) at(box.line, "an option's chart carries no ✓ or ✗ (\"result\"), so it doesn't give the answer away");
     }
@@ -140,7 +120,7 @@ export function check(doc, { plan, nameFound }) {
     if (plan && c.today && !pictured(c.today)) at(c.line, 'a question for the author draws its case as a picture ("shows") on a step of "today", so the author sees what it asks about');
     if (!plan && !c.today && !cols.some((col) => pictured(col.items))) at(c.line, 'a choice draws its case as a picture ("shows") on a step of an option\'s chart, so the person sees what it asks about');
     for (const box of boxes(c.today ?? [])) {
-      if (box.change) at(box.line, `"change": "${box.change}" is on a step of "today", which shows what happens now, before any change`);
+      if (box.flowMark) at(box.line, `a step of "today" shows what happens now, before any change, so it takes no "mark"`);
     }
     if (plan) {
       if (c.number === null) at(c.line, 'a plan\'s choice has a "number"');
@@ -149,39 +129,55 @@ export function check(doc, { plan, nameFound }) {
     }
   }
 
+  // Each decision says how it was made and when, on a plan and an explanation alike (teaching.md, Recording each decision).
+  for (const r of blocks(doc, "settled").flatMap((b) => b.rows)) {
+    if (!r.how) at(r.line, 'a settled item says "how" it was decided: "chose", "said", "rule" or "claude"');
+    else if (r.how === "claude") {
+      if (!r.alternatives.length) at(r.line, 'Claude\'s call lists in "alternatives" what else the author could pick, so they can flip it');
+      if (r.at) at(r.line, 'Claude\'s call takes no "at": it stands once the person answers the page, or approves the plan');
+    } else {
+      if (r.how === "rule") {
+        if (r.at) at(r.line, 'a rule takes no "at": its file\'s history holds when it was made');
+        if (!r.from) at(r.line, 'a rule names its file in "from"');
+      } else if (!r.at || !MOMENT.test(r.at)) at(r.line, `an item the author ${r.how} says when, in "at": YYYY-MM-DDTHH:MM:SS±HH:MM`);
+      if (r.alternatives.length) at(r.line, 'only Claude\'s call lists "alternatives"');
+    }
+  }
+
+  // Every page's cases (teaching.md, Cases): each draws its example, and only a change's after marks its steps.
+  for (const c of cases(doc)) {
+    if (!chartBoxes(c.chart).some((b) => b.shows)) at(c.line, 'a case draws its example as a picture ("shows") on a step, so the reader sees what happens');
+    if (c.change) {
+      const [today, after] = c.chart.columns;
+      if (boxes(today.items).some((b) => b.flowMark)) at(today.line, 'a case\'s "today" is how it runs now, so its steps take no "mark"');
+      if (!boxes(after.items).some((b) => b.flowMark)) at(after.line, 'a case is drawn because something changes: mark the steps of "after" that are new ("+"), changed ("~") or removed ("-")');
+    } else if (boxes(c.chart.items).some((b) => b.flowMark)) at(c.line, 'a case\'s "steps" show how it works now, so they take no "mark"');
+  }
+  if (questions.length > PLAN_QUESTIONS) at(questions[PLAN_QUESTIONS].line, `a page asks ${PLAN_QUESTIONS} reading questions; this one asks ${questions.length}`);
+
   if (!plan) return errors;
 
   let last = -1;
   for (const s of doc.sections) {
-    const k = PLAN_SECTIONS.findIndex((name) => s.heading === name || (name.endsWith("with") && s.heading.startsWith(name)));
+    const k = PLAN_SECTIONS.indexOf(s.heading);
     if (k < 0) at(s.line, `"${s.heading}" is not a plan section (plan-format.md, Sections, in order)`);
     else if (k < last) at(s.line, `"${s.heading}" stands after "${PLAN_SECTIONS[last]}", out of order`);
     else last = k;
   }
   if (doc.sections[0]?.heading !== "What I'm asking") at(doc.sections[0]?.line ?? doc.titleLine, "What I'm asking comes first");
+  if (!doc.sections.some((s) => s.heading === CASES)) at(doc.titleLine, `a plan has a "${CASES}" section`);
+  if (doc.approved && !APPROVED.test(doc.approved)) at(doc.titleLine, '"approved" is "<who> · <YYYY-MM-DDTHH:MM:SS±HH:MM> · <fingerprint>", the moment the author approved');
 
-  const rests = doc.sections.find((s) => s.heading === "What this rests on");
-  const premises = rests?.nodes.find((n) => n.type === "table" && PREMISE_HEAD.every((h, i) => n.head[i] === h) && n.head.length === PREMISE_HEAD.length);
-  if (!premises) at(rests?.line ?? doc.titleLine, `a plan has a "What this rests on" section holding a table headed ${PREMISE_HEAD.join(", ")} (plan-format.md)`);
-  else if (premises.rows.some((row) => row.some((cell) => !cell.trim()))) at(premises.line, "every premise under What this rests on says what it is, how it was proved and where");
-
-  const steps = changedSteps(doc);
-  if (questions.length !== questionsFor(steps)) {
-    at(questions[0]?.line ?? doc.titleLine, `the plan asks ${questions.length} reading questions, and its ${steps} changed steps call for ${questionsFor(steps)}`);
-  }
-
-  const built = new Set(blocks(doc, "flow").flatMap((f) => boxes(f.items)).map((box) => box.change));
-  for (const s of blocks(doc, "screens")) {
-    for (const box of chartBoxes(s.chart)) {
-      if (titles.has(box.change) && !built.has(box.change)) at(box.line, `"change": "${box.change}" is on a screen's step, and no flow's step names it`);
+  for (const f of blocks(doc, "flow")) at(f.line, "a plan draws what changes as cases, each today beside after; it has no flows");
+  for (const c of cases(doc)) {
+    if (!c.change) { at(c.line, 'a plan\'s case is a change: it has "today" and "after"'); continue; }
+    // A step that exists today names code that is there now.
+    for (const box of chartBoxes(c.chart)) {
+      if (box.where && box.flowMark !== "+" && !nameFound(box.where)) at(box.line, `"where": "${box.where}" is on a step that exists today, and the code at the merge base has no such name or file`);
     }
   }
 
-  for (const f of blocks(doc, "flow")) {
-    for (const box of boxes(f.items)) {
-      if (!box.where || "+".includes(box.flowMark)) continue;
-      if (!nameFound(box.where)) at(box.line, `"where": "${box.where}" is on a step marked as existing, changed or removed, and the code at the merge base has no such name or file`);
-    }
-  }
+  if (questions.length !== PLAN_QUESTIONS) at(questions[0]?.line ?? doc.titleLine, `a plan asks ${PLAN_QUESTIONS} reading questions; this one asks ${questions.length}`);
+
   return errors;
 }

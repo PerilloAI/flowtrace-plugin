@@ -93,8 +93,8 @@ const onCard = (card, pick) => {
   tip.hidden = true;
   document.body.append(tip);
   let shown = null, pinned = false, returning = false;
-  const mentions = "a.term, a.to-change";
-  // A name's line under Names, or a change's row of The changes and why, each cell under its heading.
+  const mentions = "a.term";
+  // A name's line under Names.
   const words = (target) => {
     const strong = (text) => Object.assign(document.createElement("strong"), { textContent: text });
     const copy = (el) => [...el.childNodes].map((n) => n.cloneNode(true));
@@ -141,10 +141,8 @@ const onCard = (card, pick) => {
     term.setAttribute("aria-describedby", tip.id);
     const width = tip.offsetWidth;
     const left = Math.min(Math.max(8, at.left), document.documentElement.clientWidth - width - 8);
-    // Below it where there's room, except over a step's How it's built, which the reader may want next.
-    const roomBelow = at.bottom + 6 + tip.offsetHeight < innerHeight;
-    const roomAbove = at.top - 6 - tip.offsetHeight >= 0;
-    const below = roomBelow && !(roomAbove && term.closest(".n")?.querySelector(".to-flow"));
+    // Below it where there's room, above it where there isn't.
+    const below = at.bottom + 6 + tip.offsetHeight < innerHeight;
     tip.style.left = `${left + dx}px`;
     tip.style.top = `${(below ? at.bottom + 6 : at.top - 6 - tip.offsetHeight) + dy}px`;
     tip.classList.toggle("above", !below);
@@ -218,9 +216,6 @@ const onCard = (card, pick) => {
     lit.forEach((el) => el.classList.remove("hit"));
     lit = light;
     light.forEach((el) => el.classList.add("hit"));
-    // A link on a row's line is in view with the row closed, so going back to one leaves the row as it is.
-    const row = target.closest("summary") ? null : target.closest("details");
-    if (row) row.open = true;
     target.scrollIntoView({ behavior: motion, block: "center" });
     if (!target.matches("a, button")) target.setAttribute("tabindex", "-1");
     target.focus({ preventScroll: true });
@@ -230,7 +225,7 @@ const onCard = (card, pick) => {
   const partOf = (target) => target.closest(".flowbox") || (target.matches("h2, h3") ? target : null);
   // A part's heading, and what it holds under it.
   const contents = (part) => {
-    if (part.matches(".flowbox")) return { heading: part.querySelector("h3"), held: [part.querySelector(".row-meta"), part.querySelector("figure")].filter(Boolean) };
+    if (part.matches(".flowbox")) return { heading: part.querySelector("h3"), held: [part.querySelector("figure")].filter(Boolean) };
     if (part.matches("h2")) return { heading: part, held: [...part.parentElement.children].filter((el) => el !== part) };
     const held = [];
     for (let n = part.nextElementSibling; n && !n.matches("h2, h3"); n = n.nextElementSibling) {
@@ -255,7 +250,7 @@ const onCard = (card, pick) => {
       el.removeAttribute("id");
     });
     copy.querySelectorAll(".cmt-box").forEach((el) => el.remove());
-    const asks = [...copy.querySelectorAll("button.opt, button.pick, .approve-btn, .send button")];
+    const asks = [...copy.querySelectorAll("button.opt, button.pick, .approve-btn")];
     if (asks.some((button) => !button.disabled)) copy.prepend(Object.assign(document.createElement("p"), { className: "desc modal-note", textContent: "To answer, close this and use the page." }));
     asks.forEach((button) => {
       button.disabled = true;
@@ -292,7 +287,7 @@ const onCard = (card, pick) => {
     focused.focus({ preventScroll: true });
   };
   document.addEventListener("click", (event) => {
-    const link = event.target.closest('a[href^="#"]:not(.term, .to-change)');
+    const link = event.target.closest('a[href^="#"]:not(.term)');
     const target = link && document.getElementById(decodeURIComponent(link.getAttribute("href").slice(1)));
     if (!target) return;
     event.preventDefault();
@@ -408,38 +403,40 @@ if (approve) {
 
 // Picking an option of a question for the author gives the chat its answer. Where the line is copied, every question's
 // pick so far goes in one line, "1 A, 3 B", so one paste answers them all; a pick made again replaces that question's.
+// Flipping one of Claude's calls under Already settled adds "call 2 B" to the same line; flipping it again takes it out.
 (() => {
   const cards = [...document.querySelectorAll(".decision")].filter((card) => card.querySelector("button.pick"));
+  const calls = [...document.querySelectorAll("tr.call")].filter((row) => row.querySelector("button.flip-pick"));
   const picked = new Map();
+  const sends = typeof sendPrompt === "function";
+  const all = () => [...cards, ...calls].filter((c) => picked.has(c)).map((c) => picked.get(c)).join(", ");
+  calls.forEach((row) => {
+    const flip = row.querySelector("button.flip");
+    flip.addEventListener("click", () => flip.setAttribute("aria-expanded", String(row.classList.toggle("open"))));
+    const buttons = [...row.querySelectorAll("button.flip-pick")];
+    buttons.forEach((button) => button.addEventListener("click", async () => {
+      const undo = button.getAttribute("aria-pressed") === "true";
+      buttons.forEach((other) => other.setAttribute("aria-pressed", String(!undo && other === button)));
+      row.classList.toggle("flipped", !undo);
+      if (undo) picked.delete(row);
+      else picked.set(row, button.dataset.line);
+      const box = document.querySelector(".flipped-line");
+      const line = sends ? (undo ? `undo ${button.dataset.line}` : button.dataset.line) : all();
+      if (line) await give(line, box.querySelector("code"), box.querySelector(".desc"));
+      else box.querySelectorAll("code, .desc").forEach((el) => (el.hidden = true));
+    }));
+  });
   cards.forEach((card) => {
     const buttons = [...card.querySelectorAll("button.pick")];
     buttons.forEach((button) => onCard(button.closest(".pick-card"), async () => {
       if (button.disabled) return;
       buttons.forEach((other) => other.setAttribute("aria-pressed", String(other === button)));
       picked.set(card, button.dataset.line);
-      const sends = typeof sendPrompt === "function";
-      const line = sends ? button.dataset.line : cards.filter((c) => picked.has(c)).map((c) => picked.get(c)).join(", ");
+      const line = sends ? button.dataset.line : all();
       const desc = card.querySelector(".picked .desc");
       await give(line, card.querySelector(".picked code"), desc);
-      const open = cards.length - picked.size;
+      const open = cards.filter((c) => !picked.has(c)).length;
       if (!sends && open > 0) desc.textContent += ` ${open} question${open === 1 ? "" : "s"} still to pick; picking ${open === 1 ? "it" : "them"} adds to this line.`;
     }));
-  });
-})();
-
-// Send answers, on a page whose data asks for it: once every question is answered, gives the chat this page load's
-// first picks as one line, which the skill that drew the page sends on.
-(() => {
-  const box = document.querySelector(".send");
-  if (!box) return;
-  const load = crypto.randomUUID();
-  const cards = [...document.querySelectorAll(".qz")];
-  document.addEventListener("click", (event) => {
-    if (event.target.closest(".opt-card") && cards.every((card) => card.dataset.picked)) box.hidden = false;
-  });
-  const go = box.querySelector("button");
-  go.addEventListener("click", () => {
-    const picks = cards.map((card, k) => `${k + 1} ${card.dataset.picked} ${card.dataset.picked === card.dataset.answer ? "right" : "wrong"}`);
-    give(`pr-review picks ${load}: ${picks.join("; ")}`, box.querySelector("code"), box.querySelector(".desc"), go);
   });
 })();

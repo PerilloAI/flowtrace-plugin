@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { blocks, boxes, chartBoxes, readTarget } from "./check.mjs";
+import { blocks, boxes, readTarget } from "./check.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CSS = readFileSync(path.join(here, "page.css"), "utf8");
@@ -52,25 +52,7 @@ export function render(doc, o) {
     return c ? ` class="${c}"` : "";
   };
   const comments = o.plan;
-  const warnWords = (f) => `<b>Look closely · ${esc(f.kind)}</b>: ${inline(f.text)}`;
-  const changeIds = new Map(blocks(doc, "changes").flatMap((b) => b.rows.map((r) => [r.title, r.id])));
   let where = [];
-  let inScreen = false;
-  // Each change's flows, with the first step naming it in each, and each flow's screens: the links between the two.
-  const flowsOf = new Map();
-  const seenIn = new Map();
-  for (const f of blocks(doc, "flow")) {
-    const named = new Set();
-    for (const b of boxes(f.items)) {
-      if (!b.change || named.has(b.change)) continue;
-      named.add(b.change);
-      flowsOf.set(b.change, [...(flowsOf.get(b.change) ?? []), { flow: f.id, name: f.name, step: b.whereId }]);
-    }
-  }
-  for (const s of blocks(doc, "screens")) {
-    const flows = new Set(chartBoxes(s.chart).flatMap((b) => flowsOf.get(b.change) ?? []).map((f) => f.flow));
-    for (const flow of flows) seenIn.set(flow, [...(seenIn.get(flow) ?? []), s]);
-  }
 
   // Paragraphs, lists, subheadings, tables and code, each as the data gives it.
   const prose = (n) => {
@@ -102,16 +84,15 @@ export function render(doc, o) {
     const mk = b.flowMark && !newFlow ? MK[b.flowMark] ?? "" : "";
     const mark = b.mark ? ` <span class="mark ${b.mark}">${b.mark === "ok" ? "✓" : "✗"}</span>` : "";
     const whereSpan = b.where ? `<span class="where">${esc(b.where)}</span>` : "";
-    const change = b.change ? `<a class="to-change" href="#${changeIds.get(b.change) ?? ""}">change: ${esc(b.change)}</a>` : "";
-    const toFlow = inScreen ? (flowsOf.get(b.change) ?? []).map((f) => `<a class="to-flow" href="#${f.step}">How it's built: ${inlineInLink(f.name)}</a>`).join("") : "";
-    const warns = (b.flags ?? []).map((f) => `<div class="warn${since(`${f.kind}: ${f.text}`)}">${warnWords(f)}</div>`).join("");
+    // The part of the system a step runs in, on a change large enough to show how its pieces fit (teaching.md).
+    const partTag = b.part ? `<span class="part">${inline(b.part)}</span>` : "";
     const id = b.whereId ? ` id="${b.whereId}"` : "";
     // The example as it is at this step, drawn inside the step's card under its words, with where it came from.
     const pic = b.shows ? `<div class="pic">${b.shows.html.join("\n")}</div><div class="pic-src">${b.shows.from ? inline(b.shows.from) : "Drawn for this page"}</div>` : "";
     const onlyLane = b.lanes?.length === 1 ? b.lanes[0] : null;
     const side = onlyLane ? `<div class="side"><div class="exit">${esc(onlyLane.label)}</div>${col(onlyLane.items, newFlow)}</div>` : "";
     const note = b.note ? (side ? `<div class="note">${inline(b.note)}</div>` : "") : "";
-    const row = `<div class="row"><div class="cell"${id}><div class="${cls}${since(b.source)}">${mk}${inline(b.text)}${mark}${whereSpan}${pic}${change}${toFlow}</div>${warns}${side ? note : ""}${cmt(b)}</div>${side || (b.note ? `<div class="note">${inline(b.note)}</div>` : "")}</div>`;
+    const row = `<div class="row"><div class="cell"${id}><div class="${cls}${since(b.source)}">${partTag}${mk}${inline(b.text)}${mark}${whereSpan}${pic}</div>${side ? note : ""}${cmt(b)}</div>${side || (b.note ? `<div class="note">${inline(b.note)}</div>` : "")}</div>`;
     const lanes = b.lanes && !onlyLane
       ? `${arrow}<div class="br">${b.lanes.map((l) => `<div class="lane"><div class="exit">${esc(l.label)}</div>${l.items.length ? arrow + col(l.items, newFlow) : ""}</div>`).join("")}</div>`
       : "";
@@ -129,20 +110,35 @@ export function render(doc, o) {
     }).join("")}</div></div>`;
   };
 
+  // A plan's decisions: what was decided, who decided it and how, the moment, and where it came from. Each of Claude's
+  // calls can be flipped to one of its alternatives, which adds "call <n> <letter>" to the answers given to the chat.
+  const approvedAt = doc.approved?.split(" · ")[1] ?? null;
+  const moment = (at) => esc(at.replace("T", " ").replace(/([+-]\d{2}:\d{2}|Z)$/, " $1"));
+  let calls = 0;
+  const settledTable = (rows) => {
+    const body = rows.map((r) => {
+      const key = `${r.who}: ${r.how}: ${r.text}: ${r.alternatives.join("|")}`;
+      if (r.how !== "claude") {
+        const by = { chose: `${esc(r.who)} chose`, said: `${esc(r.who)} said`, rule: "A rule" }[r.how];
+        return `<tr${cls(key)}><td>${inline(r.text)}</td><td><span class="by ${r.how}">${by}</span></td><td class="when">${r.at ? moment(r.at) : ""}</td><td class="from">${r.from ? inline(r.from) : ""}</td></tr>`;
+      }
+      const n = ++calls;
+      const flips = r.alternatives.map((a, k) => `<button type="button" class="flip-pick" aria-pressed="false" data-line="call ${n} ${"BCD"[k] ?? "?"}"><span class="letter">${"BCD"[k] ?? "?"}</span><span>${inline(a)}</span></button>`).join("");
+      const when = o.approvedNow && approvedAt ? `Accepted with the plan, ${moment(approvedAt)}` : o.plan ? "Accepted when you approve" : "Stands unless you flip it";
+      return `<tr class="call${since(key)}" data-call="${n}"><td><span class="was">${inline(r.text)}</span>${o.approvedNow ? "" : `<button type="button" class="flip" aria-expanded="false">Flip</button><div class="flips">${flips}</div>`}</td><td><span class="by claude">${esc(r.who)}'s call ${n}</span></td><td class="when wait">${when}</td><td class="from">${r.from ? inline(r.from) : ""}</td></tr>`;
+    }).join("");
+    const line = calls ? '<div class="flipped-line"><code hidden></code><p class="desc" hidden></p></div>' : "";
+    return `<div class="tablewrap"><table class="decided"><thead><tr><th>Decision</th><th>Decided by</th><th>When</th><th>From</th></tr></thead><tbody>${body}</tbody></table></div>${line}`;
+  };
+
   const quiz = [];
   const block = (b) => {
     switch (b.kind) {
       case "case":
-        return `<div class="example">${b.content.map(prose).join("\n")}</div>`;
-      case "screens":
-      case "trace":
       case "chart": {
         const head = b.title ? `<h3 id="${b.id}"${cls(b.title)}>${inline(b.title)}</h3>` : "";
-        const about = b.about ? `<p class="desc">${inline(b.about)}</p>` : "";
-        inScreen = b.kind === "screens";
-        const drawn = chartHtml(b.chart, b.title);
-        inScreen = false;
-        return `${head}${about}<figure>${drawn}</figure>`;
+        const about = b.about ? `<p class="desc${since(b.about)}">${inline(b.about)}</p>` : "";
+        return `${head}${about}<figure>${chartHtml(b.chart, b.title)}</figure>`;
       }
       case "question": {
         quiz.push(b);
@@ -156,7 +152,7 @@ export function render(doc, o) {
           const letter = "ABC"[k];
           return `<div class="opt-card" data-letter="${letter}"><button type="button" class="opt" data-letter="${letter}"><span class="letter">${letter}</span><span>${inline(x.text)}</span></button>${chartHtml({ items: x.items }, `${b.question} › ${letter}`)}</div>`;
         }).join("");
-        return `<div class="qz${since(key)}" data-answer="${answer}"${b.source ? ` data-source="${esc(b.source)}"` : ""}><p class="qt">${inline(b.question)}</p>${look ? `<p class="hint">Where to look: ${look}</p>` : ""}${caseChart}<div class="opts">${opts}</div><div class="fb" hidden><strong class="verdict"></strong> ${inline(b.why ?? "")}${look ? ` See it in ${look}` : ""}${b.source ? ` <span class="src">· ${b.source === "map" ? "the map" : esc(b.source)}</span>` : ""}</div></div>`;
+        return `<div class="qz${since(key)}" data-answer="${answer}"><p class="qt">${inline(b.question)}</p>${look ? `<p class="hint">Where to look: ${look}</p>` : ""}${caseChart}<div class="opts">${opts}</div><div class="fb" hidden><strong class="verdict"></strong> ${inline(b.why ?? "")}${look ? ` See it in ${look}` : ""}</div></div>`;
       }
       case "choice": {
         const title = b.number !== null ? `${b.number} · ${b.question}` : b.question;
@@ -178,10 +174,8 @@ export function render(doc, o) {
         const today = b.today ? `<h4 class="today">How it works today</h4><figure>${chartHtml({ items: b.today }, `${title} › Today`)}</figure>` : "";
         return `<div class="decision${since(key)}" id="${b.id}"><h3>${inline(title)}</h3>${today}<div class="picks">${picks}</div><div class="picked"><code hidden></code><p class="desc" hidden></p></div>${b.why ? `<p class="why">${inline(b.why)}</p>` : ""}</div>${ask}`;
       }
-      case "changes":
-        return `<div class="tablewrap"><table><thead><tr><th>Change</th><th>What users get</th><th>Why</th></tr></thead><tbody>${b.rows
-          .map((r) => `<tr id="${r.id}"${cls(`${r.title}|${r.gets}|${r.why}`)}><td>${inline(r.title)}</td><td>${inline(r.gets)}</td><td>${inline(r.why)}</td></tr>`).join("")}</tbody></table></div>`;
       case "settled":
+        if (b.rows.some((r) => r.how)) return settledTable(b.rows);
         return `<ul class="settled">${b.rows.map((r) => {
           const model = /^(Claude|Codex|the agent|the model)\b/i.test(r.who);
           const tag = model ? `<span class="tag model">${esc(r.who)}'s call</span>` : `<span class="tag who">Decided by ${esc(r.who)}</span>`;
@@ -196,19 +190,7 @@ export function render(doc, o) {
         const tag = newFlow ? '<span class="tag rec">new flow</span> ' : b.nameMark === "-" ? '<span class="tag alt">removed flow</span> ' : "";
         const heading = `<h3${cls(`Flow: ${b.name}`)}>${tag}${inline(b.name)}</h3>`;
         const chart = `<figure><div class="chart">${col(b.items, newFlow)}</div></figure>`;
-        if (!o.plan) return `<section class="flowbox" id="${b.id}">${heading}${chart}</section>`;
-        // On a plan, a closed row: its line says what opening it shows, and its warnings stand under the line until it opens,
-        // when they sit on their steps. A flow marked as a whole has its tag, not counts.
-        const all = boxes(b.items);
-        const counts = b.nameMark !== " " ? "" : [["+", "+", "new", "new"], ["~", "~", "chg", "changed"], ["-", "−", "gone", "removed"]].map(([mark, sign, c, word]) => {
-          const n = all.filter((x) => x.flowMark === mark).length;
-          return n ? `<span class="mk ${c}">${sign}${n} ${word}</span>` : "";
-        }).join("");
-        // The step's own drawing counts a changed warning as outlined, so this one, the same warning, doesn't count again.
-        const warnings = all.flatMap((x) => x.flags ?? []).map((f) => `<span class="warn${changedSince(`${f.kind}: ${f.text}`) ? " since" : ""}">${warnWords(f)}</span>`).join("");
-        const screens = seenIn.get(b.id) ?? [];
-        const seen = screens.length ? `Seen in: ${screens.map((s) => `<a href="#${s.id}">${inlineInLink(s.title)}</a>`).join(", ")}` : "No screen links here";
-        return `<details class="flowbox" id="${b.id}"><summary>${heading}<span class="row-meta">${counts}<span>${all.length} step${all.length === 1 ? "" : "s"}</span><span>${seen}</span></span>${warnings ? `<span class="row-warns">${warnings}</span>` : ""}</summary>${chart}</details>`;
+        return `<section class="flowbox" id="${b.id}">${heading}${chart}</section>`;
       }
     }
     return "";
@@ -216,20 +198,25 @@ export function render(doc, o) {
   const node = (n) => (n.type === "block" ? block(n) : prose(n));
 
   const body = [];
-  body.push(`<header><div class="eyebrow">${o.eyebrow}</div><h1>${inline(doc.title)}</h1>${doc.approved ? `<p class="approval">Approved: ${esc(doc.approved)}</p>` : ""}%%LEGEND%%</header>`);
+  // A plan's header says where it stands: approved or not, how many questions wait, how many cases change.
+  const open = blocks(doc, "choice").length;
+  const caseCount = blocks(doc, "case").length;
+  const status = o.plan
+    ? `<p class="status">${o.approvedNow ? `<span class="approval">Approved: ${esc(doc.approved)}</span>` : `<span class="pending">${doc.approved ? `Changed since it was approved (${esc(doc.approved)})` : "Not approved yet"}</span>`}<span><b>${open}</b> question${open === 1 ? "" : "s"} for you</span><span><b>${caseCount}</b> case${caseCount === 1 ? "" : "s"} change</span></p>`
+    : doc.approved ? `<p class="approval">Approved: ${esc(doc.approved)}</p>` : "";
+  body.push(`<header><div class="eyebrow">${o.eyebrow}</div><h1>${inline(doc.title)}</h1>${status}%%LEGEND%%</header>`);
   if (doc.intro.length) body.push(`<section>${doc.intro.map(node).join("\n")}</section>`);
   for (const s of doc.sections) {
     where = [s.heading];
     const ask = /^Questions from /.test(s.heading) ? '<p class="ask">Pick an option on each question to copy your answers, such as "1 A, 3 B", and paste them into the chat. Or type them there, or use Comment on a box.</p>' : "";
-    const send = doc.send ? '<div class="send" hidden><button type="button" id="send-answers">Send answers</button><code hidden></code><p class="desc" hidden></p></div>' : "";
-    const score = s.nodes.some((n) => n.kind === "question") ? `<p class="score" hidden></p>${send}` : "";
+    const score = s.nodes.some((n) => n.kind === "question") ? `<p class="score" hidden></p>` : "";
     const nodes = s.nodes.map(node).join("\n");
     body.push(`<section><h2 id="${s.id}">${inline(s.heading)}</h2>\n${s.nodes.some((n) => n.kind === "question") ? `<div class="qs">${nodes}</div>` : nodes}${score}${ask}</section>`);
   }
   if (o.plan) {
     const approve = o.approvedNow
       ? `<p><span class="approved">Approved</span> ${esc(doc.approved)}</p>`
-      : `<p>Answer the questions and comment in the chat, or with Comment on any box. When the plan is right, press Approve plan, or type approve in the chat. Any question still open is then asked there.</p><button type="button" class="approve-btn" data-line="Approve plan ${o.fingerprint}">Approve plan</button><code hidden></code><p class="desc" hidden></p>`;
+      : `<p>Answer the questions, flip any of Claude's calls under Already settled you'd make differently, and comment in the chat or with Comment on any box. When the plan is right, press Approve plan, or type approve in the chat. The approval records who approved and the moment, and accepts each of Claude's calls you left alone.</p><button type="button" class="approve-btn" data-line="Approve plan ${o.fingerprint}">Approve plan</button><code hidden></code><p class="desc" hidden></p>`;
     body.push(`<section><h2 id="s-approve">Approve</h2><div class="approve">${approve}</div></section>`);
   }
   const legend = outlined ? '<p class="since-legend">Outlined: changed since the page you last read.</p>' : "";

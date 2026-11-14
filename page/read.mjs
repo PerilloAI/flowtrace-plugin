@@ -14,7 +14,8 @@ export function slug(text) {
   return text.toLowerCase().replace(/[`*_]/g, "").replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 80);
 }
 
-const SOURCES = ["map", "test ran", "test read", "reading"];
+// How a settled item was decided: the person picked it, said it, a file's rule holds it, or it is Claude's call.
+export const HOW = ["chose", "said", "rule", "claude"];
 
 // The strict reader every page's data shares: an object with only the keys given, each of its type, and a list, each
 // failure naming the line to fix.
@@ -54,7 +55,7 @@ export function readDocument(text) {
   const { value, lineOf } = readJson(text);
   const { fail, where, shape, list } = reader(lineOf);
 
-  shape(value, [], { title: "string", approved: "string?", reviewPage: "string?", about: "string?", send: "boolean?", pictures: "object?", intro: "array?", sections: "array" });
+  shape(value, [], { title: "string", approved: "string?", reviewPage: "string?", about: "string?", pictures: "object?", intro: "array?", sections: "array" });
   // The pictures drawn once at the top of the file, each by its name, for the steps that show them with "use".
   const pictures = new Map(Object.entries(value.pictures ?? {}).map(([name, v]) => {
     const p = ["pictures", name];
@@ -65,15 +66,15 @@ export function readDocument(text) {
 
   const step = (v, path, flow) => {
     const s = shape(v, path, flow
-      ? { keyword: "string?", text: "string", mark: "string?", where: "string?", result: "string?", note: "string?", change: "string?", lookClosely: "array?", inner: "array?", answers: "array?", shows: "object?" }
-      : { text: "string", kind: "string?", where: "string?", result: "string?", note: "string?", change: "string?", inner: "array?", answers: "array?", shows: "object?" });
+      ? { keyword: "string?", text: "string", mark: "string?", where: "string?", result: "string?", note: "string?", inner: "array?", answers: "array?", shows: "object?" }
+      : { text: "string", kind: "string?", mark: "string?", part: "string?", where: "string?", result: "string?", note: "string?", inner: "array?", answers: "array?", shows: "object?" });
     if (flow && s.shows) fail([...path, "shows"], "a flow's step takes no picture: flows stay lean, and the example is drawn on a chart's step");
     if (s.result && !["ok", "bad"].includes(s.result)) fail([...path, "result"], '"result" is "ok" (✓) or "bad" (✗)');
     let kind = "step";
     let text = s.text;
+    if (s.mark && !MARKS.includes(s.mark)) fail([...path, "mark"], '"mark" is "+" (new), "~" (changed) or "-" (removed); leave it out for a step that exists');
     if (flow) {
       if (s.keyword && !KEYWORDS.includes(s.keyword)) fail([...path, "keyword"], `"keyword" is one of ${KEYWORDS.join(", ")}`);
-      if (s.mark && !MARKS.includes(s.mark)) fail([...path, "mark"], '"mark" is "+" (new), "~" (changed) or "-" (removed); leave it out for a step that exists');
       if (s.mark && flow.mark) fail([...path, "mark"], "a flow marked as a whole marks none of its steps");
       kind = s.keyword === "Starts" ? "start" : QUESTION_KEYWORDS.includes(s.keyword) ? "q" : END_KEYWORDS.includes(s.keyword) ? "end" : "step";
       if (s.keyword) text = s.keyword === "Finishes" ? `Finishes ${s.text}` : `${s.keyword}: ${s.text}`;
@@ -98,13 +99,13 @@ export function readDocument(text) {
         shows = { html: s.shows.html, from: s.shows.from ?? null, lines: s.shows.html.map((_, k) => lineOf([...p, "html", k])), use: null };
       }
     }
-    const flags = s.lookClosely ? list(s.lookClosely, [...path, "lookClosely"], (f, p) => ({ ...shape(f, p, { kind: "string", text: "string" }), line: lineOf(p) })) : [];
     const box = {
-      text, kind, question: kind === "q", keyword: s.keyword ?? null, mark: s.result ?? null, note: s.note ?? null, change: s.change ?? null,
-      where: s.where ?? null, flags, shows, line: lineOf(path),
-      flowMark: flow ? s.mark ?? flow.mark ?? " " : undefined,
+      text, kind, question: kind === "q", keyword: s.keyword ?? null, mark: s.result ?? null, note: s.note ?? null,
+      where: s.where ?? null, part: s.part ?? null, shows, line: lineOf(path),
+      // A flow's step is new, changed, removed or existing (" "); a chart's step only when it says so.
+      flowMark: flow ? s.mark ?? flow.mark ?? " " : s.mark,
       // A step showing a named picture changes when that picture does, so its source holds the picture too.
-      source: JSON.stringify({ ...s, inner: undefined, answers: undefined, mark: flow ? s.mark ?? flow.mark : undefined, ...(shows?.use ? { shows: { use: shows.use, html: shows.html, from: shows.from } } : {}) }),
+      source: JSON.stringify({ ...s, inner: undefined, answers: undefined, mark: flow ? s.mark ?? flow.mark : s.mark, ...(shows?.use ? { shows: { use: shows.use, html: shows.html, from: shows.from } } : {}) }),
     };
     if (s.inner) box.inner = list(s.inner, [...path, "inner"], (x, p) => step(x, p, flow));
     if (s.answers) {
@@ -166,22 +167,25 @@ export function readDocument(text) {
   };
 
   const BLOCKS = {
-    case: (v, path) => ({ content: list(v, path, (x, p) => prose(x, p, ["p", "list", "numbered"])) }),
+    // One situation: for a change, how it runs today beside how it runs after; for how something works, one chart.
+    case: (v, path) => {
+      shape(v, path, { title: "string", gets: "string", today: "array?", after: "array?", steps: "array?" });
+      const change = v.today !== undefined || v.after !== undefined;
+      if (change && (v.today === undefined || v.after === undefined || v.steps !== undefined)) fail(path, 'a case has "today" and "after", for a change, or "steps" alone, for how something works');
+      if (!change && v.steps === undefined) fail(path, 'a case has "today" and "after", for a change, or "steps" alone, for how something works');
+      return {
+        title: v.title, about: v.gets, change,
+        chart: change
+          ? { columns: [{ title: "Today", line: lineOf([...path, "today"]), items: steps(v.today, [...path, "today"]) }, { title: "After", line: lineOf([...path, "after"]), items: steps(v.after, [...path, "after"]) }] }
+          : { items: steps(v.steps, [...path, "steps"]) },
+      };
+    },
     chart: (v, path) => {
       shape(v, path, { title: "string?", about: "string?", steps: "array?", columns: "array?" });
       return { title: v.title ?? null, about: v.about ?? null, chart: chart(v, path) };
     },
-    screens: (v, path) => {
-      shape(v, path, { title: "string", about: "string?", columns: "array" });
-      return { title: v.title, about: v.about ?? null, chart: chart(v, path) };
-    },
-    trace: (v, path) => {
-      shape(v, path, { title: "string", about: "string?", steps: "array?", columns: "array?" });
-      return { title: v.title, about: v.about ?? null, chart: chart(v, path) };
-    },
     question: (v, path) => {
-      shape(v, path, { question: "string", steps: "array", options: "array", answer: "string", read: "string", why: "string", source: "string?" });
-      if (v.source && !SOURCES.includes(v.source)) fail([...path, "source"], `"source" is one of ${SOURCES.join(", ")}`);
+      shape(v, path, { question: "string", steps: "array", options: "array", answer: "string", read: "string?", why: "string" });
       const right = "ABC".indexOf(v.answer);
       if (v.answer.length !== 1 || right < 0 || right >= v.options.length) fail([...path, "answer"], '"answer" is the right option\'s letter: "A", "B" or "C"');
       // The question's case, charted up to the step it asks about, and each option charted on from there.
@@ -189,7 +193,7 @@ export function readDocument(text) {
         shape(o, p, { text: "string", steps: "array" });
         return { text: o.text, line: lineOf(p), items: steps(o.steps, [...p, "steps"]) };
       });
-      return { question: v.question, case: steps(v.steps, [...path, "steps"]), options: options.map((o, k) => ({ ...o, right: k === right })), read: v.read, why: v.why, source: v.source ?? null };
+      return { question: v.question, case: steps(v.steps, [...path, "steps"]), options: options.map((o, k) => ({ ...o, right: k === right })), read: v.read ?? null, why: v.why, source: v.source ?? null };
     },
     choice: (v, path) => {
       shape(v, path, { number: "number?", question: "string", today: "array?", recommended: "string", alternatives: "strings", options: "array", why: "string" });
@@ -206,8 +210,13 @@ export function readDocument(text) {
         },
       };
     },
-    changes: (v, path) => ({ rows: list(v, path, (r, p) => ({ ...shape(r, p, { title: "string", gets: "string", why: "string" }), line: lineOf(p) })) }),
-    settled: (v, path) => ({ rows: list(v, path, (r, p) => ({ ...shape(r, p, { who: "string", from: "string?", text: "string" }), from: r.from ?? null, line: lineOf(p) })) }),
+    settled: (v, path) => ({
+      rows: list(v, path, (r, p) => {
+        shape(r, p, { who: "string", how: "string?", at: "string?", from: "string?", text: "string", alternatives: "strings?" });
+        if (r.how && !HOW.includes(r.how)) fail([...p, "how"], `"how" is one of ${HOW.map((h) => `"${h}"`).join(", ")}`);
+        return { who: r.who, how: r.how ?? null, at: r.at ?? null, from: r.from ?? null, text: r.text, alternatives: r.alternatives ?? [], line: lineOf(p) };
+      }),
+    }),
     names: (v, path) => ({ rows: list(v, path, (r, p) => ({ ...shape(r, p, { name: "string", also: "strings?", text: "string" }), also: r.also ?? [], line: lineOf(p) })) }),
     flow: (v, path) => {
       shape(v, path, { name: "string", mark: "string?", steps: "array" });
@@ -223,7 +232,7 @@ export function readDocument(text) {
   };
 
   const doc = {
-    title: value.title, titleLine: lineOf(["title"]), approved: value.approved ?? null, reviewPage: value.reviewPage ?? null, about: value.about ?? null, send: value.send === true,
+    title: value.title, titleLine: lineOf(["title"]), approved: value.approved ?? null, reviewPage: value.reviewPage ?? null, about: value.about ?? null,
     pictures: [...pictures.values()],
     intro: value.intro ? list(value.intro, ["intro"], node) : [],
     sections: list(value.sections, ["sections"], (s, p) => {
@@ -235,8 +244,7 @@ export function readDocument(text) {
   return { doc, value };
 }
 
-// Gives every heading, chart, flow, choice, change, name, first [where] and each flow's first step naming a change the
-// id links reach it by, each id once.
+// Gives every heading, chart, case, flow, choice, name and first [where] the id links reach it by, each id once.
 function assignIds(doc) {
   const used = new Set();
   const unique = (id) => {
@@ -245,26 +253,20 @@ function assignIds(doc) {
     used.add(out);
     return out;
   };
-  const prefix = { screens: "v", trace: "t", chart: "h" };
+  const prefix = { case: "k", chart: "h" };
   for (const s of doc.sections) s.id = unique(s.id);
   const wheres = new Set();
   for (const node of [...doc.intro, ...doc.sections.flatMap((s) => s.nodes)]) {
     if (node.type !== "block") continue;
     if (node.title) node.id = unique(`${prefix[node.kind]}-${slug(node.title)}`);
     if (node.kind === "choice") node.id = unique(`q-${node.number ?? slug(node.question)}`);
-    if (node.kind === "changes") for (const row of node.rows) row.id = unique(`c-${slug(row.title)}`);
     if (node.kind === "names") for (const row of node.rows) row.id = unique(`n-${slug(row.name)}`);
     if (node.kind === "flow") {
       node.id = unique(`f-${slug(node.name)}`);
-      const named = new Set();
       const walk = (items) => items.forEach((b) => {
         if (b.where && !wheres.has(b.where)) {
           wheres.add(b.where);
           b.whereId = unique(`w-${slug(b.where)}`);
-        }
-        if (b.change && !named.has(b.change)) {
-          named.add(b.change);
-          b.whereId ??= unique(`w-${slug(b.change)}`);
         }
         walk(b.inner ?? []);
         (b.lanes ?? []).forEach((l) => walk(l.items));

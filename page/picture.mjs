@@ -2,7 +2,7 @@
 // nothing from elsewhere, styles nothing outside itself, links nowhere (links stay in the step's words), and leaves no tag
 // open, so the page around it keeps its layout and its links.
 
-const HTML = ["div", "span", "p", "b", "strong", "i", "em", "u", "s", "small", "sub", "sup", "mark", "abbr", "del", "ins", "q", "kbd", "time",
+const HTML = ["div", "span", "p", "b", "strong", "i", "em", "u", "s", "small", "sub", "sup", "mark", "abbr", "del", "ins", "q", "kbd", "code", "samp", "pre", "time",
   "br", "hr", "wbr", "table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption", "colgroup", "col", "ul", "ol", "li", "dl", "dt", "dd",
   "figure", "figcaption", "h4", "h5", "h6"];
 const SVG = ["svg", "g", "rect", "circle", "ellipse", "line", "polyline", "polygon", "path", "text", "tspan", "defs", "marker", "lineargradient",

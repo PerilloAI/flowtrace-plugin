@@ -1,4 +1,4 @@
-/* Prose in one readable column; charts, tables and flows break out to the wider measure. */
+/* Prose in one readable column; charts, tables and flows run the window's width, since a step's picture is often wide. */
 :root {
   --bg: #f6f7f9; --card: #ffffff; --fg: #1b2230; --muted: #5d6677; --line: #c9cfda;
   --accent: #2a4b9b; --accent-soft: #e6ecfa; --ok: #1d7a55; --ok-soft: #e3f3ec; --bad: #b2362d; --bad-soft: #fbe9e7;
@@ -18,7 +18,7 @@
   --note: #f0b864; --note-soft: #362a17; --code-bg: #232a36; --chg: #f0b864; color-scheme: dark; }
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15.5px; line-height: 1.6; }
 [hidden] { display: none !important; }
-.wrap { max-width: 1040px; margin: 0 auto; padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { margin: 0 auto; padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .prose { max-width: 70ch; }
 h1, h2, h3 { font-family: var(--display); font-weight: 600; text-wrap: balance; line-height: 1.2; }
 h1 { font-size: 2rem; margin: 6px 0 12px; max-width: 30ch; }
@@ -77,13 +77,10 @@ figure { margin: 14px 0 22px; }
 .n.q { border-style: dashed; border-color: var(--accent); font-weight: 500; }
 .n.end { border-radius: 999px; }
 .n.removed { text-decoration: line-through; opacity: .75; }
+.n .part { display: block; width: fit-content; margin: 0 auto 4px; font: 600 10.5px/1.5 var(--mono); letter-spacing: .03em; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 0 6px; }
 .n .where { display: block; font: 400 11px/1.4 var(--mono); color: var(--muted); margin-top: 3px; }
-.n .to-change, .n .to-flow { display: block; font-size: 12px; margin-top: 3px; }
-.n .to-flow { font-weight: 500; }
 .mk { display: inline-block; font: 600 10.5px/1.5 var(--body); letter-spacing: .04em; text-transform: uppercase; padding: 0 6px; border-radius: 999px; margin-right: 6px; vertical-align: 1px; text-decoration: none; }
 .mk.new { color: var(--ok); border: 1px solid var(--ok); } .mk.chg { color: var(--chg); border: 1px solid var(--chg); } .mk.gone { color: var(--bad); border: 1px solid var(--bad); }
-.warn { font-size: 12.5px; line-height: 1.4; background: var(--note-soft); border: 1px solid var(--note); color: var(--fg); border-radius: 6px; padding: 5px 9px; text-align: left; }
-.warn b { color: var(--note); }
 .mark { font-weight: 600; } .mark.ok { color: var(--ok); } .mark.bad { color: var(--bad); }
 .note { font-size: 12.5px; color: var(--note); line-height: 1.35; }
 .note::before { content: "← "; }
@@ -104,21 +101,6 @@ figure { margin: 14px 0 22px; }
 figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; max-width: 72ch; }
 .flowbox { margin: 18px 0; }
 .flowbox h3 { margin: 0 0 8px; }
-/* On a plan, a flow is a closed row: one line that opens in place. */
-details.flowbox { margin: 6px 0; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
-details.flowbox > summary { position: relative; padding: 10px 14px 10px 34px; cursor: pointer; list-style: none; border-radius: 8px; }
-details.flowbox > summary::-webkit-details-marker { display: none; }
-details.flowbox > summary::before { content: ""; position: absolute; left: 15px; top: 17px; border-left: 7px solid var(--muted); border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
-details.flowbox[open] > summary::before { transform: rotate(90deg); }
-details.flowbox > summary:hover { background: var(--accent-soft); }
-details.flowbox > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-details.flowbox > summary h3 { display: inline; margin: 0; font-size: 1.1rem; }
-.row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 4px; font-size: 13px; color: var(--muted); }
-.row-meta .mk { margin-right: 0; }
-/* A flow's warnings stay readable under its closed row. Opened, they sit on their steps. */
-.row-warns { display: grid; gap: 4px; margin-top: 6px; max-width: 90ch; }
-details[open] > summary .row-warns { display: none; }
-details.flowbox > figure { margin: 4px 14px 14px; }
 /* What a link names, opened over the dimmed page, or in a sheet across the bottom at phone width. */
 .modal { box-sizing: border-box; width: min(980px, calc(100vw - 32px)); max-width: none; max-height: 86vh; padding: 0; overflow: hidden; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 40px rgb(0 0 0 / .3); }
 .modal[open] { display: flex; flex-direction: column; }
@@ -138,7 +120,6 @@ details.flowbox > figure { margin: 4px 14px 14px; }
 .modal-body :is(.pick-card, .opt-card):has(button:disabled):hover { border-color: var(--line); }
 .modal-note { margin: 0 0 10px; font-size: 13px; }
 .modal-body > div > :first-child { margin-top: 0; }
-.modal-body .row-meta { margin-bottom: 4px; }
 @media (max-width: 640px) {
   .modal { width: 100%; max-height: 85vh; margin: auto 0 0; border-radius: 12px 12px 0 0; }
   .modal-body { padding: 12px 12px calc(16px + env(safe-area-inset-bottom, 0px)); }
@@ -250,7 +231,6 @@ tr.since td { background: var(--note-soft); }
 a.term { color: inherit; text-decoration: underline dotted var(--accent); text-underline-offset: 3px; }
 a.term:hover { color: var(--accent); }
 a.term.lit { color: var(--fg); background: var(--accent-soft); border-radius: 3px; text-decoration-style: solid; }
-a.to-change.lit { color: var(--fg); background: var(--accent-soft); border-radius: 3px; }
 /* The tip's ::before bridges the gap to its mention, so the pointer can cross it. */
 .tip::before { content: ""; position: absolute; left: -1px; right: -1px; bottom: 100%; height: 8px; }
 .tip.above::before { top: 100%; bottom: auto; }
@@ -263,8 +243,32 @@ a.to-change.lit { color: var(--fg); background: var(--accent-soft); border-radiu
 @media (max-width: 640px) { .names { grid-template-columns: 1fr; gap: 2px; } .names dd { margin-bottom: 8px; } }
 .sources { font-size: 13.5px; max-width: 90ch; padding-left: 1.3em; }
 .sources li { margin: 4px 0; overflow-wrap: anywhere; }
-.send { margin-top: 10px; max-width: 74ch; }
-.send button { font: 600 15px var(--body); padding: 8px 16px; border-radius: 7px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--fg); cursor: pointer; }
-.send button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.send code { display: block; margin-top: 10px; user-select: all; }
 .qz .src { color: var(--muted); font-size: 13px; }
+
+/* A chart's boxes widen on a wide window, and side-by-side columns share the width, so a step's picture has room. */
+@media (min-width: 641px) { .row, .arrow { grid-template-columns: 1fr minmax(0, 640px) 1fr; } }
+.sbs { grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); min-width: 0; }
+@media (max-width: 760px) { .sbs { grid-template-columns: 1fr; gap: 26px; } }
+.decision .picks { max-width: none; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); }
+
+/* A plan's header: where it stands. */
+.status { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 14px; color: var(--muted); margin: 6px 0 0; }
+.status b { color: var(--fg); }
+.status .pending { color: var(--note); font-weight: 600; }
+
+/* A plan's decisions: who decided each, how and when; Claude's calls can be flipped. */
+table.decided td:first-child { font-weight: 400; width: 46%; }
+table.decided td.when { font: 400 12.5px/1.5 var(--mono); white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.decided td.when.wait { font-family: var(--body); color: var(--note); white-space: normal; }
+.by { display: inline-block; font-size: 11.5px; padding: 0 8px; border-radius: 999px; white-space: nowrap; border: 1px solid currentColor; }
+.by.chose { color: var(--ok); } .by.said { color: var(--accent); } .by.rule { color: var(--muted); } .by.claude { color: var(--note); }
+button.flip { font: 500 12px var(--body); color: var(--accent); background: none; border: 1px solid var(--accent); border-radius: 999px; padding: 0 9px; margin-left: 6px; cursor: pointer; }
+button.flip:focus-visible, button.flip-pick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.flips { display: none; flex-direction: column; gap: 4px; margin-top: 6px; }
+tr.call.open .flips { display: flex; }
+button.flip-pick { display: flex; gap: 8px; align-items: baseline; text-align: left; font: inherit; font-size: 13px; padding: 4px 9px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
+button.flip-pick .letter { font-weight: 700; color: var(--muted); }
+button.flip-pick[aria-pressed="true"] { border-color: var(--ok); background: var(--ok-soft); }
+tr.call.flipped .was { text-decoration: line-through; color: var(--muted); }
+.flipped-line { margin-top: 8px; }
+.flipped-line code { user-select: all; }

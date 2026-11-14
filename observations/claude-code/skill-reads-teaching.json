@@ -1,7 +1,7 @@
 {
   "claim": "Each of the plugin's four skills, started by its slash command in `claude -p` with the plugin loaded by --plugin-dir, reads <plugin>/skills/teaching.md as its first tool call, before any file of the repository it works on.",
   "source": "Claude Code 2.1.316 (claude CLI on macOS), model claude-sonnet-5-5",
-  "observed": "2026-11-07",
+  "observed": "2026-11-14",
   "how": "node observations/claude-code/skill-reads-teaching.probe.mjs (beside this record). It makes a throwaway git repository holding orders.ts and docs/plans/retry.json, then runs each skill's slash command there with `claude -p --plugin-dir <this repository> --model sonnet --output-format stream-json --verbose --max-turns 4 --tools Read,Glob,Grep --permission-mode default --permission-prompts none`, and prints each tool call in order, with <plugin> and <scratch> for the two folders and whether the call was refused. Each turn calls a model, so Claude Code must be signed in.",
   "recheckWhen": "Claude Code is upgraded, the model changes, or a skill's SKILL.md changes how it starts.",
   "evidence": [
@@ -9,16 +9,11 @@
       "skill": "explain",
       "prompt": "/flowtrace:explain how does exportOrder in orders.ts reach the warehouse?",
       "model": "claude-sonnet-5-5",
-      "claudeCode": "2.1.316",
+      "claudeCode": "2.1.323",
       "toolCalls": [
         {
           "tool": "Read",
           "file": "<plugin>/skills/teaching.md",
-          "refused": false
-        },
-        {
-          "tool": "Read",
-          "file": "<plugin>/skills/premises.md",
           "refused": false
         },
         {
@@ -27,8 +22,8 @@
           "refused": false
         },
         {
-          "tool": "Grep",
-          "file": "exportOrder",
+          "tool": "Read",
+          "file": "<plugin>/skills/premises.md",
           "refused": false
         },
         {
@@ -38,7 +33,7 @@
         },
         {
           "tool": "Glob",
-          "file": "**/*",
+          "file": "<scratch>",
           "refused": false
         },
         {
@@ -48,7 +43,7 @@
         },
         {
           "tool": "Grep",
-          "file": "warehouse",
+          "file": "<scratch>",
           "refused": false
         }
       ]
@@ -57,7 +52,7 @@
       "skill": "plan-flows",
       "prompt": "/flowtrace:plan-flows retry exportOrder in orders.ts once when the warehouse times out",
       "model": "claude-sonnet-5-5",
-      "claudeCode": "2.1.316",
+      "claudeCode": "2.1.323",
       "toolCalls": [
         {
           "tool": "Read",
@@ -70,8 +65,13 @@
           "refused": false
         },
         {
+          "tool": "Grep",
+          "file": "exportOrder",
+          "refused": false
+        },
+        {
           "tool": "Glob",
-          "file": "<scratch>",
+          "file": "**/{package.json,pyproject.toml,go.mod,orders.ts,*.test.ts,CLAUDE.md,docs/**}",
           "refused": false
         },
         {
@@ -93,26 +93,6 @@
           "tool": "Read",
           "file": "<plugin>/page/blocks.md",
           "refused": false
-        },
-        {
-          "tool": "Grep",
-          "file": "<scratch>",
-          "refused": false
-        },
-        {
-          "tool": "Glob",
-          "file": "<scratch>",
-          "refused": false
-        },
-        {
-          "tool": "Glob",
-          "file": "<plugin>/page",
-          "refused": false
-        },
-        {
-          "tool": "Write",
-          "file": "<scratch>/docs/plans/retry.json",
-          "refused": true
         }
       ]
     },
@@ -120,7 +100,7 @@
       "skill": "plan-check",
       "prompt": "/flowtrace:plan-check docs/plans/retry.json",
       "model": "claude-sonnet-5-5",
-      "claudeCode": "2.1.316",
+      "claudeCode": "2.1.323",
       "toolCalls": [
         {
           "tool": "Read",
@@ -140,10 +120,10 @@
       ]
     },
     {
-      "skill": "pr-review",
-      "prompt": "/flowtrace:pr-review https://github.com/PerilloAI/flowtrace-plugin/pull/10",
+      "skill": "plan-flows-tech",
+      "prompt": "/flowtrace:plan-flows-tech docs/plans/retry.json",
       "model": "claude-sonnet-5-5",
-      "claudeCode": "2.1.316",
+      "claudeCode": "2.1.323",
       "toolCalls": [
         {
           "tool": "Read",
@@ -152,7 +132,12 @@
         },
         {
           "tool": "Read",
-          "file": "<plugin>/skills/premises.md",
+          "file": "<scratch>/docs/plans/retry.json",
+          "refused": false
+        },
+        {
+          "tool": "Glob",
+          "file": "<scratch>",
           "refused": false
         }
       ]
