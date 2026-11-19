@@ -11,16 +11,17 @@
 // The data is JSON, as blocks.md gives it. A plan is checked by every rule plan-format.md marks checked, its cases' existing steps' names looked up at the merge base
 // with the default branch. On any failure it prints each, naming its line, and exits 1 with nothing written. Otherwise
 // it writes the page (an HTML fragment, or with --whole a whole document) and prints one line of JSON: the page's
-// path, the fingerprint, and the counts. `seen` keeps a copy of the file as the author has read it, and every drawing
-// after outlines what differs from that copy (--since names another copy).
+// path, the fingerprint, and the counts: its cases, its questions, the minutes the whole page and the gist alone take to
+// read, and its steps. `seen` keeps a copy of the file as the author has read it, and every drawing after
+// outlines what differs from that copy (--since names another copy).
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { formatJson } from "./json.mjs";
 import { PageError, readDocument } from "./read.mjs";
-import { blocks, cases, chartBoxes, check, targets } from "./check.mjs";
+import { blocks, cases, chartBoxes, check, minutes, reading, targets } from "./check.mjs";
 import { esc, inline, render } from "./render.mjs";
 
 const [command, file, ...rest] = process.argv.slice(2);
@@ -69,10 +70,11 @@ try {
   throw error;
 }
 
-// The fingerprint: the plan's data without "approved" and "reviewPage", one item a line, hashed as git hashes a file.
-// So it names the plan's words, whatever their spacing.
+// The fingerprint: the plan's data without "approved", "reviewPage", "build" and "told", one item a line, hashed as git
+// hashes a file. So it names the plan's words, whatever their spacing, and writing the build's progress or the author's
+// account of it changes nothing approved.
 const fingerprint = () => {
-  const kept = formatJson({ ...data, approved: undefined, reviewPage: undefined });
+  const kept = formatJson({ ...data, approved: undefined, reviewPage: undefined, build: undefined, told: undefined });
   return execFileSync("git", ["hash-object", "--stdin"], { input: kept, encoding: "utf8" }).trim().slice(0, 7);
 };
 if (command === "fingerprint") {
@@ -92,6 +94,7 @@ if (command === "seen") {
 const plan = command === "plan";
 let eyebrow = doc.about ? inline(doc.about) : "";
 let nameFound = () => true;
+let codeFound = () => true;
 let fp = null;
 if (plan) {
   const root = tried(path.dirname(source), "rev-parse", "--show-toplevel");
@@ -103,7 +106,7 @@ if (plan) {
   const rel = path.relative(root, source);
   eyebrow = `Plan · <code>${esc(rel)}</code> · marks compare with <code>${esc(label)}</code> at <code>${base ? base.slice(0, 7) : "no commit"}</code>`;
 
-  // Every step's "where" in the cases, looked up in two git calls: the files at the merge base, and one grep for the names.
+  // Every step's "where" in the cases (each in the plan step that makes it come true), looked up in two git calls: the files at the merge base, and one grep for the names.
   const wheres = cases(doc).flatMap((c) => chartBoxes(c.chart)).map((b) => b.where).filter(Boolean);
   const isFile = (w) => w.includes("/") || /\.(c|cc|cjs|cpp|cs|csproj|css|go|h|html|java|js|json|jsx|kt|md|mjs|php|py|rb|rs|scss|sh|sql|swift|tf|toml|ts|tsx|txt|vue|xml|ya?ml)$/i.test(w);
   const files = new Set(base ? git(root, "ls-tree", "-r", "--name-only", base).split("\n").filter((f) => f && !f.startsWith("docs/plans/")) : []);
@@ -114,10 +117,25 @@ if (plan) {
     for (const line of out.split("\n")) found.add(line.slice(line.lastIndexOf(":") + 1));
   }
   nameFound = (w) => (isFile(w) ? files.has(w) : found.has(w.split(".").pop()));
+  // Where a built step's code is, looked up in the repository as it stands now: the file, then the name inside it.
+  codeFound = (where, name) => {
+    const file = path.resolve(root, where);
+    const rel = path.relative(root, file);
+    if (rel.startsWith("..") || path.isAbsolute(rel) || rel.startsWith(`docs${path.sep}plans${path.sep}`) || !existsSync(file) || !statSync(file).isFile()) return "file";
+    if (name) {
+      const word = name.split(".").pop();
+      const text = readFileSync(file, "utf8");
+      const inWord = /[\p{L}\p{N}_$]/u;
+      let at = text.indexOf(word);
+      while (at >= 0 && (inWord.test(text[at - 1] ?? "") || inWord.test(text[at + word.length] ?? ""))) at = text.indexOf(word, at + 1);
+      if (at < 0) return "name";
+    }
+    return true;
+  };
   fp = fingerprint();
 }
 
-const errors = check(doc, { plan, nameFound });
+const errors = check(doc, { plan, nameFound, codeFound });
 if (errors.length) fail(errors);
 
 mkdirSync(home, { recursive: true });
@@ -141,6 +159,6 @@ mkdirSync(path.dirname(out), { recursive: true });
 writeFileSync(out, page.html);
 console.log(JSON.stringify({
   page: out,
-  ...(plan ? { fingerprint: fp, approved: approvedNow, cases: cases(doc).length, questions: blocks(doc, "choice").length } : {}),
+  ...(plan ? { fingerprint: fp, approved: approvedNow, cases: cases(doc).length, questions: blocks(doc, "choice").length, minutes: minutes(reading(doc).total), gist: minutes(reading(doc).gist), steps: blocks(doc, "step").length } : {}),
   outlined: page.outlined,
 }));

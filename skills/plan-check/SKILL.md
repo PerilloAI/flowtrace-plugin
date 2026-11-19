@@ -1,6 +1,6 @@
 ---
 name: plan-check
-description: Question a plan before any code; running it approves the plan. A fresh subagent tries to prove the plan's premises false, and finds the cases the plan doesn't handle and the gaps it leaves; each that only the author can decide becomes a question on the plan's page, charted on a real case with the recommendation first, and the rest become Claude's calls the author can flip. The answers go into the plan, and the build starts as soon as the last is in. Use when plan-flows approves a plan, and whenever the person asks to check, question or approve a plan in docs/plans, or to start building one.
+description: Question a plan before any code; running it approves the plan. A fresh subagent tries to prove the plan's premises false, and finds the cases the plan doesn't handle and the gaps it leaves; each that only the author can decide becomes a question on the plan's page, charted on a real case and saying what decides it, and the rest become Claude's calls the author can flip. The answers go into the plan, and the build starts as soon as the last is in, step by step. Use when plan-flows approves a plan, and whenever the person asks to check, question or approve a plan in docs/plans, or to start building one.
 ---
 
 # Plan check
@@ -22,8 +22,8 @@ the plan: each drawing outlines what changed since the author last read it.
 
 Its approval, when it has one, is its `approved`; the fingerprint and the approval's form are in plan-format.md
 (`../plan-flows/plan-format.md` from this skill's folder). A plan not approved at its current fingerprint is approved
-by running plan-check: step 4 writes it once every question is answered. Questions still open under Questions from
-plan-flows stay on the page, and the author answers them together with plan-check's.
+by running plan-check: step 4 writes it once every question is answered. Questions plan-flows
+left open stay on the page, at their steps, and the author answers them together with plan-check's.
 
 ## 2. Find what the plan leaves open
 
@@ -57,8 +57,12 @@ from this skill's folder):
 > - **A pinned behaviour**: a test the change breaks, or a behaviour a test pins that the plan doesn't mention.
 > - **A contradiction**: a doc, recorded decision or comment the plan contradicts, or two parts of the plan that
 >   disagree.
+> - **An untested unknown**: something the plan rests on that only building and running can settle, which its
+>   `whole` doesn't name or no step tests; or a step whose `see` nobody could look at.
+> - **A hidden trade-off**: a step built one way where another sensible way exists, with no `trade` saying what was
+>   chosen over what and what it costs; or a `trade` whose cost the code or its docs show is larger than it says.
 >
-> Leave out what is already under Already settled, what the plan's Questions sections already ask, and any finding
+> Leave out what is already under Already settled, what the plan's steps already ask, and any finding
 > whose answer changes nothing anyone gets. Done when every premise has been traced or looked up, every changed step
 > has been checked for each kind, and every caller and test of the code it touches has been read.
 >
@@ -68,8 +72,9 @@ from this skill's folder):
 >
 > Return the findings, with the one that changes most for the people using the code first, each as:
 >
-> - a line `### <n>. <headline, at most 12 words>`, then a line `Ask` or `Call`;
-> - a line `Changes: <the plan's cases this answer changes or adds>`;
+> - a line `### <n>. <headline, at most 12 words>`, then a line `Ask` or `Call`, then a line
+>   `Step: <the title of the step it belongs to>`;
+> - a line `Changes: <the plan's steps and cases this answer changes or adds>`;
 > - for **Call**: one `settled` item in a `json` block, `"who": "Claude"`, `"how": "claude"`, your pick in `text`, the
 >   other options in `alternatives`, and in `from` what supports your pick (a test by name, `file:line`, a doc, a
 >   rule); then the case it adds or changes, as plan-format.md's case gives it;
@@ -80,7 +85,9 @@ from this skill's folder):
 >   step of `today` draws the case's example as it stands, as a picture, and each option draws what would be different
 >   under it, as `<teaching.md>`'s The worked example and Questions that check the reading say. Recommend first the one that
 >   the code, a test, a doc or the plan's own reason supports, and say which in `why` (a test by name, `file:line`, a
->   doc, a decision). When nothing supports any of them, recommend the safest one for the people using the code, and say
+>   doc, a decision), and in `decides` the facts about the author's own situation that make each option the right one, naming no
+>   recommendation. When
+>   nothing supports any of them, recommend the safest one for the people using the code, and say
 >   so. What an outside thing does under an option comes from its docs, linked in `why`.
 >
 > Return "Nothing to ask" when there is no finding.
@@ -102,10 +109,11 @@ When the subagent returns:
    `today` chart or an option the code contradicts, and drop a finding the plan already answers. A false premise is
    settled by the code, never by what the plan says, which is the claim in question. Check its sorting too: a finding
    marked Ask that you would bet on is a Call, and a Call whose wrong bet would be costly to undo is an Ask.
-2. Put each Ask's `choice` under Questions from plan-check, in the subagent's order, numbered on from the highest
-   question still open. Put each Call's item under Already settled, and add or change the case it names under What
-   changes, case by case.
-3. Say in What I'm asking how many questions are open and how many calls plan-check added for the author to flip.
+2. Put each Ask's `choice` into the `choices` of the step it belongs to, numbered on from the highest question
+   still open, in the subagent's order. Put each Call's item under Already settled, and add or change the case it
+   names in the step that makes it come true, and the step's trade-off when the finding changes it. Keep `wrongIf`
+   to two calls across the whole page: when a finding matters more than one that has it, move it.
+3. Say in `whole`'s `asking` how many questions are open and how many calls plan-check added for the author to flip.
 4. Draw the page by plan-flows' step 3 (`../plan-flows/SKILL.md`); its one cold read covers the new questions. Ask
    at once, while it runs: the author answers each question by picking an option on the page and flips any call they'd
    make differently, which copies the answers (`3 A`, or `1 A, 3 B, call 4 B` for several) to paste into the chat, by
@@ -129,5 +137,6 @@ Done when the page shows every answer, outlined, and `approved` matches the plan
 The author's last answer is their go-ahead: answering plan-check's questions is the last thing they do before the
 code, so start building at once, in the same turn, without asking whether to. The harness's own permission prompts
 apply as usual. Say in a line that the plan is approved and the build has started. Build by plan-flows' step 7
-(`../plan-flows/SKILL.md`): it asks the author nothing the plan answers, and shows every plan change with the code
-before anything is committed.
+(`../plan-flows/SKILL.md`), step by step: each step's result goes on the page beside what the plan promised, the build
+stops for the author when the two differ, every plan change is shown with the code before anything is committed, and
+when the last step is done its step 8 has the author tell back what was built.

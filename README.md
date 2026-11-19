@@ -1,17 +1,18 @@
 # Flowtrace
 
-Flowtrace is a plugin for Claude Code and Codex, by [Perillo](https://perillo.ai). Its four skills help you understand a
-change before you make it or approve it, by drawing a page you can read, answer and comment on.
+Flowtrace is a plugin for Claude Code and Codex, by [Perillo](https://perillo.ai). Its three skills help you understand a
+change before you make it or approve it, well enough to steer it, by drawing a page you can read, answer and comment
+on.
 
 | Skill | What it does |
 |---|---|
-| `plan-flows` | Plans a change before any code, from the code it touches. Its page draws each case the change handles differently, today beside after, asks only what you alone can decide, and lists Claude's other calls for you to flip. You answer and approve it. |
-| `plan-flows-tech` | Draws a plan's technical page, for the engineer who builds it: how the pieces fit and what each runs on, the ideas behind the approach drawn on the plan's example, why each technology beats the obvious way, and how each case runs through the pieces. `plan-flows` draws it by itself when a change adds a part or connects parts; run it yourself any time you want it. |
+| `plan-flows` | Plans a change before any code, as a storyboard: the problem today and the whole thing first, then every step in the order it is built. Each step has a picture of the example, the gist in a sentence or two, how it works drawn frame by frame on the example with the detail noted on each frame, the trade-off made there (what was chosen, over what, and what it costs) and what you will see when it works. A switch hides the technical parts. It asks only what you alone can decide, at the step each question belongs to, and lists Claude's calls most likely to be wrong for you to flip. During the build each step shows its result beside what the plan promised and where its code is, and the build stops for you when they differ. When the build is done you explain it back in your own words, and Claude says what your account missed. |
 | `plan-check` | Has a fresh subagent test what the approved plan takes as true and find the cases it leaves open, then asks you each one. |
-| `explain` | Explains how something works, or asks you to choose, case by case: one chart for each situation, today beside after for a change, following one worked example drawn as you would see it. It asks only a choice that is yours to make, lists its own calls for you to flip, and records each decision with who made it and when. `plan-flows` is the same teaching with research for a better way, its questions, and a plan to approve and build from. |
+| `explain` | Explains how something works, or asks you to choose, case by case: one chart for each situation, today beside after for a change, following one worked example drawn as you would see it. It asks only a choice that is yours to make, lists its own calls for you to flip, and records each decision with who made it and when. `plan-flows` is the same teaching with research for a better way, a storyboard of every step, and a plan to approve and build from. |
 
 In Claude Code a skill runs as `/flowtrace:plan-flows`, and in Codex as `$flowtrace:plan-flows`. Claude or Codex may also
-start one by itself when your request fits it: `plan-flows` when a change adds or alters behaviour, `explain` when you
+start one by itself when your request fits it: `plan-flows` when a change adds or alters behaviour, or when you want
+to build something while learning how it works, `explain` when you
 must choose or ask how something works.
 
 ## Install
@@ -73,15 +74,17 @@ Everything below happens for the person using the plugin. Nothing else in this r
 **On your machine**
 
 - The skills read your code, and write plans under `docs/plans` when you plan a change: the plan, the notes its research and code
-  reading returned, and for a large change its technical page's data. They make no commit and switch no
+  reading returned, and `docs/plans/learned.md`, a record of what you have explained in your own words and what
+  your account missed, which the next plan reads so it explains nothing to you twice. They make no commit and switch no
   branch.
 - Once you approve a plan, or run `plan-check` on it, your approval is written into the plan with the moment you gave it, and each decision the plan records says who made it, how and when. When its last question is
-  answered, the skill starts building at once, changing your code under your harness's usual permissions, and shows you
-  every change before anything is committed.
+  answered, the skill starts building at once, one step of the plan at a time, changing your code under your
+  harness's usual permissions. It writes what each step showed into the plan, stops when a step shows something other
+  than what the plan promised, and shows you every change before anything is committed.
 - `page/page.mjs` draws each page from a data file, to a temporary folder. It runs `git` to look up names and the default
   branch. It makes no network call of its own. A step's picture of the example is HTML or SVG a skill writes; the script
   refuses one that would run anything or load anything from elsewhere.
-- `plan-flows`, `plan-flows-tech`, `plan-check` and `explain` share their rules on teaching a reader in `skills/teaching.md`, which each
+- `plan-flows`, `plan-check` and `explain` share their rules on teaching a reader in `skills/teaching.md`, which each
   reads before its first step.
 
 **A hook, in every session in the Claude app**
@@ -96,6 +99,8 @@ imports only Node's file reading, and sends nothing anywhere.
 
 - **Google Fonts.** Opening a page loads its fonts from `fonts.googleapis.com` and `fonts.gstatic.com`, which see your IP
   address as for any web font. No page content goes with the request.
+- **What you write on a page.** A pick, a flipped call, what you type at a stopped step and your account of the
+  finished build go to the chat you are in, sent where the page can send or copied for you to paste, and nowhere else.
 - **Published pages.** In Claude Code, the skills, and Claude when the hook asks, may publish a page through Claude's
   Artifact tool, private to you unless you share it. A page holds what the skill wrote about your code. In Codex, a page is shown with its visualize skill.
 - **Web searches.** `plan-flows` may start subagents that search the web for how a thing is best done, in your harness's
@@ -109,7 +114,7 @@ Nothing else leaves your machine: the plugin names no server of its own. Perillo
 `observations/` holds what outside tools were seen to do, each with the small script that captured it
 (`*.probe.mjs`). Those probes are for people working on this plugin. The plugin never runs them, and each says what it
 runs: `plugin-hook-deny.probe.mjs` runs one `claude -p` turn, which calls a
-model; `skill-reads-teaching.probe.mjs` runs four `claude -p` turns, one per skill, which call a model;
+model; `skill-reads-teaching.probe.mjs` runs three `claude -p` turns, one per skill, which call a model;
 `transcript-rows.probe.mjs` reads the transcripts you name; `plugin-marketplace-and-manifest.probe.mjs` runs the
 Codex CLI on scratch folders, with no model; `import-meta-dirname.probe.mjs` prints what Node gives.
 

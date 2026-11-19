@@ -1,8 +1,8 @@
 {
   "name": "flowtrace",
   "displayName": "Flowtrace",
-  "version": "0.20.0",
-  "description": "Plan a change before any code, and explain one to someone who has never seen it. plan-flows reads the code the change touches, researches how it is best done, writes the plan and draws its page for you to read, answer and approve; plan-check then questions the approved plan; explain teaches how something works or asks you to choose, with one worked example traced through today and after. In the Claude app, a hook holds a choice in the next-step box until its page is out.",
+  "version": "0.21.0",
+  "description": "Plan a change before any code, well enough to steer it, and explain one to someone who has never seen it. plan-flows reads the code the change touches, researches how it is best done, and draws the plan as a storyboard: every step in order, each with a picture, the gist, how it works and the trade-off made there; during the build the page shows each step's result beside what was promised. plan-check then questions the approved plan; explain teaches how something works or asks you to choose, with one worked example traced through today and after. In the Claude app, a hook holds a choice in the next-step box until its page is out.",
   "author": {
     "name": "Perillo"
   },

@@ -219,6 +219,9 @@ tr.since td { background: var(--note-soft); }
   td { border-bottom: 0; padding: 4px 12px; }
   tr { border-bottom: 1px solid var(--line); padding: 6px 0; }
   td:first-child { width: auto; }
+  /* A picture's table is the picture: it keeps its rows and columns, and scrolls sideways when it must. */
+  .pic table { display: table; } .pic thead { display: table-header-group; } .pic tbody { display: table-row-group; }
+  .pic tr { display: table-row; padding: 0; border-bottom: 0; } .pic :is(th, td) { display: table-cell; padding: 3px 8px; border-bottom: 1px solid var(--line); }
   .settled li { grid-template-columns: 1fr; gap: 2px; }
 }
 
@@ -272,3 +275,145 @@ button.flip-pick[aria-pressed="true"] { border-color: var(--ok); background: var
 tr.call.flipped .was { text-decoration: line-through; color: var(--muted); }
 .flipped-line { margin-top: 8px; }
 .flipped-line code { user-select: all; }
+
+/* A plan's whole thing: what the change gives, large, its picture, then a labelled line each and the map of plans. */
+.whole { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; max-width: 90ch; }
+.whole .problem { margin: 0 0 12px; max-width: 70ch; }
+.whole .gets { font: 600 1.3rem/1.35 var(--display); margin: 0 0 12px; max-width: 46ch; }
+.whole .gets .lbl { font: 400 11px/1.6 var(--body); }
+.whole .asking { font-weight: 500; color: var(--accent); max-width: 70ch; }
+.whole-pic { margin: 0 0 12px; }
+.whole-pic .pic, .step-pic .pic, .frame .pic { overflow-x: auto; max-width: 100%; padding: 10px; border: 1px dashed var(--line); border-radius: 8px; background: var(--bg); }
+:is(.whole-pic, .step-pic, .frame) .pic svg { max-width: 100%; height: auto; }
+:is(.whole-pic, .step-pic, .frame) .pic table { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; min-width: 0; width: auto; }
+:is(.whole-pic, .step-pic, .frame) .pic :is(th, td) { border: 1px solid var(--line); padding: 3px 8px; width: auto; }
+:is(.whole-pic, .step-pic, .frame) .pic-src { font: 400 11px/1.4 var(--mono); color: var(--muted); margin-top: 4px; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 12px 0 0; }
+.facts dt { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding-top: 2px; }
+.facts dd { margin: 0; }
+.map { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 14px 0 0; counter-reset: plan; }
+.map li { counter-increment: plan; border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; font-size: 13.5px; color: var(--muted); background: var(--bg); }
+.map li::before { content: counter(plan) ". "; font-weight: 600; }
+.map li.here { color: var(--fg); border-color: var(--ok); background: var(--ok-soft); }
+
+/* The switch: the gist and the technical parts, or the gist alone. */
+.seg { display: inline-flex; margin-top: 14px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--card); max-width: 100%; flex-wrap: wrap; }
+.seg button { font: 500 14px var(--body); border: 0; background: none; padding: 7px 14px; color: var(--muted); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.gist-only .tech { display: none; }
+
+/* Every step's name on one line, in order; those holding a question for the author shaded. */
+.storyhead { margin-top: 22px; }
+.storyline { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 6px; }
+.storyline li { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.storyline li + li::before { content: "→"; color: var(--muted); }
+.storyline a { color: var(--fg); text-decoration: none; background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; }
+.storyline a:hover { border-color: var(--accent); }
+.storyline .n { font-weight: 600; color: var(--accent); }
+.storyline .mine a { border-color: var(--note); background: var(--note-soft); }
+
+/* The steps: the number, the picture of the example beside the gist, how it works, the trade-off and what you will see. */
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.step { display: grid; grid-template-columns: 40px minmax(0, 2fr) minmax(0, 3fr); gap: 10px 22px; padding: 26px 0; border-top: 1px solid var(--line); align-items: start; }
+.step .num { font: 600 28px/1 var(--display); color: var(--accent); }
+.step-pic { min-width: 0; }
+.step-pic .cap { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+.step-head { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.step-head > h3 { margin: 0; }
+.step-body { grid-column: 2 / -1; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.step-body h4 { margin: 0 0 4px; font: 600 12px var(--body); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.step .gist { font-size: 17px; line-height: 1.5; margin: 0; max-width: 70ch; }
+.tech { display: flex; flex-direction: column; gap: 10px; }
+.tech > h4 { margin: 0; }
+.tech > :last-child { margin-bottom: 0; }
+/* How it works, drawn: the example at each moment of the step, one frame under the other, so each picture has the
+   width it needs: the picture on the left, its caption and notes beside it. */
+.frames { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 28px; max-width: 1100px; }
+.frame { position: relative; display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 8px 20px; align-items: start; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; min-width: 0; }
+.frame + .frame::before { content: "↓"; position: absolute; top: -25px; left: 17px; color: var(--muted); font-size: 16px; line-height: 1; }
+.frame .fhead { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; min-height: 20px; }
+.frame .fn { flex: none; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: var(--bg); font: 600 12px/1 var(--body); font-variant-numeric: tabular-nums; }
+.frame .part { font: 600 10.5px/1.5 var(--mono); letter-spacing: .03em; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 0 6px; }
+.frame .fpic { grid-column: 1; min-width: 0; }
+.frame .pic { font-size: 13px; line-height: 1.45; }
+.frame .fwords { grid-column: 2; min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+.frame .fcap { margin: 0; font-size: 15px; line-height: 1.45; font-weight: 500; }
+@media (max-width: 720px) { .frame { grid-template-columns: minmax(0, 1fr); } .frame .fwords { grid-column: 1; } }
+.tech > .pic-src { font: 400 11px/1.4 var(--mono); color: var(--muted); margin-top: -4px; }
+.decides { max-width: 80ch; }
+.breaks { margin: 0; font-size: 15px; max-width: 80ch; border-left: 3px solid var(--bad); padding-left: 10px; }
+.frame .fnotes { margin: 0; padding-left: 1.1em; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
+.frame .fnotes li + li { margin-top: 3px; }
+.more-how { max-width: 90ch; display: flex; flex-direction: column; gap: 8px; }
+.more-how h5 { margin: 0; font: 600 12px var(--body); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.more-how :is(ul, ol) { margin: 0; font-size: 14.5px; }
+.more-how figure { margin: 0; }
+.tech figure { margin: 8px 0; }
+.tech table { min-width: 0; }
+.tech td:first-child { width: auto; }
+.step-cases h3 { font-size: 1.05rem; margin: 10px 0 4px; }
+.step-cases figure { margin: 6px 0 12px; }
+.trade { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; max-width: 80ch; }
+.trade dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; font-size: 15px; }
+.trade dt { font-weight: 600; white-space: nowrap; }
+.trade dd { margin: 0; }
+.see { font-size: 15px; margin: 0; }
+.step .tag.mine { color: var(--note); }
+.step .tag.unk { color: var(--accent); }
+.step-choices .decision { margin: 0; }
+.step-choices .ask { margin: 6px 0 0; }
+@media (max-width: 680px) { .step { grid-template-columns: 32px minmax(0, 1fr); } .step-pic, .step-head, .step-body { grid-column: 2; } }
+
+/* Where the build stands at each step: its state, what the plan promised beside what it showed, and on a stopped step
+   its causes and a box for the author's words. */
+.state { display: inline-block; font: 500 11.5px var(--body); letter-spacing: .05em; text-transform: uppercase; padding: 0 8px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; vertical-align: 2px; }
+.state.done { color: var(--ok); } .state.now { color: var(--accent); } .state.stopped { color: var(--bad); background: var(--bad-soft); } .state.not { color: var(--muted); }
+.step.stopped { box-shadow: inset 4px 0 0 var(--bad); padding-left: 10px; }
+.seesaw { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13.5px; max-width: 80ch; }
+.seesaw > div { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; min-width: 0; overflow-wrap: anywhere; }
+.lbl { display: block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.found { margin: 0; font-size: 13.5px; max-width: 80ch; }
+.built ul { margin: 0; padding-left: 1.2em; font-size: 13.5px; max-width: 80ch; }
+.built .does { display: block; color: var(--muted); font-size: 12.5px; }
+.causes ol { margin: 0; padding-left: 1.3em; font-size: 13.5px; }
+.causes .check { display: block; color: var(--muted); font-size: 12.5px; }
+
+/* The author's own words, at a stopped step and in Tell it back: a place to write and a button that works once something
+   is written. */
+.step-say, .say { display: grid; gap: 6px; max-width: 74ch; }
+.say { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin-top: 14px; }
+:is(.say, .step-say) .qt { font-weight: 600; margin: 0; }
+:is(.say, .step-say) textarea { font: 400 14px/1.45 var(--body); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; resize: vertical; min-height: 4em; }
+:is(.say, .step-say) textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.say-go button { font: 600 14px var(--body); padding: 6px 14px; border-radius: 7px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--fg); cursor: pointer; }
+.say-go button:disabled { opacity: .5; cursor: not-allowed; }
+.say-go button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:is(.say, .step-say) code { user-select: all; justify-self: start; }
+:is(.say, .step-say) .desc { margin: 0; font-size: 13px; }
+.tell h3 { margin: 0; }
+.told { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin-top: 14px; max-width: 80ch; }
+.told h3 { margin-top: 0; }
+.told blockquote { margin: 8px 0; padding-left: 12px; border-left: 3px solid var(--accent-soft); }
+.told h4 { margin: 10px 0 2px; font: 600 12px var(--body); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.told ul { margin: 0; padding-left: 1.2em; }
+
+/* Every trade-off, in the order it is made. */
+table.trades td:first-child { width: 4em; color: var(--accent); font-variant-numeric: tabular-nums; }
+table.trades tr.mine td { background: var(--note-soft); }
+
+/* A question for the author: what decides it before its options. */
+.decision .decides p { margin: 0 0 8px; max-width: 74ch; }
+
+/* Already settled on a plan: the calls most likely to be wrong first, the others folded under a line counting them. */
+h4.sub { margin: 14px 0 6px; font: 600 13px var(--body); letter-spacing: .04em; text-transform: uppercase; color: var(--note); }
+.wrong-if { margin: 4px 0 0; font-size: 13px; color: var(--note); }
+details.more-calls { margin: 10px 0; }
+details.more-calls > summary { cursor: pointer; font-size: 14px; color: var(--accent); padding: 4px 0; }
+details.more-calls > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+details.more-calls + .tablewrap, .tablewrap + .tablewrap { margin-top: 10px; }
+@media (max-width: 640px) { .seesaw { grid-template-columns: 1fr; } .facts { grid-template-columns: 1fr; gap: 0; } .facts dd { margin-bottom: 8px; } }
+
+/* A name the field calls by another, its own name beside it. */
+.names .usual { font-size: 12.5px; color: var(--muted); margin-right: 4px; }
+.names .usual::after { content: " ·"; }

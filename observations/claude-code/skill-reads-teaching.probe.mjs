@@ -1,5 +1,5 @@
 /* global console, process */
-// Runs each of the plugin's four skills once in `claude -p`, with this repository loaded by --plugin-dir, in a throwaway
+// Runs each of the plugin's three skills once in `claude -p`, with this repository loaded by --plugin-dir, in a throwaway
 // repository holding one small file and one plan, and prints which files Claude read, in order, before its turns ran
 // out. `--tools` leaves Claude only Read, Glob and Grep, and anything that would ask permission is refused, so nothing is
 // written, run or published (`--allowedTools` alone only approves tools ahead and leaves the others in reach). Each turn
@@ -27,7 +27,6 @@ const prompts = {
   explain: "/flowtrace:explain how does exportOrder in orders.ts reach the warehouse?",
   "plan-flows": "/flowtrace:plan-flows retry exportOrder in orders.ts once when the warehouse times out",
   "plan-check": "/flowtrace:plan-check docs/plans/retry.json",
-  "plan-flows-tech": "/flowtrace:plan-flows-tech docs/plans/retry.json",
 };
 const seen = [];
 for (const [skill, prompt] of Object.entries(prompts)) {

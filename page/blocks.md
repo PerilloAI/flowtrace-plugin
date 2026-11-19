@@ -15,7 +15,8 @@ node <this folder>/page.mjs now                                # this moment, as
 - **It checks first.** On a failure it prints every problem, each with its line in your file (a missing comma, a key
   the format doesn't have, a broken rule), and writes nothing. Fix the file and run it again.
 - **It prints one line of JSON**: the page's path (`page`), and for a plan its `fingerprint`, whether it is `approved`
-  at that fingerprint, and its counts.
+  at that fingerprint, and its counts: `cases`, `questions`, `minutes` (the whole page), `gist` (the gist alone) and
+  `steps`.
 - **It outlines what changed** since the person last read the page. `seen` keeps a copy of the file as they have read
   it: run it when their message arrives, before you edit the file. Every drawing after outlines what differs from that
   copy. `--since <copy.json>` compares with another copy.
@@ -44,8 +45,9 @@ node <this folder>/page.mjs now                                # this moment, as
 }
 ```
 
-`pictures`, before `sections`, holds each picture more than one step shows (Pictures, below). A plan also takes `approved` and `reviewPage` (plan-format.md), and may open with `intro`, a `content` list before the
-first section. Each item of a `content` list is one object with one key:
+`pictures`, before `sections`, holds each picture more than one step shows (Pictures, below). A plan also takes
+`approved`, `reviewPage`, `build` and `told` (plan-format.md), and may open with `intro`, a `content` list before the first
+section. Each item of a `content` list is one object with one key:
 
 | Item | What it draws |
 |---|---|
@@ -55,9 +57,11 @@ first section. Each item of a `content` list is one object with one key:
 | `{ "table": { "head": ["…", "…"], "rows": [["…", "…"]] } }` | a table, each row one text per heading |
 | `{ "code": { "lang": "sh", "lines": ["…", "…"] } }` | code, shown as written |
 | `{ "chart": { … } }` | a flowchart (below) |
-| `{ "case": { … } }` | one situation: `title`, `gets`, and `today` beside `after` for a change or `steps` for how something works (teaching.md, Cases) |
-| `{ "flow": { … } }` | a way in through the code, step by step (below); never on a plan |
-| `{ "question": { … } }`, `{ "choice": { … } }`, `{ "settled": [ … ] }`, `{ "names": [ … ] }` | below |
+| `{ "case": { … } }` | one situation: `title`, `gets`, and `today` beside `after` for a change or `steps` for how something works (teaching.md, Cases); on a plan, only inside a step |
+| `{ "flow": { … } }`, `{ "question": { … } }` | a way in through the code, step by step, and a question that checks the reading (below); never on a plan |
+| `{ "choice": { … } }` | a decision for the person (below); on a plan, only inside a step |
+| `{ "settled": [ … ] }`, `{ "names": [ … ] }` | below |
+| `{ "whole": { … } }`, `{ "step": { … } }` | on a plan only, below |
 
 ## chart
 
@@ -133,8 +137,9 @@ frame, image, link, form, `id`, `on…` attribute, nothing that loads from elsew
 
 ## question
 
-A question that checks the reading: its case charted up to the step it asks about, with the example drawn as it stands
-there, and each option charted on from there to what the person gets, drawn as a card holding its chart.
+A question that checks the reading, on an explanation: its case charted up to the step it asks about, with the example
+drawn as it stands there, and each option charted on from there to what the person gets, drawn as a card holding its
+chart.
 
 ```json
 { "question": {
@@ -157,7 +162,7 @@ on an option's words, or anywhere else on its card but a link or a button in it,
 Write the options about the same length, so the right one doesn't stand out. **Checked**: three different options,
 each with its chart, `answer` the right one's letter, a `read` that names a part of the page, and no `result` on an
 option's steps, which would give the answer away. Across the page, the right option doesn't sit in the same place
-every time.
+every time, and a page asks no more than two.
 
 The reader answers from the question alone, so it holds its own picture of the example (a step's `shows`), even when
 a chart elsewhere on the page draws the same one, which it then shows by its name (`use`). **Checked**: at least one step of the case holds a picture, and
@@ -178,9 +183,13 @@ One decision, charted on one real case under each option, the recommendation fir
     { "name": "Retry once", "steps": [ { "text": "The case under the recommended option", "kind": "start", "shows": { "html": ["<table>", "…", "</table>"] } } ] },
     { "name": "Don't retry", "steps": [ { "text": "The same case under this one", "kind": "start" } ] }
   ],
-  "why": "Why the recommendation: a test, a file and line, a doc, a decision, or the reason"
+  "why": "Why the recommendation: a test, a file and line, a doc, a decision, or the reason",
+  "decides": "On a plan: the facts about the person's own situation that make each option the right one"
 } }
 ```
+
+On a plan a choice sits in the `choices` of the step it belongs to, written as the object inside `{ "choice": … }`.
+`decides`, on a plan only, is drawn before the options, as "What decides it", and names no recommendation.
 
 Each option is drawn as a card holding its chart, which the reader picks with a click on its words or anywhere else on
 it but a link or a button in it. Picking one gives the chat its answer: sent where the page can
@@ -190,7 +199,7 @@ the letter and the option's name (`A · Retry once`).
 
 The first of `options` is the recommended one; they are lettered A, B, C, D in order. A plan numbers each choice and
 adds `today` (plan-format.md); an explanation leaves both out. **Checked**: 2 to 4 options, and one `alternatives` text per
-option after the first.
+option after the first; on a plan, `decides` on each; on an explanation, no `decides`.
 
 The person decides from the choice alone, so it holds its own picture of the example (a step's `shows`): the case as
 it stands, and under each option what the person would get where they would see it. **Checked**: at least one step
@@ -202,7 +211,7 @@ holds a picture, of `today` on a plan, of an option's chart on an explanation.
 { "settled": [
   { "who": "Sam", "how": "said", "at": "2026-11-14T09:30:00-05:00", "text": "What was settled" },
   { "who": "Sam", "how": "rule", "from": "AGENTS.md", "text": "A rule from a file" },
-  { "who": "Claude", "how": "claude", "text": "A call the person hasn't made", "alternatives": ["What else they could pick"] }
+  { "who": "Claude", "how": "claude", "text": "A call the person hasn't made", "alternatives": ["What else they could pick"], "wrongIf": "What about the person's situation would make this call wrong" }
 ] }
 ```
 
@@ -219,11 +228,14 @@ each decision):
   file's history holds it), and neither has Claude's call: it stands once the person answers the page, or on a plan,
   once it is approved.
 - `alternatives`: on Claude's call only, what else the person could pick, each a flip on the page.
+- `wrongIf`: on a plan, on the one or two of Claude's calls most likely to be wrong. The page draws those first, under
+  "Calls most likely to be wrong", each with its `wrongIf` and its flip, and folds Claude's other calls under a line
+  that counts them.
 
 ## flow
 
 A way in through the code, from what starts it down to what the caller gets, for an explanation (a plan
-draws cases instead). Write one for each way in that the change adds or touches.
+draws cases in its steps instead). Write one for each way in that the change adds or touches.
 
 ```json
 { "flow": { "name": "The way in, in plain words", "steps": [
@@ -261,9 +273,106 @@ One item per name a newcomer wouldn't know, in alphabetical order, `also` holdin
 
 ```json
 { "names": [
-  { "name": "warehouse service", "also": ["warehouse"], "text": "the service that holds stock and answers each export's questions" }
+  { "name": "warehouse service", "also": ["warehouse"], "text": "the service that holds stock and answers each export's questions" },
+  { "name": "letter table", "usual": "ToUnicode map", "text": "the table in a font that says which letter each shape is" }
 ] }
 ```
 
+`usual` is the name the field uses for a thing the page calls by a plain word, drawn beside it, so a reader who goes
+on to the field's own docs knows what to search for.
+
 Pointing at, clicking or tapping any mention of a name shows its line beside it, so each name means one thing: where
 the same word means something else, reword the sentence.
+
+## whole
+
+A plan's first item: the whole change, in a few lines. Its keys and what each says are in plan-format.md (whole).
+
+```json
+{ "whole": {
+  "problem": "What is wrong today, on the example, in a sentence or two",
+  "gets": "What the change gives a person, in a sentence or two",
+  "shows": { "html": ["…"] },
+  "for": "Who it is for", "in": "What it covers", "out": "What it leaves out for now",
+  "assumes": "What the page takes its reader to know",
+  "unknown": "What nobody knows yet, and the step that tests it",
+  "asking": "What they approve, and which steps hold a question for them",
+  "map": [ { "text": "This plan, in a line", "here": true }, { "text": "The next plan" } ]
+} }
+```
+
+`shows` is a picture as on a chart's step (Pictures), or `{ "use": "…" }`. The page draws `gets` large with the
+picture under it, then `asking`, then the rest as a short list of labelled lines (For, In, Left out for now, Assumes,
+Not known yet), and the `map` as a row of plans with this one marked. Under it the page adds what it works out itself:
+
+- **Everything that will happen, in order**: every step's `label`, or its `title` when it has none, on one line,
+  numbered, each a link to its step, the steps holding a question for the person shaded.
+- **How long it takes to read**: the gist alone and the whole page, at 230 words a minute over every text the reader
+  reads: all of the page's texts but its pictures, Names, Claude's folded calls and the `build` and `told` records.
+  The gist alone also leaves out every step's `how`. Neither has a limit.
+
+A `chart` of the parts may follow `whole` (plan-format.md, Sections). **Checked**: a plan has exactly one `whole`,
+first in The whole thing, with every key but `unknown` and `map`; The whole thing holds nothing else but that one
+chart; a `map` marks exactly one plan `here`.
+
+## step
+
+One step of a plan's storyboard, under What will happen, in order, one for each step in the order they are built.
+What each key says is in plan-format.md (step).
+
+```json
+{ "step": {
+  "title": "Read every letter on a page, with where it sits",
+  "label": "Letters",
+  "shows": { "use": "inside invoice 1042" },
+  "caption": "Each letter of invoice 1042, placed where the file says.",
+  "gist": "The file stores shapes and where each one goes, not words, so this step collects them.",
+  "how": {
+    "frames": [ { "part": "…", "shows": { "html": ["…"] }, "text": "…", "notes": ["…"] }, … ],
+    "decides": [ { "number": "…", "decides": "…" } ],
+    "breaks": "…",
+    "more": [ { "table": { … } } ]
+  },
+  "trade": { "chose": "…", "over": "…", "because": "…", "costs": "…" },
+  "cases": [ { "title": "…", "gets": "…", "today": [ … ], "after": [ … ] } ],
+  "choices": [ { "number": 1, "question": "…", … } ],
+  "see": "1,210 letters, each in its place, matching the page by eye",
+  "unknown": true
+} }
+```
+
+- `shows` is a picture as on a chart's step (Pictures), drawn beside the step's words, with `caption` under it.
+- `how` is drawn under How it works, and holds no paragraph. Its `frames` are drawn one under the other,
+  numbered, each a card as wide as the step: the part that acts, the frame's picture on the left, and beside it its
+  caption with its `notes` as small points. A picture has the room a table or a request needs, so it is not cut off. A `how` with a `chart` in place of `frames` draws that flowchart. Then `decides` as a table of each number and
+  what it decides, `breaks` as Where it goes wrong first, and `more` (a `table`, `list`, `numbered` or `chart`) under
+  More detail. The page's switch, "The gist and the technical parts" or "The gist only", hides every step's `how` and
+  nothing else.
+- `trade` is drawn as The trade-off: Chose, Over, Because and It costs.
+- `cases` and `choices` hold cases and choices as `case` and `choice` give them, each written as the object inside
+  `{ "case": … }` or `{ "choice": … }`. Cases are drawn under What a person gets.
+- `see` is drawn as You will see, until the build reaches the step.
+
+Each step is drawn as a numbered row: its picture beside its title, tagged "Your call · question <n>" when it holds a
+question and "Tests what nobody knows yet" when it carries `unknown`, and its gist; then, across the step's width, How it works, its
+cases, its trade-off or its questions, and You will see. After the last step the page draws Every trade-off, in the order it is
+made: a table of each step's number, what it chose, over what, and what it costs. A step with a question and no
+`trade` shows "Your call: question <n>" in its row.
+
+**Checked**: at least one step, and nothing else under What will happen, in order; a `gist` of fifty words or fewer;
+a `how` with `frames` or a `chart`, never both, and `breaks`: two to eight frames, each with a picture, a caption of
+twenty-five words or fewer and at most three notes of twenty-five words or fewer;
+a `trade` with all four of its texts, its `costs` naming a cost, never "nothing" or "none"; when `whole` has an
+`unknown`, exactly one step with `"unknown": true`, and otherwise none. A plan's cases and choices stand only in its
+steps.
+
+## The build on the page
+
+Once the plan has a `build` (plan-format.md, The build), each step draws where the build stands at it, tagged Done,
+Building now, Stopped for you or Not started: what the plan promised (`see`) beside what it showed (`saw`), and what
+it `found`. A stopped step draws its `causes` open, each with its `check`, and a box for the person's words, which
+gives the chat `step <n>: <their words>` the way a choice gives its answer.
+
+Once every step is done, the page asks the person to tell it back, after the last step and the trade-offs: the fixed
+question (plan-format.md, Telling it back) and a box whose words give the chat `told: <their words>`. Once the plan
+has `told`, the page draws it there instead: their account, what it had right, and what it missed.
