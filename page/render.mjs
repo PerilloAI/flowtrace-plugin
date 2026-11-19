@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { blocks, boxes, readTarget } from "./check.mjs";
+import { STEPS, WHOLE, blocks, foldsCalls, minutes, readTarget, reading } from "./check.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CSS = readFileSync(path.join(here, "page.css"), "utf8");
@@ -54,13 +54,18 @@ export function render(doc, o) {
   const comments = o.plan;
   let where = [];
 
+  const minutesSaid = (m) => (m === 1 ? "one minute" : `${m} minutes`);
+  // A plan's steps, in order, and the question numbers each holds.
+  const steps = o.plan ? blocks(doc, "step") : [];
+  const asks = (st) => st.choices.map((c) => c.number).filter((n) => n !== null);
+
   // Paragraphs, lists, subheadings, tables and code, each as the data gives it.
   const prose = (n) => {
     switch (n.type) {
       case "p":
         return `<p${cls(n.text, "prose")}>${inline(n.text)}</p>`;
       case "h3":
-        return `<h3${cls(n.text)}>${inline(n.text)}</h3>`;
+        return `<h3${n.id ? ` id="${n.id}"` : ""}${cls(n.text)}>${inline(n.text)}</h3>`;
       case "list": {
         const tag = n.ordered ? "ol" : "ul";
         return `<${tag} class="prose">${n.items.map((t) => `<li${cls(t)}>${inline(t)}</li>`).join("")}</${tag}>`;
@@ -114,21 +119,37 @@ export function render(doc, o) {
   // calls can be flipped to one of its alternatives, which adds "call <n> <letter>" to the answers given to the chat.
   const approvedAt = doc.approved?.split(" · ")[1] ?? null;
   const moment = (at) => esc(at.replace("T", " ").replace(/([+-]\d{2}:\d{2}|Z)$/, " $1"));
-  let calls = 0;
+  // Claude's calls are numbered in the order the file holds them, however the page groups them.
+  const callNumber = new Map(blocks(doc, "settled").flatMap((b) => b.rows).filter((r) => r.how === "claude").map((r, k) => [r, k + 1]));
+  const calls = callNumber.size;
   const settledTable = (rows) => {
+    if (!rows.length) return "";
     const body = rows.map((r) => {
       const key = `${r.who}: ${r.how}: ${r.text}: ${r.alternatives.join("|")}`;
       if (r.how !== "claude") {
         const by = { chose: `${esc(r.who)} chose`, said: `${esc(r.who)} said`, rule: "A rule" }[r.how];
         return `<tr${cls(key)}><td>${inline(r.text)}</td><td><span class="by ${r.how}">${by}</span></td><td class="when">${r.at ? moment(r.at) : ""}</td><td class="from">${r.from ? inline(r.from) : ""}</td></tr>`;
       }
-      const n = ++calls;
+      const n = callNumber.get(r);
       const flips = r.alternatives.map((a, k) => `<button type="button" class="flip-pick" aria-pressed="false" data-line="call ${n} ${"BCD"[k] ?? "?"}"><span class="letter">${"BCD"[k] ?? "?"}</span><span>${inline(a)}</span></button>`).join("");
       const when = o.approvedNow && approvedAt ? `Accepted with the plan, ${moment(approvedAt)}` : o.plan ? "Accepted when you approve" : "Stands unless you flip it";
-      return `<tr class="call${since(key)}" data-call="${n}"><td><span class="was">${inline(r.text)}</span>${o.approvedNow ? "" : `<button type="button" class="flip" aria-expanded="false">Flip</button><div class="flips">${flips}</div>`}</td><td><span class="by claude">${esc(r.who)}'s call ${n}</span></td><td class="when wait">${when}</td><td class="from">${r.from ? inline(r.from) : ""}</td></tr>`;
+      const wrong = r.wrongIf ? `<p class="wrong-if"><strong>Wrong if:</strong> ${inline(r.wrongIf)}</p>` : "";
+      return `<tr class="call${since(`${key}: ${r.wrongIf ?? ""}`)}" data-call="${n}"><td><span class="was">${inline(r.text)}</span>${wrong}${o.approvedNow ? "" : `<button type="button" class="flip" aria-expanded="false">Flip</button><div class="flips">${flips}</div>`}</td><td><span class="by claude">${esc(r.who)}'s call ${n}</span></td><td class="when wait">${when}</td><td class="from">${r.from ? inline(r.from) : ""}</td></tr>`;
     }).join("");
-    const line = calls ? '<div class="flipped-line"><code hidden></code><p class="desc" hidden></p></div>' : "";
-    return `<div class="tablewrap"><table class="decided"><thead><tr><th>Decision</th><th>Decided by</th><th>When</th><th>From</th></tr></thead><tbody>${body}</tbody></table></div>${line}`;
+    return `<div class="tablewrap"><table class="decided"><thead><tr><th>Decision</th><th>Decided by</th><th>When</th><th>From</th></tr></thead><tbody>${body}</tbody></table></div>`;
+  };
+  const flippedLine = calls ? '<div class="flipped-line"><code hidden></code><p class="desc" hidden></p></div>' : "";
+  // On a plan, the calls most likely to be wrong come first, each saying what would make it wrong; Claude's other calls
+  // fold under a line counting them; the rest are drawn as on any page.
+  const folds = o.plan && foldsCalls(doc);
+  const settledHtml = (rows) => {
+    if (!folds) return settledTable(rows) + flippedLine;
+    const risky = rows.filter((r) => r.how === "claude" && r.wrongIf);
+    const smaller = rows.filter((r) => r.how === "claude" && !r.wrongIf);
+    const rest = rows.filter((r) => r.how !== "claude");
+    const first = risky.length ? `<h4 class="sub">Calls most likely to be wrong</h4>${settledTable(risky)}` : "";
+    const more = smaller.length ? `<details class="more-calls"><summary>Claude's other ${smaller.length === 1 ? "call" : `${smaller.length} calls`}, each yours to flip</summary>${settledTable(smaller)}</details>` : "";
+    return `${first}${more}${settledTable(rest)}${flippedLine}`;
   };
 
   const quiz = [];
@@ -156,7 +177,7 @@ export function render(doc, o) {
       }
       case "choice": {
         const title = b.number !== null ? `${b.number} · ${b.question}` : b.question;
-        const key = [title, b.recommended, ...b.alternatives, b.why].join("\n");
+        const key = [title, b.recommended, ...b.alternatives, b.why, b.decides ?? ""].join("\n");
         const ask = b.number === null ? `<p class="ask">${inline(b.question)} Pick an option to copy your answer, or answer in the chat.</p>` : "";
         // Each option is a button that gives the chat its answer: "3 A" on a plan, the letter and the option's name on an
         // explanation.
@@ -172,10 +193,12 @@ export function render(doc, o) {
         }).join("");
         // How the case goes today comes right under the question, before the options that would change it.
         const today = b.today ? `<h4 class="today">How it works today</h4><figure>${chartHtml({ items: b.today }, `${title} › Today`)}</figure>` : "";
-        return `<div class="decision${since(key)}" id="${b.id}"><h3>${inline(title)}</h3>${today}<div class="picks">${picks}</div><div class="picked"><code hidden></code><p class="desc" hidden></p></div>${b.why ? `<p class="why">${inline(b.why)}</p>` : ""}</div>${ask}`;
+        // What decides it comes before the options.
+        const decides = b.decides ? `<div class="decides"><h4 class="today">What decides it</h4><p>${inline(b.decides)}</p></div>` : "";
+        return `<div class="decision${since(key)}" id="${b.id}"><h3>${inline(title)}</h3>${today}${decides}<div class="picks">${picks}</div><div class="picked"><code hidden></code><p class="desc" hidden></p></div>${b.why ? `<p class="why">${inline(b.why)}</p>` : ""}</div>${ask}`;
       }
       case "settled":
-        if (b.rows.some((r) => r.how)) return settledTable(b.rows);
+        if (b.rows.some((r) => r.how)) return settledHtml(b.rows);
         return `<ul class="settled">${b.rows.map((r) => {
           const model = /^(Claude|Codex|the agent|the model)\b/i.test(r.who);
           const tag = model ? `<span class="tag model">${esc(r.who)}'s call</span>` : `<span class="tag who">Decided by ${esc(r.who)}</span>`;
@@ -183,7 +206,8 @@ export function render(doc, o) {
           return `<li${cls(`${r.who}: ${r.text}`)}><span>${tag}${from}</span><span>${inline(r.text)}</span></li>`;
         }).join("")}</ul>`;
       case "names":
-        return `<dl class="names">${b.rows.map((r) => `<dt id="${r.id}"${r.also.length ? ` data-also="${esc(r.also.join(","))}"` : ""}${cls(`${r.name}: ${r.text}`)}>${esc(r.name)}</dt><dd>${inline(r.text)}</dd>`).join("")}</dl>`;
+        // A name the field calls by another, its own name beside it, for whoever goes on to the field's docs.
+        return `<dl class="names">${b.rows.map((r) => `<dt id="${r.id}"${r.also.length ? ` data-also="${esc(r.also.join(","))}"` : ""}${cls(`${r.name}: ${r.usual ?? ""}: ${r.text}`)}>${esc(r.name)}</dt><dd>${r.usual ? `<span class="usual">The field calls it <b>${esc(r.usual)}</b></span> ` : ""}${inline(r.text)}</dd>`).join("")}</dl>`;
       case "flow": {
         const newFlow = b.nameMark === "+";
         where = [where[0], b.name];
@@ -192,22 +216,119 @@ export function render(doc, o) {
         const chart = `<figure><div class="chart">${col(b.items, newFlow)}</div></figure>`;
         return `<section class="flowbox" id="${b.id}">${heading}${chart}</section>`;
       }
+      case "whole": {
+        // The whole change: what it gives, its picture, what is asked, then a labelled line each and the map of plans.
+        const pic = `<figure class="whole-pic"><div class="pic">${b.shows.html.join("\n")}</div><div class="pic-src">${b.shows.from ? inline(b.shows.from) : "Drawn for this page"}</div></figure>`;
+        const line = (label, html) => `<dt>${label}</dt><dd>${html}</dd>`;
+        const facts = [
+          line("For", inline(b.for)), line("In", inline(b.in)), line("Left out for now", inline(b.out)), line("Assumes", inline(b.assumes)),
+          b.unknown ? line("Not known yet", inline(b.unknown)) : "",
+        ].join("");
+        const map = b.map ? `<ol class="map" aria-label="The plans toward the larger change">${b.map.map((m) => `<li${m.here ? ' class="here" aria-current="step"' : ""}>${m.here ? '<span class="tag rec">this plan</span> ' : ""}${inline(m.text)}</li>`).join("")}</ol>` : "";
+        return `<div class="whole${since(b.source)}"><p class="problem"><span class="lbl">The problem today</span>${inline(b.problem)}</p><p class="gets"><span class="lbl">With this plan</span>${inline(b.gets)}</p>${pic}<p class="asking">${inline(b.asking)}</p><dl class="facts">${facts}</dl>${map}</div>${storyline()}`;
+      }
+      case "step":
+        return stepHtml(b);
     }
     return "";
   };
   const node = (n) => (n.type === "block" ? block(n) : prose(n));
+
+  // Every step's name on one line, in order, each linking to its step, those holding a question for the author marked;
+  // then how many steps there are and how long the gist and the whole take to read.
+  const storyline = () => {
+    if (!o.plan || !steps.length) return "";
+    const read = reading(doc);
+    const mine = steps.filter((st) => asks(st).length);
+    const items = steps.map((st) => `<li${asks(st).length ? ' class="mine"' : ""}><a href="#${st.id}"><span class="n">${st.number}</span> ${inlineInLink(st.label ?? st.title)}</a></li>`).join("");
+    const held = mine.length ? ` ${mine.length === 1 ? `Step ${mine[0].number} holds` : `Steps ${mine.map((st) => st.number).join(", ")} hold`} a question for you, shaded.` : "";
+    return `<h3 class="storyhead">Everything that will happen, in order</h3><ol class="storyline">${items}</ol><p class="desc">${steps.length} step${steps.length === 1 ? "" : "s"}, each ending in something you can look at.${held} The gist alone reads in about ${minutesSaid(minutes(read.gist))}; the whole page, with how each step works, in about ${minutesSaid(minutes(read.total))}.</p>`;
+  };
+
+  // One step of the storyboard: its number, its picture beside its words (the gist, how it works, the cases it makes come
+  // true, the trade-off made there or the question that is the author's, and what they will see), and once the build
+  // has started, where the build stands at it: what the plan promised beside what it showed, what it found, and on a
+  // stopped step its causes and a box whose words go to the chat as "step <n>: <their words>".
+  const STATE = { now: "Building now", done: "Done", stopped: "Stopped for you", not: "Not started" };
+  const stepHtml = (st) => {
+    const n = st.number;
+    where = [where[0], `Step ${n}`];
+    const item = doc.build?.[n - 1] ?? null;
+    const state = doc.build ? item?.state ?? "not" : null;
+    const questions = asks(st);
+    const tags = [
+      state ? `<span class="state ${state}">${STATE[state]}</span>` : "",
+      questions.length ? `<span class="tag mine">Your call · question ${questions.join(", ")}</span>` : "",
+      st.unknown ? '<span class="tag unk">Tests what nobody knows yet</span>' : "",
+    ].filter(Boolean).join(" ");
+    const pic = `<div class="step-pic"><div class="pic">${st.shows.html.join("\n")}</div>${st.caption ? `<p class="cap">${inline(st.caption)}</p>` : ""}<div class="pic-src">${st.shows.from ? inline(st.shows.from) : "Drawn for this page"}</div></div>`;
+    // How it works, drawn: the example at each moment of the step, one frame under the other, each with its picture and,
+    // beside it, its caption and the notes that belong to it; or a chart when the step branches. Then the numbers that decide, where it goes wrong
+    // first, and any detail left, as lists, tables and charts.
+    const frames = () => {
+      const items = st.drawn.chart.items;
+      const strip = items.map((f, k) => {
+        where = [where[0], `Step ${n}`, `Frame ${k + 1}`];
+        return `<li class="frame cell${since(f.source)}"><div class="fhead"><span class="fn">${k + 1}</span>${f.part ? `<span class="part">${inline(f.part)}</span>` : ""}</div><div class="fpic"><div class="pic">${f.shows.html.join("\n")}</div>${f.shows.from ? `<div class="pic-src">${inline(f.shows.from)}</div>` : ""}</div><div class="fwords"><p class="fcap">${inline(f.text)}</p>${f.notes.length ? `<ul class="fnotes">${f.notes.map((t) => `<li>${inline(t)}</li>`).join("")}</ul>` : ""}</div>${cmt(f)}</li>`;
+      }).join("");
+      where = [where[0], `Step ${n}`];
+      return `<ol class="frames">${strip}</ol>${items.some((f) => !f.shows.from) ? '<div class="pic-src">Pictures drawn for this page</div>' : ""}`;
+    };
+    const decides = st.decides.length
+      ? `<div class="tablewrap decides"><table><thead><tr><th>The number</th><th>What it decides</th></tr></thead><tbody>${st.decides.map((d) => `<tr${cls(`${d.number}|${d.decides}`)}><td>${inline(d.number)}</td><td>${inline(d.decides)}</td></tr>`).join("")}</tbody></table></div>`
+      : "";
+    const breaks = `<p class="breaks${since(`breaks: ${st.breaks}`)}"><strong>Where it goes wrong first:</strong> ${inline(st.breaks)}</p>`;
+    const more = st.more.length ? `<div class="more-how"><h5>More detail</h5>${st.more.map(node).join("\n")}</div>` : "";
+    const how = `<div class="tech"><h4>How it works</h4>${st.drawn.strip ? frames() : node(st.drawn)}${decides}${breaks}${more}</div>`;
+    const cases = st.cases.length ? `<div class="step-cases"><h4>What a person gets</h4>${st.cases.map(node).join("\n")}</div>` : "";
+    const t = st.trade;
+    const trade = t ? `<div class="trade"><h4>The trade-off</h4><dl><dt>Chose</dt><dd>${inline(t.chose)}</dd><dt>Over</dt><dd>${inline(t.over)}</dd><dt>Because</dt><dd>${inline(t.because)}</dd><dt>It costs</dt><dd>${inline(t.costs)}</dd></dl></div>` : "";
+    const choices = st.choices.length ? `<div class="step-choices">${st.choices.map(node).join("\n")}<p class="ask">Pick an option to copy your answer, such as "${questions[0] ?? 1} A", and paste it into the chat. Or type it there, or use Comment on a box.</p></div>` : "";
+    const see = item
+      ? `<div class="seesaw"><div><span class="lbl">Promised</span>${inline(st.see)}</div><div><span class="lbl">Showed</span>${item.saw ? inline(item.saw) : '<span class="desc">Nothing yet</span>'}</div></div>`
+      : `<p class="see"><strong>You will see:</strong> ${inline(st.see)}</p>`;
+    const found = item?.found ? `<p class="found"><strong>Found:</strong> ${inline(item.found)}</p>` : "";
+    const code = item?.code?.length ? `<div class="tech built"><h4>Where it is in the code</h4><ul>${item.code.map((c) => `<li><code>${esc(c.where)}</code>${c.name ? ` · <code>${esc(c.name)}</code>` : ""} <span class="does">${inline(c.does)}</span></li>`).join("")}</ul></div>` : "";
+    const causes = item?.causes ? `<div class="causes"><h4>What may have caused it, the cheapest to check first</h4><ol>${item.causes.map((c) => `<li>${inline(c.text)} <span class="check">Check: ${inline(c.check)}</span></li>`).join("")}</ol></div>` : "";
+    const box = state === "stopped" ? `<div class="step-say" data-prefix="step ${n}"><p class="qt">Which check should run, or what do you think went wrong?</p><textarea rows="3" aria-label="Your words on step ${n}"></textarea><div class="say-go"><button type="button" class="step-btn" disabled>Send</button></div><code hidden></code><p class="desc" hidden></p></div>` : "";
+    const key = `${st.source}: ${JSON.stringify(item)}`;
+    return `<li class="step${state ? ` ${state}` : ""}${questions.length ? " mine" : ""}${since(key)}" id="${st.id}"><div class="num">${n}</div>${pic}<div class="step-head"><h3>${inline(st.title)}${tags ? ` ${tags}` : ""}</h3><p class="gist">${inline(st.gist)}</p></div><div class="step-body">${how}${cases}${trade}${choices}${see}${found}${code}${causes}${box}</div></li>`;
+  };
+
+  // After the last step: every trade-off in the order it is made, a step whose trade-off is the author's showing the
+  // question that asks it; then, once every step is done, the author's account of what was built, or the box for it.
+  const TELL = "Explain what was built, as you would to a colleague: what it does, how it is built, what was chosen over what and why, what that cost, and what you would do differently.";
+  const afterSteps = () => {
+    const rows = steps.filter((st) => st.trade || asks(st).length).map((st) => (st.trade
+      ? `<tr><td>${st.number}</td><td>${inline(st.trade.chose)}</td><td>${inline(st.trade.over)}</td><td>${inline(st.trade.costs)}</td></tr>`
+      : `<tr class="mine"><td>${st.number}</td><td colspan="3"><a href="#${st.id}">Your call: question ${asks(st).join(", ")}</a></td></tr>`)).join("");
+    const trades = rows ? `<h3 id="h-every-trade-off">Every trade-off, in the order it is made</h3><div class="tablewrap"><table class="trades"><thead><tr><th>Step</th><th>Chose</th><th>Over</th><th>It costs</th></tr></thead><tbody>${rows}</tbody></table></div>` : "";
+    const finished = doc.build && steps.length && doc.build.length === steps.length && doc.build.every((x) => x.state === "done");
+    const told = doc.told
+      ? `<div class="told${since(`told: ${JSON.stringify(doc.told)}`)}"><h3>You told it back</h3><p class="desc">${moment(doc.told.at)}</p><blockquote>${inline(doc.told.said)}</blockquote>${doc.told.right.length ? `<h4>What it had right</h4><ul>${doc.told.right.map((x) => `<li>${inline(x)}</li>`).join("")}</ul>` : ""}${doc.told.missed.length ? `<h4>What it missed</h4><ul>${doc.told.missed.map((x) => `<li>${inline(x)}</li>`).join("")}</ul>` : ""}</div>`
+      : finished ? `<div class="say tell" data-prefix="told"><h3>Tell it back</h3><p class="qt">${TELL}</p><textarea rows="6" aria-label="What was built, in your own words"></textarea><div class="say-go"><button type="button" class="tell-btn" disabled>Send</button></div><code hidden></code><p class="desc" hidden></p></div>` : "";
+    return `${trades}${told}`;
+  };
 
   const body = [];
   // A plan's header says where it stands: approved or not, how many questions wait, how many cases change.
   const open = blocks(doc, "choice").length;
   const caseCount = blocks(doc, "case").length;
   const status = o.plan
-    ? `<p class="status">${o.approvedNow ? `<span class="approval">Approved: ${esc(doc.approved)}</span>` : `<span class="pending">${doc.approved ? `Changed since it was approved (${esc(doc.approved)})` : "Not approved yet"}</span>`}<span><b>${open}</b> question${open === 1 ? "" : "s"} for you</span><span><b>${caseCount}</b> case${caseCount === 1 ? "" : "s"} change</span></p>`
+    ? `<p class="status">${o.approvedNow ? `<span class="approval">Approved: ${esc(doc.approved)}</span>` : `<span class="pending">${doc.approved ? `Changed since it was approved (${esc(doc.approved)})` : "Not approved yet"}</span>`}<span><b>${steps.length}</b> step${steps.length === 1 ? "" : "s"}</span><span><b>${open}</b> question${open === 1 ? "" : "s"} for you</span><span><b>${caseCount}</b> case${caseCount === 1 ? "" : "s"} change</span></p>`
     : doc.approved ? `<p class="approval">Approved: ${esc(doc.approved)}</p>` : "";
-  body.push(`<header><div class="eyebrow">${o.eyebrow}</div><h1>${inline(doc.title)}</h1>${status}%%LEGEND%%</header>`);
+  // A plan's switch: the gist and the technical parts, or the gist alone, which hides every step's "How it works".
+  const show = o.plan && steps.length ? '<div class="seg" role="group" aria-label="How much to show"><button type="button" data-show="all" aria-pressed="true">The gist and the technical parts</button><button type="button" data-show="gist" aria-pressed="false">The gist only</button></div>' : "";
+  body.push(`<header><div class="eyebrow">${o.eyebrow}</div><h1>${inline(doc.title)}</h1>${status}${show}%%LEGEND%%</header>`);
   if (doc.intro.length) body.push(`<section>${doc.intro.map(node).join("\n")}</section>`);
   for (const s of doc.sections) {
     where = [s.heading];
+    if (o.plan) {
+      // The steps, in order, as one list; after the last, every trade-off and the telling back.
+      const nodes = s.heading === STEPS ? `<ol class="steps">${s.nodes.map(node).join("\n")}</ol>${afterSteps()}` : s.nodes.map(node).join("\n");
+      body.push(`<section${s.heading === WHOLE ? ' class="top"' : ""}><h2 id="${s.id}">${inline(s.heading)}</h2>\n${nodes}</section>`);
+      continue;
+    }
     const ask = /^Questions from /.test(s.heading) ? '<p class="ask">Pick an option on each question to copy your answers, such as "1 A, 3 B", and paste them into the chat. Or type them there, or use Comment on a box.</p>' : "";
     const score = s.nodes.some((n) => n.kind === "question") ? `<p class="score" hidden></p>` : "";
     const nodes = s.nodes.map(node).join("\n");

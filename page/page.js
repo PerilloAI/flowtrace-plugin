@@ -250,7 +250,7 @@ const onCard = (card, pick) => {
       el.removeAttribute("id");
     });
     copy.querySelectorAll(".cmt-box").forEach((el) => el.remove());
-    const asks = [...copy.querySelectorAll("button.opt, button.pick, .approve-btn")];
+    const asks = [...copy.querySelectorAll("button.opt, button.pick, .approve-btn, [data-prefix] button, textarea")];
     if (asks.some((button) => !button.disabled)) copy.prepend(Object.assign(document.createElement("p"), { className: "desc modal-note", textContent: "To answer, close this and use the page." }));
     asks.forEach((button) => {
       button.disabled = true;
@@ -440,3 +440,24 @@ if (approve) {
     }));
   });
 })();
+
+// A plan's switch: the gist and the technical parts, or the gist alone, which hides every step's "How it works".
+document.querySelectorAll("[data-show]").forEach((button) => button.addEventListener("click", () => {
+  document.querySelector(".wrap").classList.toggle("gist-only", button.dataset.show === "gist");
+  document.querySelectorAll("[data-show]").forEach((other) => other.setAttribute("aria-pressed", String(other === button)));
+}));
+
+// The author's own words on a plan: at a stopped step, and telling the build back once it is done. The button works once
+// something is written, and gives the chat the box's prefix and the words: "step <n>: …" or "told: …".
+document.querySelectorAll("[data-prefix]").forEach((box) => {
+  const area = box.querySelector(":scope > textarea");
+  const button = box.querySelector(":scope > .say-go > button");
+  if (typeof sendPrompt !== "function") button.textContent = "Copy";
+  area.addEventListener("input", () => {
+    button.disabled = !area.value.trim();
+  });
+  button.addEventListener("click", () => {
+    const words = area.value.trim();
+    if (words) give(`${box.dataset.prefix}: ${words}`, box.querySelector(":scope > code"), box.querySelector(":scope > .desc"));
+  });
+});

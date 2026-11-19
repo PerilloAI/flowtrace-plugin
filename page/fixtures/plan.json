@@ -1,0 +1,748 @@
+{
+  "title": "Read the words out of a PDF invoice, in the order a person reads them",
+  "build": [
+    {
+      "state": "done",
+      "saw": "invoice-1042.pdf · 1 page",
+      "code": [
+        { "where": "invoices/read.py", "name": "read_invoice", "does": "Opens the file with the library and hands on each page with its number" }
+      ]
+    },
+    {
+      "state": "done",
+      "saw": "1,210 letters, each in its place; on 2 invoices in 100, font F3 has no letter table",
+      "found": "Two invoices in a hundred use a font with no letter table, so their letters can only be shown as boxes.",
+      "code": [
+        { "where": "invoices/read.py", "name": "read_letters", "does": "Walks a page's drawing steps and names each shape through its font's letter table" }
+      ]
+    },
+    {
+      "state": "stopped",
+      "saw": "Total and $1,284.50 come out on two lines",
+      "causes": [
+        { "text": "Letters on one line sit a hair apart in height, so they are read as two lines", "check": "Print the height of each letter on the Total line" },
+        { "text": "The amount is in a second font whose letters sit lower", "check": "Print the font of each letter on the Total line" },
+        { "text": "The line is drawn as two pieces of text in the file", "check": "Print the pieces of text the page holds, in the order it holds them" }
+      ],
+      "code": [
+        { "where": "invoices/read.py", "name": "lines_of", "does": "Groups letters into lines by baseline; the Total line splits here" }
+      ]
+    }
+  ],
+  "pictures": {
+    "invoice 1042": {
+      "html": [
+        "<div style=\"border: 1px solid var(--line); background: var(--card); padding: 10px 14px; max-width: 360px; font-family: var(--body)\">",
+        "<div style=\"display: flex; justify-content: space-between\"><b>ACME Supplies</b><span>Invoice 1042</span></div>",
+        "<div style=\"color: var(--muted); font-size: 12px\">3 November 2026 · for Hill Street Bakery</div>",
+        "<table>",
+        "<tr><td>Flour, 25 kg</td><td>8 sacks</td><td>$640.00</td></tr>",
+        "<tr><td>Paper bags</td><td>12 boxes</td><td>$480.00</td></tr>",
+        "<tr><td>Delivery</td><td></td><td>$164.50</td></tr>",
+        "</table>",
+        "<div style=\"text-align: right; margin-top: 6px\"><b>Total $1,284.50</b></div>",
+        "</div>"
+      ],
+      "from": "tests/fixtures/invoice-1042.pdf"
+    },
+    "words of invoice 1042": {
+      "html": [
+        "<div style=\"font-family: var(--mono); font-size: 12.5px; line-height: 1.5\">",
+        "<div><span style=\"color: var(--muted)\">page 1</span></div>",
+        "<div>ACME Supplies   Invoice 1042</div>",
+        "<div>3 November 2026 · for Hill Street Bakery</div>",
+        "<div>Flour, 25 kg   8 sacks   $640.00</div>",
+        "<div>Paper bags   12 boxes   $480.00</div>",
+        "<div>Delivery   $164.50</div>",
+        "<div><mark style=\"background: var(--ok-soft)\">Total $1,284.50</mark></div>",
+        "</div>"
+      ]
+    },
+    "inside invoice 1042": {
+      "html": [
+        "<svg viewBox=\"0 0 420 150\" width=\"420\" xmlns=\"http://www.w3.org/2000/svg\" style=\"font-family: var(--body); font-size: 12px\">",
+        "<rect x=\"2\" y=\"2\" width=\"416\" height=\"146\" rx=\"6\" style=\"fill: var(--card); stroke: var(--line)\"/>",
+        "<text x=\"12\" y=\"20\" style=\"fill: var(--muted)\">invoice-1042.pdf</text>",
+        "<rect x=\"12\" y=\"30\" width=\"240\" height=\"108\" rx=\"4\" style=\"fill: var(--accent-soft); stroke: var(--accent)\"/>",
+        "<text x=\"22\" y=\"48\" style=\"fill: var(--fg); font-weight: 600\">Page 1</text>",
+        "<text x=\"22\" y=\"70\" style=\"fill: var(--fg)\">shape 17 at (412, 88)</text>",
+        "<text x=\"22\" y=\"90\" style=\"fill: var(--fg)\">shape 42 at (419, 88)</text>",
+        "<text x=\"22\" y=\"110\" style=\"fill: var(--fg)\">… 1,206 more shapes</text>",
+        "<text x=\"22\" y=\"130\" style=\"fill: var(--muted)\">no words, no lines</text>",
+        "<rect x=\"264\" y=\"30\" width=\"144\" height=\"108\" rx=\"4\" style=\"fill: var(--note-soft); stroke: var(--note)\"/>",
+        "<text x=\"274\" y=\"48\" style=\"fill: var(--fg); font-weight: 600\">Font F1</text>",
+        "<text x=\"274\" y=\"70\" style=\"fill: var(--fg)\">letter table</text>",
+        "<text x=\"274\" y=\"90\" style=\"fill: var(--fg)\">17 → T, 42 → o</text>",
+        "</svg>"
+      ]
+    },
+    "the newsletter": {
+      "html": [
+        "<svg viewBox=\"0 0 320 120\" width=\"320\" xmlns=\"http://www.w3.org/2000/svg\" style=\"font-family: var(--body); font-size: 11px\">",
+        "<rect x=\"2\" y=\"2\" width=\"316\" height=\"116\" rx=\"4\" style=\"fill: var(--card); stroke: var(--line)\"/>",
+        "<text x=\"12\" y=\"20\" style=\"fill: var(--fg); font-weight: 600\">Hill Street News</text>",
+        "<text x=\"12\" y=\"44\" style=\"fill: var(--fg)\">The town fair opens</text>",
+        "<text x=\"12\" y=\"62\" style=\"fill: var(--fg)\">on Saturday at ten.</text>",
+        "<text x=\"12\" y=\"80\" style=\"fill: var(--fg)\">Bring a chair.</text>",
+        "<text x=\"168\" y=\"44\" style=\"fill: var(--fg)\">Bake sale prizes go</text>",
+        "<text x=\"168\" y=\"62\" style=\"fill: var(--fg)\">to the best loaf and</text>",
+        "<text x=\"168\" y=\"80\" style=\"fill: var(--fg)\">the best pie.</text>",
+        "<line x1=\"160\" y1=\"32\" x2=\"160\" y2=\"108\" style=\"stroke: var(--line); stroke-dasharray: 3 3\"/>",
+        "</svg>"
+      ],
+      "from": "tests/fixtures/newsletter.pdf"
+    },
+    "the newsletter in order": {
+      "html": [
+        "<div style=\"font-family: var(--mono); font-size: 12.5px\">",
+        "<div>The town fair opens on Saturday at ten. Bring a chair.</div>",
+        "<div>Bake sale prizes go to the best loaf and the best pie.</div>",
+        "</div>"
+      ]
+    },
+    "boxes for font F3": {
+      "html": [
+        "<div style=\"font-family: var(--mono); font-size: 12.5px\">",
+        "<div>Paper bags   12 boxes   $480.00</div>",
+        "<div>▯▯▯▯▯▯▯▯ ▯▯   $164.50   <span style=\"color: var(--note)\">(font F3 has no letter table)</span></div>",
+        "</div>"
+      ]
+    }
+  },
+  "sections": [
+    {
+      "heading": "The whole thing",
+      "content": [
+        {
+          "whole": {
+            "problem": "Sam drops invoice-1042.pdf in and the file is kept, but none of its words are read. A search for Total finds nothing, so Sam copies every total by hand.",
+            "gets": "Drop a PDF in. Get its words back, page by page, in the order a person would read them.",
+            "shows": { "use": "words of invoice 1042" },
+            "for": "Anyone at the bakery who needs to search or copy what an invoice says.",
+            "in": "PDFs made by software: invoices, statements, newsletters.",
+            "out": "Scanned pages, locked files, and tables kept as tables.",
+            "assumes": "You have opened a PDF. Nothing about how one is stored.",
+            "unknown": "Whether the fonts in real invoices carry their letter tables. Step 2 tests it.",
+            "asking": "Approve the five steps and answer one question, at step 5. The research found no better way than the one you asked for.",
+            "map": [
+              { "text": "Read the words", "here": true },
+              { "text": "Keep tables as tables" },
+              { "text": "Read scanned pages" }
+            ]
+          }
+        },
+        {
+          "chart": {
+            "title": "The parts",
+            "steps": [
+              {
+                "text": "Opener: opens the file and finds its pages",
+                "kind": "start",
+                "mark": "+",
+                "shows": { "use": "invoice 1042" }
+              },
+              { "text": "Letter reader: each shape on a page, named through its font's letter table, with where it sits", "mark": "+" },
+              { "text": "Line maker: letters into words, words into lines, lines and columns into reading order", "mark": "+" },
+              { "text": "Page by page, the words go back to Sam", "result": "ok" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "heading": "What will happen, in order",
+      "content": [
+        {
+          "step": {
+            "title": "Open the file and find its pages",
+            "label": "Pages",
+            "shows": { "use": "invoice 1042" },
+            "caption": "Invoice 1042 as Sam sees it: one page.",
+            "gist": "A PDF keeps an index of its parts at its very end. This step reads that index and finds each page, the least that runs from one end to the other.",
+            "how": {
+              "frames": [
+                {
+                  "part": "The file's last lines",
+                  "shows": {
+                    "html": [
+                      "<div style=\"font-family: var(--mono); font-size: 12.5px; line-height: 1.55\">",
+                      "<div style=\"color: var(--muted)\">… 48,297 bytes above …</div>",
+                      "<div>startxref</div>",
+                      "<div><span style=\"background: var(--ok-soft)\">48210</span></div>",
+                      "<div>%%EOF</div>",
+                      "</div>"
+                    ]
+                  },
+                  "text": "The file's last lines say where the index starts: byte 48,210.",
+                  "notes": [
+                    "A program reads a PDF from its end, because the index is written last."
+                  ]
+                },
+                {
+                  "part": "The index",
+                  "shows": {
+                    "html": [
+                      "<table>",
+                      "<tr><th>Part</th><th>Starts at byte</th></tr>",
+                      "<tr><td>1</td><td>15</td></tr>",
+                      "<tr><td>2</td><td>74</td></tr>",
+                      "<tr><td>3</td><td>182</td></tr>",
+                      "<tr><td>…</td><td>…</td></tr>",
+                      "</table>",
+                      "<div style=\"font-family: var(--mono); font-size: 12px; margin-top: 6px\">/Root → part 1</div>"
+                    ]
+                  },
+                  "text": "The index lists every numbered part and the byte it starts at. Beside it, `/Root` names the part everything hangs from.",
+                  "notes": [
+                    "A file saved again adds a new index after the old one, pointing back with `/Prev`. The newest wins."
+                  ]
+                },
+                {
+                  "part": "The page tree",
+                  "shows": {
+                    "html": [
+                      "<div style=\"font-family: var(--mono); font-size: 12.5px; line-height: 1.55\">",
+                      "<div>/Root</div>",
+                      "<div style=\"padding-left: 14px\">└ /Pages</div>",
+                      "<div style=\"padding-left: 28px\">└ /Kids: <span style=\"background: var(--ok-soft)\">Page 1</span></div>",
+                      "</div>"
+                    ]
+                  },
+                  "text": "`/Root` points to `/Pages`, a tree. Its branches list their children under `/Kids`, and its leaves are the pages.",
+                  "notes": [
+                    "Walking the tree left to right gives the pages in order."
+                  ]
+                },
+                {
+                  "part": "Handed on",
+                  "shows": { "html": ["<b>invoice-1042.pdf</b> · page 1 of 1"] },
+                  "text": "Each page is handed on with its number."
+                }
+              ],
+              "breaks": "A damaged index. The library rebuilds it by scanning the file for the start of each part, which this plan would otherwise have to write.",
+              "more": [
+                {
+                  "table": {
+                    "head": [
+                      "What the library also handles",
+                      "How"
+                    ],
+                    "rows": [
+                      [
+                        "An index that is itself packed",
+                        "It is unpacked like any other packed part, then read"
+                      ],
+                      [
+                        "Parts stored inside other parts",
+                        "The outer part is unpacked before the index is followed into it"
+                      ],
+                      [
+                        "A damaged index",
+                        "Rebuilt by scanning the file for the start of each part"
+                      ]
+                    ]
+                  }
+                }
+              ]
+            },
+            "trade": { "chose": "An established PDF library to open the file", "over": "Reading the file's parts by hand", "because": "Its index, packing and damaged-file cases are many and well handled there", "costs": "A library for the project to keep up to date" },
+            "see": "invoice-1042.pdf · 1 page"
+          }
+        },
+        {
+          "step": {
+            "title": "Read every letter on a page, with where it sits",
+            "label": "Letters",
+            "unknown": true,
+            "shows": { "use": "inside invoice 1042" },
+            "caption": "What the file holds: shapes at places, and the font's table naming each.",
+            "gist": "The file doesn't store words. It stores shapes and where each goes, and each font's letter table says which letter a shape is.",
+            "how": {
+              "frames": [
+                {
+                  "part": "Page 1, as stored",
+                  "shows": {
+                    "html": [
+                      "<div style=\"font-family: var(--mono); font-size: 12.5px; line-height: 1.55\">",
+                      "<div style=\"color: var(--muted)\">x\\x9c\\xb5\\x92\\xcdN\\xc30\\x10 …</div>",
+                      "<div style=\"font-family: var(--body); font-size: 12px\">packed · FlateDecode</div>",
+                      "</div>"
+                    ]
+                  },
+                  "text": "A page doesn't hold text. It holds drawing steps, packed the way a zip file is (`FlateDecode`)."
+                },
+                {
+                  "part": "Unpacked",
+                  "shows": {
+                    "html": [
+                      "<div style=\"font-family: var(--mono); font-size: 12.5px; line-height: 1.55\">",
+                      "<div>BT</div>",
+                      "<div>/F1 11 Tf</div>",
+                      "<div>412 704 Td</div>",
+                      "<div><span style=\"background: var(--ok-soft)\">&lt;112A&gt; Tj</span></div>",
+                      "<div>ET</div>",
+                      "</div>"
+                    ]
+                  },
+                  "text": "Unpacked, they are short commands, each written after its values.",
+                  "notes": [
+                    "`BT` … `ET` start and end a run of text. `/F1 11 Tf` picks font F1 at 11 points.",
+                    "`412 704 Td` moves to 412 across, 704 up from the bottom. `Tm` sets the place outright.",
+                    "`Tj` draws shapes, given as numbers: `<112A>` is shapes 17 and 42. `TJ` also nudges them sideways."
+                  ]
+                },
+                {
+                  "part": "Font F1's letter table",
+                  "shows": {
+                    "html": [
+                      "<table>",
+                      "<tr><th>Shape</th><th>Letter</th></tr>",
+                      "<tr><td>17</td><td><b>T</b></td></tr>",
+                      "<tr><td>42</td><td><b>o</b></td></tr>",
+                      "</table>"
+                    ]
+                  },
+                  "text": "The font's letter table turns each number into a letter: 17 is T, 42 is o."
+                },
+                {
+                  "part": "Where each sits",
+                  "shows": {
+                    "html": [
+                      "<table>",
+                      "<tr><th>Letter</th><th>Across</th><th>Down</th></tr>",
+                      "<tr><td>T</td><td>412</td><td>88</td></tr>",
+                      "<tr><td>o</td><td>419</td><td>88</td></tr>",
+                      "</table>"
+                    ]
+                  },
+                  "text": "Each letter is kept with its place. The next one starts further right, by the shape's width times the size.",
+                  "notes": [
+                    "A PDF measures in points, 72 to an inch, up from the bottom-left corner.",
+                    "This step turns that into down from the top, so later steps read top to bottom: 704 up is 88 down here."
+                  ]
+                }
+              ],
+              "decides": [
+                { "number": "A shape's width, which the font lists, times the size", "decides": "Where the next shape starts" }
+              ],
+              "breaks": "A font with no letter table. One using a standard set of codes can still be read. One cut down to its file's shapes, numbered its own way, cannot.",
+              "more": [
+                {
+                  "list": [
+                    "Not known yet: how many fonts carry no letter table. This step counts them across a hundred of the bakery's invoices."
+                  ]
+                }
+              ]
+            },
+            "trade": { "chose": "Naming each shape through its font's letter table", "over": "Reading the page as a picture, letter by letter", "because": "Software-made PDFs carry the table, and it is exact", "costs": "A font with no letter table gives no letters at all" },
+            "cases": [
+              {
+                "title": "A scanned receipt",
+                "gets": "Sam is told the page is a photo and holds no letters to read",
+                "today": [
+                  {
+                    "text": "Sam drops receipt-77.pdf in",
+                    "kind": "start",
+                    "where": "invoices/upload.py",
+                    "shows": {
+                      "html": [
+                        "<div style=\"border: 1px solid var(--line); padding: 8px 12px; max-width: 300px\">",
+                        "<div><b>receipt-77.pdf</b> · page 1</div>",
+                        "<div style=\"color: var(--muted)\">a photo of a paper receipt: no letters in the file</div>",
+                        "</div>"
+                      ]
+                    }
+                  },
+                  { "text": "Nothing is said", "result": "bad" }
+                ],
+                "after": [
+                  { "text": "No letters on page 1", "kind": "start", "mark": "+" },
+                  { "text": "Sam reads: this page is a picture, and reading pictures is a later plan", "mark": "+", "result": "ok" }
+                ]
+              }
+            ],
+            "see": "1,210 letters on invoice 1042, each in its place, matching the page by eye"
+          }
+        },
+        {
+          "step": {
+            "title": "Put the letters into words and lines",
+            "label": "Lines",
+            "shows": { "use": "words of invoice 1042" },
+            "caption": "Invoice 1042's words, line by line.",
+            "gist": "Letters close together make a word, and words at the same height make a line. Read top to bottom, Sam can now search for Total.",
+            "how": {
+              "frames": [
+                {
+                  "part": "Letters, each in a box",
+                  "shows": {
+                    "html": [
+                      "<div style=\"font-family: var(--mono); font-size: 12.5px\"><span style=\"border: 1px solid var(--line); padding: 0 3px; margin-right: 1px\">T</span><span style=\"border: 1px solid var(--line); padding: 0 3px; margin-right: 1px\">o</span><span style=\"border: 1px solid var(--line); padding: 0 3px; margin-right: 1px\">t</span><span style=\"border: 1px solid var(--line); padding: 0 3px; margin-right: 1px\">a</span><span style=\"border: 1px solid var(--line); padding: 0 3px; margin-right: 1px\">l</span><span style=\"display: inline-block; width: 14px\"></span><span style=\"border: 1px solid var(--line); padding: 0 3px; margin-right: 1px\">$</span><span style=\"border: 1px solid var(--line); padding: 0 3px; margin-right: 1px\">1</span><span style=\"border: 1px solid var(--line); padding: 0 3px; margin-right: 1px\">,</span><span style=\"border: 1px solid var(--line); padding: 0 3px; margin-right: 1px\">2</span><span style=\"border: 1px solid var(--line); padding: 0 3px; margin-right: 1px\">8</span><span style=\"border: 1px solid var(--line); padding: 0 3px; margin-right: 1px\">4</span><span style=\"border: 1px solid var(--line); padding: 0 3px; margin-right: 1px\">.</span><span style=\"border: 1px solid var(--line); padding: 0 3px; margin-right: 1px\">5</span><span style=\"border: 1px solid var(--line); padding: 0 3px; margin-right: 1px\">0</span></div>"
+                    ]
+                  },
+                  "text": "Each letter has a box: where it starts and ends across, and its baseline. The file often holds no spaces at all.",
+                  "notes": [
+                    "The program that made the file only moved the position between words, so words and lines are worked out from the boxes."
+                  ]
+                },
+                {
+                  "part": "One line?",
+                  "shows": {
+                    "html": [
+                      "<table>",
+                      "<tr><th>Letter</th><th>Baseline</th></tr>",
+                      "<tr><td>l</td><td>88.0</td></tr>",
+                      "<tr><td>$</td><td>88.0</td></tr>",
+                      "<tr><td>apart by</td><td><span style=\"background: var(--ok-soft)\">0.0: one line</span></td></tr>",
+                      "</table>"
+                    ]
+                  },
+                  "text": "Sort by baseline, top to bottom. Letters whose baselines differ by less than a fifth of a letter's height are one line."
+                },
+                {
+                  "part": "One word?",
+                  "shows": {
+                    "html": [
+                      "<table>",
+                      "<tr><th>Gap</th><th>Wide</th><th></th></tr>",
+                      "<tr><td>a → l</td><td>0.4</td><td>same word</td></tr>",
+                      "<tr><td>l → $</td><td>6.1</td><td><span style=\"background: var(--ok-soft)\">new word</span></td></tr>",
+                      "</table>"
+                    ]
+                  },
+                  "text": "Along the line, sorted by where each letter starts, a gap wider than a third of a letter's width starts a new word.",
+                  "notes": [
+                    "A letter here is about 5.5 wide, so the line is drawn at 1.8."
+                  ]
+                },
+                {
+                  "part": "Joined",
+                  "shows": {
+                    "html": [
+                      "<div style=\"font-family: var(--mono); font-size: 12.5px; line-height: 1.55\">",
+                      "<div><span style=\"background: var(--ok-soft)\">Total $1,284.50</span></div>",
+                      "</div>"
+                    ]
+                  },
+                  "text": "A line's words are joined with single spaces, and the lines with line breaks."
+                }
+              ],
+              "decides": [
+                { "number": "A fifth of a letter's height", "decides": "Whether two letters are on one line" },
+                { "number": "A third of a letter's width", "decides": "Whether a gap between letters is a space" }
+              ],
+              "breaks": "Letters set off the baseline on purpose, such as a raised mark or a figure in another font. They can land on a line of their own.",
+              "more": [
+                {
+                  "list": [
+                    "Both numbers are measured against the letters themselves, so a headline and small print are each judged at their own size."
+                  ]
+                }
+              ]
+            },
+            "trade": { "chose": "A gap of a third of a letter's width between words", "over": "A fixed gap, the same for every size of letter", "because": "Large and small type space their words differently", "costs": "Tightly set text can run two words together" },
+            "cases": [
+              {
+                "title": "Sam searches invoice 1042 for its total",
+                "gets": "Sam finds Total $1,284.50 and copies it",
+                "today": [
+                  {
+                    "text": "Sam drops invoice-1042.pdf in",
+                    "kind": "start",
+                    "where": "invoices/upload.py",
+                    "shows": { "use": "invoice 1042" }
+                  },
+                  { "text": "The file is kept, and no words are read from it", "where": "read_invoice" },
+                  { "text": "Sam searches for Total: nothing is found", "result": "bad" }
+                ],
+                "after": [
+                  { "text": "Sam drops invoice-1042.pdf in", "kind": "start", "where": "invoices/upload.py" },
+                  { "text": "Read each letter and where it sits, then put them into words and lines", "mark": "+" },
+                  {
+                    "text": "Sam searches for Total and finds $1,284.50",
+                    "result": "ok",
+                    "mark": "~",
+                    "shows": { "use": "words of invoice 1042" }
+                  }
+                ]
+              }
+            ],
+            "see": "Total $1,284.50 on one line"
+          }
+        },
+        {
+          "step": {
+            "title": "Read two columns one after the other",
+            "label": "Columns",
+            "shows": { "use": "the newsletter" },
+            "caption": "The Hill Street newsletter: two stories side by side.",
+            "gist": "Read straight across, a two-column page mixes its stories. A strip down the page with no letters in it marks the columns, and each is read whole.",
+            "how": {
+              "frames": [
+                {
+                  "part": "The page",
+                  "shows": { "use": "the newsletter" },
+                  "text": "The newsletter as laid out: two stories, side by side.",
+                  "notes": [
+                    "The file draws its text in whatever order the program that made it chose, so that order can't be trusted. The layout can."
+                  ]
+                },
+                {
+                  "part": "Across the page",
+                  "shows": {
+                    "html": [
+                      "<div style=\"display: flex; height: 16px\"><div style=\"flex: 45; background: var(--accent-soft)\"></div><div style=\"flex: 6; border: 1px dashed var(--muted)\"></div><div style=\"flex: 45; background: var(--accent-soft)\"></div></div>",
+                      "<div style=\"display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px\"><span>letters</span><span>none</span><span>letters</span></div>"
+                    ]
+                  },
+                  "text": "Lay every letter's box against the page's width, and mark which stretches across hold letters."
+                },
+                {
+                  "part": "The empty strip",
+                  "shows": {
+                    "html": [
+                      "<div style=\"display: flex; align-items: stretch\"><div style=\"flex: 45; background: var(--ok-soft); padding: 8px; text-align: center\"><b>1</b> · left</div><div style=\"flex: 6\"></div><div style=\"flex: 45; background: var(--ok-soft); padding: 8px; text-align: center\"><b>2</b> · right</div></div>"
+                    ]
+                  },
+                  "text": "The stretch with no letters is the empty strip. Split each line there, and read the left side top to bottom, then the right.",
+                  "notes": [
+                    "With no strip, the page is one column and step 3's order stands."
+                  ]
+                },
+                {
+                  "part": "In order",
+                  "shows": { "use": "the newsletter in order" },
+                  "text": "Each story comes out whole."
+                }
+              ],
+              "decides": [
+                { "number": "At least two letters wide", "decides": "Whether a gap across the page is an empty strip" },
+                { "number": "Letters cross it on fewer than one line in ten", "decides": "Whether it still counts as empty" }
+              ],
+              "breaks": "A headline or a quote set across both columns is split in two at the strip.",
+              "more": [
+                {
+                  "list": [
+                    "This is the first cut of the field's recursive X-Y cut: cut across, then down, and repeat inside each piece. A later plan repeats it."
+                  ]
+                },
+                {
+                  "chart": {
+                    "title": "The obvious way beside the way it's built",
+                    "about": "The PDF format's own description says text is drawn as shapes at places, in any order ([ISO 32000-2, 9.4](https://www.iso.org/standard/75839.html)).",
+                    "columns": [
+                      {
+                        "title": "The obvious way",
+                        "steps": [
+                          { "text": "Take the lines straight across the page", "kind": "start" },
+                          {
+                            "text": "The two stories come out mixed",
+                            "result": "bad",
+                            "shows": {
+                              "html": [
+                                "<div style=\"font-family: var(--mono); font-size: 12.5px\">",
+                                "<div style=\"color: var(--bad)\">The town fair opens Bake sale prizes go</div>",
+                                "<div style=\"color: var(--bad)\">on Saturday at ten. to the best loaf and</div>",
+                                "</div>"
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "title": "The way it's built",
+                        "steps": [
+                          { "text": "Find the empty strip, then read each column", "kind": "start" },
+                          { "text": "Each story comes out whole", "result": "ok" }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "trade": { "chose": "Finding columns by the empty strip down the page", "over": "Reading in the order the file draws", "because": "The file's order is whatever the program that made it chose", "costs": "A quote set across both columns is split in two" },
+            "cases": [
+              {
+                "title": "Sam drops in a two-column newsletter",
+                "gets": "Sam gets each story whole, the left column first",
+                "today": [
+                  {
+                    "text": "Sam drops newsletter.pdf in",
+                    "kind": "start",
+                    "where": "invoices/upload.py",
+                    "shows": { "use": "the newsletter" }
+                  },
+                  { "text": "No words are read", "where": "read_invoice", "result": "bad" }
+                ],
+                "after": [
+                  { "text": "Find the strip that runs down between the columns", "kind": "start", "mark": "+" },
+                  {
+                    "text": "Read the left column top to bottom, then the right",
+                    "mark": "+",
+                    "result": "ok",
+                    "shows": { "use": "the newsletter in order" }
+                  }
+                ]
+              }
+            ],
+            "see": "The newsletter's left column, then its right, each story whole"
+          }
+        },
+        {
+          "step": {
+            "title": "Show the letters a font can't name",
+            "label": "Unnamed letters",
+            "shows": { "use": "boxes for font F3" },
+            "caption": "Invoice 2207's delivery line, set in font F3.",
+            "gist": "On 2 invoices in 100, a font has no letter table, so its letters can't be named. This step decides what Sam sees in their place.",
+            "how": {
+              "frames": [
+                {
+                  "part": "Font F3",
+                  "shows": {
+                    "html": [
+                      "<table>",
+                      "<tr><th>Shape</th><th>Letter</th></tr>",
+                      "<tr><td>9</td><td>?</td></tr>",
+                      "<tr><td>31</td><td>?</td></tr>",
+                      "</table>"
+                    ]
+                  },
+                  "text": "Font F3 has no letter table and numbers its shapes its own way, so shape 9 has no name."
+                },
+                {
+                  "part": "The line",
+                  "shows": {
+                    "html": [
+                      "<div style=\"font-family: var(--mono); font-size: 12.5px; line-height: 1.55\">",
+                      "<div>▯▯▯▯▯▯▯▯ $164.50</div>",
+                      "</div>"
+                    ]
+                  },
+                  "text": "Each shape's box is still known from step 2, so the line keeps its order, with a gap of the right width.",
+                  "notes": [
+                    "Each unnamed shape is kept with its place and marked as unnamed. What Sam sees for it is question 1."
+                  ]
+                },
+                {
+                  "part": "The font's name",
+                  "shows": {
+                    "html": [
+                      "<div style=\"font-family: var(--mono); font-size: 12.5px; line-height: 1.55\">",
+                      "<div><span style=\"background: var(--ok-soft)\">ABCDEF+</span>Helvetica</div>",
+                      "</div>"
+                    ]
+                  },
+                  "text": "The font's name is kept beside it. Six capitals and a plus sign mark a font cut down to the shapes its file uses."
+                }
+              ],
+              "breaks": "A font that names some of its shapes and not others: one line comes out half letters, half boxes.",
+              "more": [
+                {
+                  "list": [
+                    "Reading the shapes back as pictures would name them, and belongs to the later plan for scanned pages."
+                  ]
+                }
+              ]
+            },
+            "cases": [
+              {
+                "title": "An invoice set in a font with no letter table",
+                "gets": "Sam sees a box for each letter that can't be named, and which font it was",
+                "today": [
+                  { "text": "Sam drops invoice-2207.pdf in", "kind": "start", "where": "invoices/upload.py" },
+                  { "text": "No words are read", "where": "read_invoice", "result": "bad" }
+                ],
+                "after": [
+                  {
+                    "text": "The font has no table to name its shapes",
+                    "kind": "question",
+                    "mark": "+",
+                    "answers": [
+                      {
+                        "label": "none",
+                        "steps": [
+                          {
+                            "text": "Show ▯ for each letter and name the font",
+                            "mark": "+",
+                            "shows": { "use": "boxes for font F3" }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "choices": [
+              {
+                "number": 1,
+                "question": "When an invoice uses a font with no letter table, as 2 in 100 of the bakery's do, what should Sam see in place of those words?",
+                "today": [
+                  {
+                    "text": "Sam drops invoice-2207.pdf in and no words are read from it",
+                    "kind": "start",
+                    "where": "read_invoice",
+                    "shows": { "html": ["<div>invoice-2207.pdf · <b>Delivery $164.50</b> · set in font F3</div>"] }
+                  }
+                ],
+                "decides": "Whether Sam needs to know a word was there and couldn't be read, or only wants the words that could.",
+                "recommended": "A box for each letter that can't be named, and a note naming the font",
+                "alternatives": [
+                  "Leave those words out, and say nothing"
+                ],
+                "options": [
+                  {
+                    "name": "Boxes and the font",
+                    "steps": [
+                      { "text": "Sam sees ▯▯▯▯▯▯▯▯ $164.50 (font F3)", "kind": "start" }
+                    ]
+                  },
+                  {
+                    "name": "Leave them out",
+                    "steps": [
+                      { "text": "Sam sees $164.50 alone", "kind": "start" }
+                    ]
+                  }
+                ],
+                "why": "A missing word Sam can see is one Sam can check on the invoice itself; one left out silently looks like a whole line."
+              }
+            ],
+            "see": "▯▯▯▯▯▯▯▯ $164.50 (font F3) on invoice 2207"
+          }
+        }
+      ]
+    },
+    {
+      "heading": "Already settled",
+      "content": [
+        {
+          "settled": [
+            { "who": "Sam", "how": "said", "at": "2026-11-18T10:12:00-05:00", "text": "The words come back in the order a person would read them" },
+            { "who": "the repository", "how": "rule", "from": "README.md", "text": "Uploaded files are never changed" },
+            { "who": "Claude", "how": "claude", "text": "Open the file with an established PDF library, not by hand", "alternatives": ["Write the file reader from scratch"], "wrongIf": "The project can take no new library" },
+            { "who": "Claude", "how": "claude", "text": "Name each shape through its font's letter table", "alternatives": ["Read the page as a picture, letter by letter"] },
+            { "who": "Claude", "how": "claude", "text": "Two letters belong to one word when the gap between them is under a third of a letter's width", "alternatives": ["A fixed gap, the same for every size of letter"] },
+            { "who": "Claude", "how": "claude", "text": "Find columns by the empty strip down the page", "alternatives": ["Read in the order the file draws"], "wrongIf": "Your PDFs often set a quote or a table across both columns" }
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Names",
+      "content": [
+        {
+          "names": [
+            { "name": "baseline", "text": "the line a row of letters sits on" },
+            { "name": "drawing steps", "usual": "content stream", "text": "the list of commands that draws a page, one after another" },
+            { "name": "empty strip", "usual": "gutter", "text": "the gap that runs down a page between two columns" },
+            { "name": "index", "usual": "cross-reference table", "text": "the table at the end of a PDF that says at which byte each of its parts starts" },
+            { "name": "letter table", "usual": "ToUnicode map", "text": "the table in a font that says which letter each shape is" },
+            { "name": "shape", "usual": "glyph", "text": "the drawing of one letter in a font, which the file places on the page" }
+          ]
+        }
+      ]
+    }
+  ]
+}

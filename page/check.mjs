@@ -1,26 +1,35 @@
 // The checks a page's data must pass before it is drawn: every rule blocks.md and plan-format.md mark **checked**, on
 // the data itself, so the page is never read back. An explanation gets the rules its blocks share with a plan.
 import { pictureProblems } from "./picture.mjs";
+import { allNodes } from "./read.mjs";
 
-export const PLAN_SECTIONS = [
-  "What I'm asking",
-  "Questions from plan-flows",
-  "Questions from plan-check",
-  "What changes, case by case",
-  "Check your reading",
-  "Already settled",
-  "Plan changes",
-  "Names",
-];
-export const CASES = "What changes, case by case";
-// A plan asks two reading questions: enough to show the reader understood, few enough to stay worth answering.
-export const PLAN_QUESTIONS = 2;
+export const WHOLE = "The whole thing";
+export const STEPS = "What will happen, in order";
+export const PLAN_SECTIONS = [WHOLE, "Plan changes", STEPS, "Already settled", "Names"];
+// An explanation asks two reading questions: enough to show the reader understood, few enough to stay worth answering.
+export const PAGE_QUESTIONS = 2;
+// A step's gist is read on its own as the account of the whole build, so it stays short.
+export const GIST_WORDS = 50;
+// How a step works is drawn: a few frames, each a picture and a caption short enough to read at a glance.
+export const FRAMES = [2, 8];
+export const FRAME_WORDS = 25;
+// A frame's notes carry the detail that belongs to it: a few, each short.
+export const FRAME_NOTES = 3;
+export const NOTE_WORDS = 25;
+// What "more" holds is scanned, not read through: each item of a list and each cell of a table stays short.
+export const MORE_WORDS = 30;
+export const BREAKS_WORDS = 40;
+export const DECIDES_WORDS = 20;
+// Minutes to read, at 230 words a minute.
+export const WORDS_A_MINUTE = 230;
+export const minutes = (words) => Math.max(1, Math.ceil(words / WORDS_A_MINUTE));
 // "<who> · <date and time, with its offset> · <fingerprint>", and what changed an approved plan since.
 export const APPROVED = /^[^·]+ · \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:[+-]\d{2}:\d{2}|Z) · [0-9a-f]{7}(?: · after (?:plan change \d+|plan-check))?$/;
 const MOMENT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:[+-]\d{2}:\d{2}|Z)$/;
 
+// Every block of a page, a plan's steps and what each holds included.
 export function blocks(doc, kind) {
-  return [...doc.intro, ...doc.sections.flatMap((s) => s.nodes)].filter((n) => n.type === "block" && (!kind || n.kind === kind));
+  return allNodes(doc).filter((n) => n.type === "block" && (!kind || n.kind === kind));
 }
 
 // Every box of a chart or flow, lanes and inner boxes included.
@@ -43,11 +52,12 @@ const pictured = (items) => boxes(items).some((b) => b.shows);
 // What a reader's question can name, and what a plan's page counts: its cases.
 export const cases = (doc) => blocks(doc, "case");
 
-// What a question's "read" can name: a chart's or flow's title, a section's heading, or a step's "where".
+// What a question's "read" can name: a chart's or flow's title, a section's heading, a subheading, or a step's "where".
 export function targets(doc) {
   const ids = new Map();
   const add = (name, id) => name && !ids.has(name) && ids.set(name, id);
   for (const s of doc.sections) add(s.heading, s.id);
+  for (const n of allNodes(doc)) if (n.type === "h3") add(n.text, n.id);
   for (const b of blocks(doc)) {
     if (b.title) add(b.title, b.id);
     if (b.kind === "flow") {
@@ -63,8 +73,62 @@ export function readTarget(ids, read) {
   return ids.get(read) ?? ids.get(read.replace(/^\[(.+)\]$/, "$1")) ?? null;
 }
 
+// Whether a plan's page folds Claude's smaller calls: it does once one of its calls says what would make it wrong.
+export const foldsCalls = (doc) => blocks(doc, "settled").some((b) => b.rows.some((r) => r.how === "claude" && r.wrongIf));
+
+// The words a reader reads on a plan's page, as the plan writes them: all of its texts but its pictures (their drawing
+// and where each came from), Names, which is looked up, Claude's calls folded under Already settled (those without
+// "wrongIf"), and the build and told records, which change as the build goes. The gist alone leaves out every step's
+// "how", which the page's switch hides.
+const count = (text) => (text ? String(text).replace(/\]\([^)\s]+\)/g, "]").replace(/[`*[\]]/g, " ").split(/\s+/).filter(Boolean).length : 0);
+const boxWords = (items) => boxes(items).reduce((n, b) => n + count(b.text) + count(b.note) + count(b.where) + count(b.part)
+  + (b.lanes ?? []).reduce((m, l) => m + count(l.label), 0), 0);
+function nodeWords(n, folds) {
+  if (n.type === "p" || n.type === "h3") return count(n.text);
+  if (n.type === "list") return n.items.reduce((m, t) => m + count(t), 0);
+  if (n.type === "table") return [...n.head, ...n.rows.flat()].reduce((m, t) => m + count(t), 0);
+  if (n.type === "code") return n.lines.reduce((m, t) => m + count(t), 0);
+  const all = (...texts) => texts.flat().reduce((m, t) => m + count(t), 0);
+  switch (n.kind) {
+    case "case":
+    case "chart":
+      return all(n.title, n.about) + (n.chart.columns ? n.chart.columns.reduce((m, c) => m + count(c.title) + boxWords(c.items), 0) : boxWords(n.chart.items));
+    case "question":
+      return all(n.question, n.read, n.why, n.options.map((o) => o.text)) + boxWords(n.case) + n.options.reduce((m, o) => m + boxWords(o.items), 0);
+    case "choice":
+      return all(n.question, n.recommended, n.alternatives, n.names, n.why, n.decides) + boxWords(n.today ?? []) + n.chart.columns.reduce((m, c) => m + boxWords(c.items), 0);
+    case "settled":
+      return n.rows.filter((r) => !(folds && r.how === "claude" && !r.wrongIf)).reduce((m, r) => m + all(r.text, r.from, r.alternatives, r.wrongIf), 0);
+    case "flow":
+      return count(n.name) + boxWords(n.items);
+    case "whole":
+      return all(n.problem, n.gets, n.for, n.in, n.out, n.assumes, n.unknown, n.asking, (n.map ?? []).map((m) => m.text));
+    case "step":
+      return all(n.title, n.label, n.caption, n.gist, n.see, n.trade ? [n.trade.chose, n.trade.over, n.trade.because, n.trade.costs] : []);
+  }
+  return 0;
+}
+/** @returns {{ total: number, gist: number }} the words of the whole page, and of the gist alone */
+export function reading(doc) {
+  const folds = foldsCalls(doc);
+  const steps = blocks(doc, "step");
+  const technical = new Set(steps.flatMap((st) => st.how));
+  let total = count(doc.title);
+  let gist = total;
+  for (const n of [...doc.intro, ...doc.sections.filter((s) => s.heading !== "Names").flatMap((s) => [{ type: "h3", text: s.heading }, ...s.nodes])].flatMap((n) => (n.kind === "step" ? [n, ...n.how, ...n.cases, ...n.choices] : [n]))) {
+    const words = nodeWords(n, folds);
+    total += words;
+    if (!technical.has(n)) gist += words;
+  }
+  for (const st of steps) {
+    total += count(st.breaks) + st.decides.reduce((m, d) => m + count(d.number) + count(d.decides), 0);
+    if (st.drawn.strip) total += st.drawn.chart.items.reduce((m, f) => m + f.notes.reduce((k, t) => k + count(t), 0), 0);
+  }
+  return { total, gist };
+}
+
 /** @returns {string[]} what is wrong, each naming its line */
-export function check(doc, { plan, nameFound }) {
+export function check(doc, { plan, nameFound, codeFound = () => true }) {
   const errors = [];
   const at = (line, message) => errors.push(`line ${line}: ${message}`);
   const all = blocks(doc);
@@ -83,6 +147,11 @@ export function check(doc, { plan, nameFound }) {
     if (!picture.used) at(picture.line, `the picture "${picture.name}" is shown by no step: a step shows it with "shows": { "use": "${picture.name}" }`);
   }
   for (const b of all) {
+    // A plan's whole and each of its steps carry a picture of their own.
+    if ((b.kind === "whole" || b.kind === "step") && !b.shows.use) {
+      copyOf(b.shows.html, b.shows.lines[0]);
+      for (const p of pictureProblems(b.shows.html)) at(b.shows.lines[p.k], p.message);
+    }
     const drawn = b.kind === "flow" ? boxes(b.items) : blockChartBoxes(b);
     for (const box of drawn) {
       // A named picture is checked once, where it is drawn, however many steps show it.
@@ -153,9 +222,17 @@ export function check(doc, { plan, nameFound }) {
       if (!boxes(after.items).some((b) => b.flowMark)) at(after.line, 'a case is drawn because something changes: mark the steps of "after" that are new ("+"), changed ("~") or removed ("-")');
     } else if (boxes(c.chart.items).some((b) => b.flowMark)) at(c.line, 'a case\'s "steps" show how it works now, so they take no "mark"');
   }
-  if (questions.length > PLAN_QUESTIONS) at(questions[PLAN_QUESTIONS].line, `a page asks ${PLAN_QUESTIONS} reading questions; this one asks ${questions.length}`);
-
-  if (!plan) return errors;
+  if (!plan) {
+    if (questions.length > PAGE_QUESTIONS) at(questions[PAGE_QUESTIONS].line, `a page asks ${PAGE_QUESTIONS} reading questions; this one asks ${questions.length}`);
+    // What only a plan has: its build and told, its whole and steps, what decides a question, and the calls most likely
+    // to be wrong.
+    if (doc.build) at(doc.buildLine, 'only a plan has a "build"');
+    if (doc.told) at(doc.toldLine, 'only a plan has a "told"');
+    for (const b of all.filter((n) => ["whole", "step"].includes(n.kind))) at(b.line, `only a plan has a "${b.kind}"`);
+    for (const c of all.filter((b) => b.kind === "choice")) if (c.decides) at(c.decidesLine, 'only a plan\'s question for the author takes "decides"');
+    for (const r of blocks(doc, "settled").flatMap((b) => b.rows).filter((r) => r.wrongIf)) at(r.line, 'only a plan\'s call takes "wrongIf"');
+    return errors;
+  }
 
   let last = -1;
   for (const s of doc.sections) {
@@ -164,11 +241,59 @@ export function check(doc, { plan, nameFound }) {
     else if (k < last) at(s.line, `"${s.heading}" stands after "${PLAN_SECTIONS[last]}", out of order`);
     else last = k;
   }
-  if (doc.sections[0]?.heading !== "What I'm asking") at(doc.sections[0]?.line ?? doc.titleLine, "What I'm asking comes first");
-  if (!doc.sections.some((s) => s.heading === CASES)) at(doc.titleLine, `a plan has a "${CASES}" section`);
+  if (doc.sections[0]?.heading !== WHOLE) at(doc.sections[0]?.line ?? doc.titleLine, `${WHOLE} comes first`);
+  if (!doc.sections.some((s) => s.heading === STEPS)) at(doc.titleLine, `a plan has a "${STEPS}" section`);
+  const section = (heading) => doc.sections.find((s) => s.heading === heading) ?? null;
   if (doc.approved && !APPROVED.test(doc.approved)) at(doc.titleLine, '"approved" is "<who> · <YYYY-MM-DDTHH:MM:SS±HH:MM> · <fingerprint>", the moment the author approved');
 
-  for (const f of blocks(doc, "flow")) at(f.line, "a plan draws what changes as cases, each today beside after; it has no flows");
+  // The whole thing: one whole, first, then at most one chart of the parts.
+  const wholes = blocks(doc, "whole");
+  if (wholes.length !== 1) at(wholes[1]?.line ?? section(WHOLE)?.line ?? doc.titleLine, `a plan has one "whole"; this one has ${wholes.length}`);
+  const whole = wholes[0] ?? null;
+  const top = section(WHOLE)?.nodes ?? [];
+  if (whole && top[0] !== whole) at(whole.line, `"whole" is the first item of ${WHOLE}`);
+  for (const n of top.slice(1)) if (n.kind !== "chart" || top.slice(1).indexOf(n) > 0) at(n.line, `${WHOLE} holds its "whole" and, when the change adds or connects parts, one "chart" of the parts, and nothing else`);
+  if (whole?.map && whole.map.filter((m) => m.here).length !== 1) at(whole.mapLine, '"map" marks exactly one plan, this one, with "here": true');
+
+  // What will happen, in order: the steps, and nothing else; every case and question sits in the step it belongs to.
+  for (const n of section(STEPS)?.nodes ?? []) if (n.kind !== "step") at(n.line, `${STEPS} holds only steps, in the order they are built`);
+  const steps = blocks(doc, "step");
+  if (!steps.length) at(section(STEPS)?.line ?? doc.titleLine, `a plan has at least one "step"`);
+  for (const n of doc.sections.flatMap((s) => s.nodes).concat(doc.intro)) {
+    if (n.kind === "step" && !(section(STEPS)?.nodes ?? []).includes(n)) at(n.line, `a "step" stands under ${STEPS}`);
+    if (n.kind === "case") at(n.line, 'a plan\'s case sits in the "cases" of the step that makes its "after" come true');
+    if (n.kind === "choice") at(n.line, 'a plan\'s question for the author sits in the "choices" of the step it belongs to');
+  }
+  for (const st of steps) {
+    const words = count(st.gist);
+    if (words > GIST_WORDS) at(st.gistLine, `a step's "gist" is ${GIST_WORDS} words or fewer, a sentence or two; this one is ${words}`);
+    const drawnBoxes = chartBoxes(st.drawn.chart);
+    if (st.drawn.strip) {
+      const [least, most] = FRAMES;
+      if (drawnBoxes.length < least || drawnBoxes.length > most) at(st.drawn.line, `"frames" holds ${least} to ${most} frames, the example at each moment of the step; this one holds ${drawnBoxes.length}. A step that needs more is two steps`);
+    } else if (!drawnBoxes.some((b) => b.shows)) at(st.drawn.line, 'a "how" drawn as a chart shows the example on at least one of its steps, as a picture');
+    for (const b of drawnBoxes) {
+      const n = count(b.text);
+      if (n > FRAME_WORDS) at(b.line, `${st.drawn.strip ? "a frame's caption" : "a step of a \"how\" chart"} is ${FRAME_WORDS} words or fewer: the picture carries the rest; this one is ${n}`);
+    }
+    for (const b of st.drawn.strip ? drawnBoxes : []) {
+      if (b.notes.length > FRAME_NOTES) at(b.notesLine, `a frame carries at most ${FRAME_NOTES} notes; this one carries ${b.notes.length}. More detail than that is another frame`);
+      for (const t of b.notes) if (count(t) > NOTE_WORDS) at(b.notesLine, `a frame's note is ${NOTE_WORDS} words or fewer; one here is ${count(t)}`);
+    }
+    for (const m of st.more) {
+      const texts = m.type === "list" ? m.items : m.type === "table" ? m.rows.flat() : [];
+      for (const t of texts) if (count(t) > MORE_WORDS) at(m.line, `each item of a list and each cell of a table under "more" is ${MORE_WORDS} words or fewer; one here is ${count(t)}`);
+    }
+    if (count(st.breaks) > BREAKS_WORDS) at(st.breaksLine, `"breaks" says where the step goes wrong first in ${BREAKS_WORDS} words or fewer; this one is ${count(st.breaks)}`);
+    for (const d of st.decides) if (count(d.number) > DECIDES_WORDS || count(d.decides) > DECIDES_WORDS) at(d.line, `each text of "decides" is ${DECIDES_WORDS} words or fewer`);
+    if (st.trade && /^(nothing|none|no cost)\.?$/i.test(st.trade.costs.trim())) at(st.costsLine, 'a trade-off\'s "costs" says what the choice costs: a choice that costs nothing is no trade-off, so leave "trade" out');
+  }
+  const unknown = steps.filter((st) => st.unknown);
+  if (whole?.unknown) {
+    if (unknown.length !== 1) at(unknown[1]?.line ?? section(STEPS)?.line ?? doc.titleLine, `"whole" says what nobody knows yet, so exactly one step carries "unknown": true; ${unknown.length} do`);
+  } else for (const st of unknown) at(st.line, '"unknown": true marks the step that tests "whole"\'s "unknown", and "whole" has none');
+
+  for (const b of all.filter((n) => ["flow", "question"].includes(n.kind))) at(b.line, `a plan has no "${b.kind}": it tells what happens step by step, each case today beside after`);
   for (const c of cases(doc)) {
     if (!c.change) { at(c.line, 'a plan\'s case is a change: it has "today" and "after"'); continue; }
     // A step that exists today names code that is there now.
@@ -177,7 +302,40 @@ export function check(doc, { plan, nameFound }) {
     }
   }
 
-  if (questions.length !== PLAN_QUESTIONS) at(questions[0]?.line ?? doc.titleLine, `a plan asks ${PLAN_QUESTIONS} reading questions; this one asks ${questions.length}`);
+  // Each question for the author says what decides it.
+  const choices = all.filter((b) => b.kind === "choice");
+  for (const c of choices) if (!c.decides) at(c.line, 'a plan\'s question for the author says in "decides" what about the author\'s situation makes each option the right one');
+
+  // Of Claude's calls, the one or two most likely to be wrong say what would make them wrong.
+  const rows = blocks(doc, "settled").flatMap((b) => b.rows);
+  for (const r of rows.filter((x) => x.wrongIf && x.how !== "claude")) at(r.line, 'only Claude\'s call takes "wrongIf"');
+  const claudes = rows.filter((r) => r.how === "claude");
+  const risky = claudes.filter((r) => r.wrongIf);
+  if (claudes.length && !risky.length) at(claudes[0].line, 'one or two of Claude\'s calls, those most likely to be wrong, say in "wrongIf" what would make them wrong');
+  if (risky.length > 2) at(risky[2].line, `one or two of Claude's calls carry "wrongIf"; ${risky.length} do`);
+
+  // The build so far: one item for each step started, every one done but the last.
+  if (doc.build) {
+    if (doc.build.length > steps.length) at(doc.buildLine, `"build" has ${doc.build.length} items and the plan ${steps.length} steps: one item for each step started`);
+    doc.build.forEach((r, k) => {
+      if (k < doc.build.length - 1 && r.state !== "done") at(r.line, 'every step of "build" but the last is "done": the build goes one step at a time');
+      if (r.state !== "now" && !r.saw) at(r.line, `a ${r.state} step says in "saw" what it showed, in the terms of its "see"`);
+      if (r.causes && r.state !== "stopped") at(r.line, 'only a stopped step has "causes"');
+      if (r.state === "done" && !r.code?.length) at(r.line, 'a done step says in "code" where its code is: each file, and what it does there');
+      for (const c of r.code ?? []) {
+        const has = codeFound(c.where, c.name);
+        if (has === "file") at(c.line, `"where" names a file of the repository as it stands now, by its path, outside docs/plans; there is no ${c.where}`);
+        else if (has === "name") at(c.line, `${c.where} holds no ${c.name}: "name" is a function or class in that file`);
+      }
+    });
+  }
+
+  // Telling it back, once every step is done.
+  if (doc.told) {
+    if (!doc.build || doc.build.length !== steps.length || doc.build.some((r) => r.state !== "done")) at(doc.toldLine, '"told" is there only once every step is "done"');
+    if (!MOMENT.test(doc.told.at)) at(doc.told.atLine, '"at" is the moment it was told, YYYY-MM-DDTHH:MM:SS±HH:MM');
+    if (doc.told.missed.length > 3) at(doc.told.missedLine, `"missed" holds at most three; this one holds ${doc.told.missed.length}`);
+  }
 
   return errors;
 }

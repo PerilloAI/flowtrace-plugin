@@ -1,6 +1,6 @@
 # Teaching
 
-The rules explain, plan-flows, plan-flows-tech and plan-check share. Each skill reads this file in full before its first
+The rules explain, plan-flows and plan-check share. Each skill reads this file in full before its first
 step; its own SKILL.md holds only what is its own. [teaching-sources.md](teaching-sources.md) gives where each rule
 comes from, for whoever changes them; a run needn't open it.
 
@@ -28,16 +28,17 @@ and who may read the page a week from now. Everything they need is on it. People
 
 A page teaches the thing case by case, each case drawn with pictures of the example, because people take in a picture
 of what happens faster than a paragraph about it. A page is never a wall of text: what isn't a case, a question or a
-decision is left off, and so is the build's detail: its classes, files and functions, its traces, its tests and its
-order of work. A change large enough to need it shows how its pieces fit, at a high level (How the pieces fit).
+decision is left off, and so is the build's detail: its classes, files and functions, its traces and its tests. A
+change large enough to need it shows how its pieces fit, at a high level (How the pieces fit), and a plan tells the
+whole build as a sequence of steps (plan-format.md).
 
 Git stays with the person: a skill makes no commit and makes or switches no branch, since what the history says and
 which branch they work on are theirs to decide. What each may write is in its own steps.
 
 ## The page
 
-Every page has these sections, in this order, each left out when it would be empty. A skill may name them more
-exactly (plan-format.md does for a plan), and adds nothing else:
+An explanation has these sections, in this order, each left out when it would be empty. A plan's page is a
+storyboard, every step in order, in the sections plan-format.md gives:
 
 1. **What I'm asking** (or **In short**, when there is nothing to decide): two or three plain sentences: what this is,
    what it gives the reader, and what they are asked, with your recommendation first.
@@ -84,6 +85,7 @@ half-way, and an outside call that fails. Then:
 ```
 
 - `title` names the situation, in the reader's words; `gets` says in a line what the person gets.
+- **On a plan, a case sits in the step that makes it come true** (plan-format.md, step).
 - **For a change**, `today` charts it as the code runs it now, flaws included (what you traced, not what the code
   seems meant to do), and `after` as it will run, side by side. A situation that can't arise today (a button that
   doesn't exist yet) shows what happens in its place. `after` marks its new (`"+"`), changed (`"~"`) and removed
@@ -108,7 +110,7 @@ the change adds a part (a service, a job, a store, a queue, a model, an outside 
 use yet), or connects parts that don't talk to each other today, and whenever the reader asks how something will be
 built. A change that stays inside one part as it is (a check, a message, a field) needs none.
 
-- **One chart of the parts**, before the cases, under `How the pieces fit` (on a plan, on its technical page): each part in the order the example passes
+- **One chart of the parts**, before the cases, under `How the pieces fit` (on a plan, under The whole thing): each part in the order the example passes
   through it, a box each, saying what the part does for the reader and the technology it runs on ("a nightly job on
   the scheduler the API server already has", "a table in the existing Postgres"), with the example as each part hands
   it to the next drawn as a picture. Mark a new part `"+"` and a changed one `"~"`; the parts that stay as they are
@@ -118,8 +120,8 @@ built. A change that stays inside one part as it is (a check, a message, a field
 - **A part's technology is a decision** like any other: the established way the research found is your call under
   Already settled, its source linked, or a question when it gives people something different or costs something they
   would weigh (a new dependency, a service to run, money).
-- **High level only**: the parts and what passes between them. No classes, files, schemas or order of work: the build
-  decides those.
+- **High level only**: the parts and what passes between them. No classes, files or schemas: the build decides those.
+  A plan gives the order of work as its steps.
 
 ## The worked example
 
@@ -166,8 +168,9 @@ detail, so none stands out. A question for the person (a `choice`) is drawn the 
 and under each option what would be different. A picture another chart already draws is shown again by its name
 (`pictures`, blocks.md), never copied.
 
-A page asks two, each testing what a reader who skimmed would get wrong, about what a person gets in a case the page
-draws: more wear the reader out, and they stop reading them. **Checked**.
+An explanation asks two, each testing what a reader who skimmed would get wrong, about what a person gets in a case
+the page draws: more wear the reader out, and they stop reading them. A plan asks none: its author tells the build back when it is done
+(plan-format.md, Telling it back). **Checked**.
 
 ## Asking the person
 
@@ -186,7 +189,7 @@ when one of these holds:
   contract other people rely on, money, access, security. This is asked however sure you are.
 
 Otherwise it is Claude's call: when you would bet on their answer and a wrong bet is cheap to put right. It goes under
-Already settled, the option you picked in `text`, the others in `alternatives`, and in `from` what it follows when
+Already settled (on a plan, the one or two most likely to be wrong saying what would make them wrong), the option you picked in `text`, the others in `alternatives`, and in `from` what it follows when
 something does (a rule, the code's own convention, an earlier answer); they flip it on the page when they'd decide
 differently. A decision with one sensible answer, which nobody would want otherwise, is not a decision: do it and say
 nothing.
@@ -195,7 +198,8 @@ nothing.
 of the page. `question` names who does what, with which values, in which state, and what is being decided. It uses no
 word the page coins, and no name from another question or chart, without saying what it means right there. The
 recommendation is the first option, and `why` says in two or three sentences why it, and what it costs, with its
-sources as links.
+sources as links. On a plan, every question also says what decides it (plan-format.md,
+choice).
 
 ## Recording each decision
 
